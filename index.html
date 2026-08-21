@@ -1094,34 +1094,55 @@
 
   <!-- Rewards list -->
   <div class="section-title" style="margin-top:24px;">🎁 獎勵清單說明</div>
-  <div class="card" style="text-align:center;border-top:4px solid #A855F7;">
-  <div style="font-size:1.8rem;">👑</div><div style="font-weight:800;font-size:.95rem;">今日獵人隊長</div>
-  <div style="font-size:.78rem;color:#94a3b8;">當一天班級小幫手</div>
-</div>
-<div class="card" style="text-align:center;border-top:4px solid #FFD93D;">
-  <div style="font-size:1.8rem;">🏅</div><div style="font-weight:800;font-size:.95rem;">專屬稱號徽章</div>
-  <div style="font-size:.78rem;color:#94a3b8;">自己取一個獵人稱號</div>
-</div>
-<div class="card" style="text-align:center;border-top:4px solid var(--sky);">
-  <div style="font-size:1.8rem;">📣</div><div style="font-weight:800;font-size:.95rem;">榮譽公告</div>
-  <div style="font-size:.78rem;color:#94a3b8;">上榮譽牆讓大家看見你</div>
-</div>
-<div class="card" style="text-align:center;border-top:4px solid var(--grass);">
-  <div style="font-size:1.8rem;">🎁</div><div style="font-weight:800;font-size:.95rem;">神秘任務卡</div>
-  <div style="font-size:.78rem;color:#94a3b8;">隨機小挑戰，完成有驚喜</div>
-</div>
-<div class="card" style="text-align:center;border-top:4px solid var(--coral);">
-  <div style="font-size:1.8rem;">🎲</div><div style="font-weight:800;font-size:.95rem;">再轉一次！</div>
-  <div style="font-size:.78rem;color:#94a3b8;">幸運連抽</div>
-</div>
-<div class="card" style="text-align:center;border-top:4px solid var(--mint);">
-  <div style="font-size:1.8rem;">⭐</div><div style="font-weight:800;font-size:.95rem;">加 3 顆星</div>
-  <div style="font-size:.78rem;color:#94a3b8;">直接入帳！</div>
-</div>
-    </div>
+ <div class="card" style="margin-top:20px;cursor:pointer;background:linear-gradient(135deg,#fef9c3,#fde68a);border-left:6px solid var(--sun);"
+     onclick="const p=document.getElementById('rewardGuide'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-weight:800;font-size:1rem;">💡 給獎勵想不出來時,點我看提示</div>
+    <div class="arrow" style="font-size:1.2rem;">▼</div>
   </div>
 </div>
 
+<div id="rewardGuide" style="display:none;margin-top:12px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+
+    <div class="card" style="border-top:4px solid #A855F7;">
+      <div style="font-weight:800;margin-bottom:8px;">🎭 自主選擇類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">給孩子掌控感</span></div>
+      <div style="font-size:.85rem;line-height:1.9;color:#444;">
+        🪑 今天的座位任你選<br>
+        📋 明天的班級小任務你來指派<br>
+        🎨 自由選一件事做 10 分鐘
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid #FFD93D;">
+      <div style="font-weight:800;margin-bottom:8px;">🌟 身份榮耀類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">呼應成長獵人主題</span></div>
+      <div style="font-size:.85rem;line-height:1.9;color:#444;">
+        👑 今日獵人隊長(當一天小幫手/小組長)<br>
+        🏅 專屬稱號徽章(可自訂,如「認真獵人」)<br>
+        📣 榮譽公告(在班級榮譽牆公開一句話)
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid var(--sky);">
+      <div style="font-weight:800;margin-bottom:8px;">🤝 連結歸屬類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">強化同儕連結</span></div>
+      <div style="font-size:.85rem;line-height:1.9;color:#444;">
+        🎉 幫全班加一個「班級任務」進度<br>
+        👥 和好朋友合作完成下個任務<br>
+        💌 寫一張感謝卡給任何一位同學
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid var(--coral);">
+      <div style="font-weight:800;margin-bottom:8px;">🎲 驚喜/趣味類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">保留遊戲感,輕量化</span></div>
+      <div style="font-size:.85rem;line-height:1.9;color:#444;">
+        🎲 再轉一次!<br>
+        ⭐ 加 3 顆星<br>
+        🎁 神秘任務卡(隨機小挑戰,完成有額外驚喜)
+      </div>
+    </div>
+
+  </div>
+</div>
 <!-- ─────────────── MISSIONS ─────────────── -->
 <div id="page-missions" class="page">
   <div style="display:flex;align-items:center;margin-bottom:16px;">
