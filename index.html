@@ -3149,11 +3149,23 @@ function toggleSeatingProjectorMode(){
 function renderSeatingChart(){
   const grid = document.getElementById('seatingGrid');
   if(!grid) return;
-  grid.style.display = 'flex';
-  grid.style.gap = seatingProjectorMode ? '10px' : '6px';
-  grid.style.height = seatingProjectorMode ? 'min(85vh, 900px)' : 'min(64vh, 560px)';
-  grid.style.removeProperty('grid-template-columns');
   const colSizes = seatingChart.colSizes || [];
+  if(colSizes.length===0){ grid.innerHTML=''; renderSeatingUnplaced(); return; }
+  const maxSeats = Math.max(...colSizes); // 以人數最多的那一排當標準，全部排統一套用同一個格子尺寸
+
+  const vhLimit = seatingProjectorMode ? 0.85 : 0.64;
+  const pxCap = seatingProjectorMode ? 900 : 560;
+  const availableHeight = Math.min(window.innerHeight * vhLimit, pxCap);
+  const labelHeight = seatingProjectorMode ? 34 : 22;
+  const gap = seatingProjectorMode ? 8 : 4;
+  const cellAreaHeight = Math.max(60, availableHeight - labelHeight);
+  const cellHeight = Math.max(30, (cellAreaHeight - gap * (maxSeats - 1)) / maxSeats);
+
+  grid.style.display = 'flex';
+  grid.style.alignItems = 'flex-start';
+  grid.style.gap = seatingProjectorMode ? '10px' : '6px';
+  grid.style.removeProperty('height');
+  grid.style.removeProperty('grid-template-columns');
   let html = '';
 
   const labelEl = document.getElementById('seatingBoardLabel');
@@ -3171,26 +3183,24 @@ function renderSeatingChart(){
 
   const nameFontSize = seatingProjectorMode ? '1.7rem' : '1.05rem';
   const labelFontSize = seatingProjectorMode ? '1rem' : '.68rem';
-  const cellGap = seatingProjectorMode ? '8px' : '4px';
 
   order.forEach(c=>{
     const count = colSizes[c];
-    html += `<div style="display:flex;flex-direction:column;gap:${cellGap};flex:1;min-width:0;height:100%;">
-      <div style="text-align:center;font-size:${labelFontSize};font-weight:800;color:#94a3b8;flex-shrink:0;">第${c+1}排</div>
-      <div style="display:flex;flex-direction:column;gap:${cellGap};flex:1;min-height:0;">`;
+    html += `<div style="display:flex;flex-direction:column;gap:${gap}px;flex:1;min-width:0;">
+      <div style="text-align:center;font-size:${labelFontSize};font-weight:800;color:#94a3b8;height:${labelHeight}px;display:flex;align-items:center;justify-content:center;">第${c+1}排</div>`;
     for(let r=0; r<count; r++){
       const key = seatKey(c,r);
       const sid = seatingChart.seats[key];
       const stu = sid!=null ? students.find(s=>s.id===sid) : null;
       html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"
-        style="flex:1;min-height:0;border-radius:8px;border:2px solid ${stu?'#5BB8F5':'#e2e8f0'};background:${stu?'#eff6ff':'#f8fafc'};
+        style="height:${cellHeight}px;border-radius:8px;border:2px solid ${stu?'#5BB8F5':'#e2e8f0'};background:${stu?'#eff6ff':'#f8fafc'};
         display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':'pointer'};padding:2px 1px;text-align:center;overflow:hidden;">
         ${stu
           ? `<div style="font-weight:900;font-size:${nameFontSize};line-height:1.1;color:#0369a1;">${stu.seatNo||''}${stu.name}</div>`
           : `<div style="font-size:.68rem;color:#cbd5e1;">空位</div>`}
       </div>`;
     }
-    html += `</div></div>`;
+    html += `</div>`;
   });
   grid.innerHTML = html;
   renderSeatingUnplaced();
