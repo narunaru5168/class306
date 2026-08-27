@@ -151,12 +151,12 @@
   }
 
   /* ── STUDENT GRID ── */
-  #studentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  #studentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
   .student-card {
     background: var(--card-bg);
-    border-radius: 18px;
+    border-radius: 16px;
     box-shadow: var(--shadow);
-    padding: 18px 16px 14px;
+    padding: 12px 10px 10px;
     text-align: center;
     position: relative;
     border-top: 5px solid var(--sky);
@@ -164,21 +164,21 @@
   }
   .student-card:hover { transform: translateY(-4px); }
   .student-card .avatar {
-    width: 60px; height: 60px;
+    width: 50px; height: 50px;
     border-radius: 50%;
-    margin: 0 auto 10px;
+    margin: 0 auto 6px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     background: linear-gradient(135deg, #fef9c3, #fde68a);
     box-shadow: 0 4px 12px rgba(0,0,0,.1);
   }
-  .student-card .name { font-weight: 800; font-size: 1rem; margin-bottom: 2px; }
-  .student-card .sid { font-size: .8rem; color: #94a3b8; margin-bottom: 8px; }
+  .student-card .name { font-weight: 900; font-size: 1.25rem; margin-bottom: 2px; }
+  .student-card .sid { font-size: .78rem; color: #94a3b8; margin-bottom: 6px; }
   .student-card .stars {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 900;
     color: var(--dark);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   .student-card .stars span { color: var(--sun); font-size: 1.2rem; }
   .star-btn-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
@@ -1460,7 +1460,10 @@
     <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
   </div>
 
-  <div style="background:#1e293b;color:#fff;text-align:center;font-weight:800;border-radius:10px;padding:8px;margin-bottom:12px;font-size:.85rem;">🖊️ 黑板（這一側是講台方向）</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;background:#1e293b;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;">
+    <span id="seatingBoardLabel" style="font-weight:800;">🖊️ 黑板（這一側是講台方向）</span>
+    <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;font-size:.75rem;padding:5px 12px;" onclick="toggleSeatingView()">🔄 <span id="seatingViewLabel">切換成黑板視角</span></button>
+  </div>
 
   <div id="seatingGrid" style="display:grid;gap:8px;margin-bottom:20px;"></div>
 
@@ -1612,6 +1615,7 @@ let siteTitle = SITE_TITLE_DEFAULT;
 let drawState = { drawnIds: [], excludeMode: true }; // 幸運籤筒：本輪已抽過的學生 id、是否啟用不重複抽選
 let seatingChart = { colSizes: [5,4,5,4,4,4], seats: {} }; // 座位表：colSizes 是每一排（直排）各坐幾人，seats 用 "col-row" 當 key 存學生 id
 let seatAssignTarget = null; // 目前正在編輯哪個座位（"row-col"）
+let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=黑板視角（老師站講台看全班，左右相反）
 let currentGradeType = '國語';
 let addStarTarget = null;
 let dartsLeft = 3;
@@ -1621,17 +1625,20 @@ const AVATARS_BOY  = ['🦁','🐯','🦊','🐻','🐼','🐸','🦄','🐲'];
 const AVATARS_GIRL = ['🌸','🦋','🌺','🌈','🦩','🐝','🌙','⭐'];
 
 // ─── 儲存（Firebase 優先，失敗就用 localStorage）───
+let cloudSyncHadIssue = false;
 async function saveField(path, value, localKey){
   let ok = false;
   if (useCloud && db) {
     try {
       await Promise.race([
         db.ref(path).set(value),
-        new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
+        new Promise((_,r)=>setTimeout(()=>r('timeout'),10000))
       ]);
       ok = true;
     } catch(e) {
       console.warn('雲端儲存失敗（改用本地備份）：' + path, e);
+      cloudSyncHadIssue = true;
+      toast('⚠️ 網路不穩，這筆修改暫時只存在這台裝置，建議稍後重新整理頁面再確認一次');
     }
   }
   if (!ok) localStorage.setItem(localKey, typeof value==='string' ? value : JSON.stringify(value));
@@ -1657,57 +1664,51 @@ async function fetchField(path, defaultVal){
     try {
       const snap = await Promise.race([
         db.ref(path).get(),
-        new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
+        new Promise((_,r)=>setTimeout(()=>r('timeout'),10000))
       ]);
       if (snap && snap.exists && snap.exists()) return snap.val();
       return defaultVal;
     } catch(e) {
       console.warn('雲端讀取失敗（改用本地備份）：' + path, e);
+      cloudSyncHadIssue = true;
     }
   }
   return null; // 代表要改用本地備份
 }
 async function loadData() {
-  const sVal = await fetchField('class306/students', []);
+  const [
+    sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal
+  ] = await Promise.all([
+    fetchField('class306/students', []),
+    fetchField('class306/grades', []),
+    fetchField('class306/classMilestone', 0),
+    fetchField('class306/classTrophies', []),
+    fetchField('class306/dutyRoles', []),
+    fetchField('class306/correctionTrackers', []),
+    fetchField('class306/teamScores', []),
+    fetchField('class306/teamCategories', []),
+    fetchField('class306/weeklyTodos', {}),
+    fetchField('class306/readingLog', []),
+    fetchField('class306/navLabels', {}),
+    fetchField('class306/siteTitle', SITE_TITLE_DEFAULT),
+    fetchField('class306/drawState', { drawnIds: [], excludeMode: true }),
+    fetchField('class306/seatingChart', { colSizes: [5,4,5,4,4,4], seats: {} }),
+  ]);
+
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
-
-  const gVal = await fetchField('class306/grades', []);
   grades = gVal !== null ? gVal : JSON.parse(localStorage.getItem('cls_grades')||'[]');
-
-  const mVal = await fetchField('class306/classMilestone', 0);
   classMilestoneClaimed = mVal !== null ? mVal : parseInt(localStorage.getItem('cls_classMilestone')||'0');
-
-  const tVal = await fetchField('class306/classTrophies', []);
   classTrophies = tVal !== null ? tVal : JSON.parse(localStorage.getItem('cls_classTrophies')||'[]');
-
-  const dVal = await fetchField('class306/dutyRoles', []);
   dutyRoles = dVal !== null ? dVal : JSON.parse(localStorage.getItem('cls_dutyRoles')||'[]');
-
-  const cVal = await fetchField('class306/correctionTrackers', []);
   correctionTrackers = cVal !== null ? cVal : JSON.parse(localStorage.getItem('cls_correctionTrackers')||'[]');
-
-  const tsVal = await fetchField('class306/teamScores', []);
   teamScores = tsVal !== null ? tsVal : JSON.parse(localStorage.getItem('cls_teamScores')||'[]');
-
-  const tcVal = await fetchField('class306/teamCategories', []);
   teamCategories = tcVal !== null ? tcVal : JSON.parse(localStorage.getItem('cls_teamCategories')||'[]');
-
-  const wtVal = await fetchField('class306/weeklyTodos', {});
   weeklyTodos = wtVal !== null ? wtVal : JSON.parse(localStorage.getItem('cls_weeklyTodos')||'{}');
-
-  const rlVal = await fetchField('class306/readingLog', []);
   readingLog = rlVal !== null ? rlVal : JSON.parse(localStorage.getItem('cls_readingLog')||'[]');
-
-  const nlVal = await fetchField('class306/navLabels', {});
   navLabels = nlVal !== null ? nlVal : JSON.parse(localStorage.getItem('cls_navLabels')||'{}');
-
-  const stVal = await fetchField('class306/siteTitle', SITE_TITLE_DEFAULT);
   siteTitle = stVal !== null ? stVal : (localStorage.getItem('cls_siteTitle') || SITE_TITLE_DEFAULT);
-
-  const dsVal = await fetchField('class306/drawState', { drawnIds: [], excludeMode: true });
   drawState = dsVal !== null ? dsVal : JSON.parse(localStorage.getItem('cls_drawState')||'{"drawnIds":[],"excludeMode":true}');
-
-  const scVal = await fetchField('class306/seatingChart', { colSizes: [5,4,5,4,4,4], seats: {} });
   seatingChart = scVal !== null ? scVal : JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
 }
 
@@ -2616,10 +2617,15 @@ function renderDutyRoles(){
   }
   wrap.innerHTML = dutyRoles.map(role=>{
     let suggestion = '尚無學生資料';
+    let didBefore = false;
+    let doneCount = 0;
     if(sorted.length>0){
       const idx = ((role.dutyIndex||0) % sorted.length + sorted.length) % sorted.length;
       const stu = sorted[idx];
       suggestion = `${stu.seatNo||''}號 ${stu.avatar} ${stu.name}`;
+      const history = role.history || [];
+      doneCount = history.filter(id=>id===stu.id).length;
+      didBefore = doneCount > 0;
     }
     return `
     <div class="card" style="padding:12px 14px;margin-bottom:0;">
@@ -2627,13 +2633,29 @@ function renderDutyRoles(){
         <div style="font-weight:800;font-size:.85rem;cursor:pointer;" onclick="renameDutyRole(${role.id})" title="點擊修改任務名稱">🏷️ ${role.name} <span style="font-size:.7em;opacity:.5;">✏️</span></div>
         <button class="del-btn" style="position:static;" onclick="removeDutyRole(${role.id})">✕</button>
       </div>
-      <div style="font-size:.92rem;font-weight:800;color:var(--sky);margin-bottom:8px;">${suggestion}</div>
+      <div style="border-radius:8px;padding:6px 8px;margin-bottom:8px;background:${didBefore?'#fff7ed':'transparent'};">
+        <div style="font-size:.92rem;font-weight:800;color:${didBefore?'#c2410c':'var(--sky)'};">${suggestion}</div>
+        ${didBefore ? `<div style="font-size:.68rem;font-weight:700;color:#c2410c;margin-top:2px;">🔁 這位已經做過 ${doneCount} 次囉</div>` : ''}
+      </div>
       <div style="display:flex;gap:6px;">
-        <button class="btn btn-success" style="padding:5px 10px;font-size:.72rem;flex:1;" onclick="toast('✅ 已確認本次由「${suggestion.replace(/'/g,"\\'")}」擔任「${role.name.replace(/'/g,"\\'")}」')">✅ 就是你</button>
+        <button class="btn btn-success" style="padding:5px 10px;font-size:.72rem;flex:1;" onclick="confirmDutyRoleAssignment(${role.id})">✅ 就是你</button>
         <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.72rem;padding:5px 10px;flex:1;" onclick="advanceDutyRole(${role.id})">🔁 換下一位</button>
       </div>
     </div>`;
   }).join('');
+}
+function confirmDutyRoleAssignment(roleId){
+  const role = dutyRoles.find(r=>r.id===roleId);
+  if(!role) return;
+  const sorted = seatSortedStudents();
+  if(sorted.length===0) return;
+  const idx = ((role.dutyIndex||0) % sorted.length + sorted.length) % sorted.length;
+  const stu = sorted[idx];
+  role.history = role.history || [];
+  role.history.push(stu.id);
+  role.dutyIndex = (idx + 1) % sorted.length;
+  save(); renderDutyRoles();
+  toast(`✅ 已確認本次由「${stu.seatNo||''}號 ${stu.name}」擔任「${role.name}」`);
 }
 function addDutyRole(){
   const name = prompt('這個任務叫什麼名字？（例如：排路隊長、擦黑板小天使）');
@@ -2799,16 +2821,10 @@ function toggleCorrectionSeat(trackerId, seatNo){
 // ─── 小組競賽積分板（特殊活動限定，跟個人星星系統完全分開）───
 function ensureTeamDefaults(){
   if(teamCategories.length===0) teamCategories = ['功課','學習表現','自律','健康'];
-  const colors=['#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
-  const names=['一','二','三','四','五'];
   if(teamScores.length===0){
+    const colors=['#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
+    const names=['一','二','三','四','五'];
     teamScores = names.map((n,i)=>({id:generateId(), name:`第${n}組`, color:colors[i], scores:{}}));
-  } else if(teamScores.length < 5 && teamScores.length >= 3){
-    // 之前已經有 3~4 組資料，自動補到 5 組（不影響已存在組別的分數）
-    for(let i=teamScores.length; i<5; i++){
-      teamScores.push({id:generateId(), name:`第${names[i]}組`, color:colors[i], scores:{}});
-    }
-    save();
   }
 }
 function teamTotal(t){ return teamCategories.reduce((a,c)=>a+(t.scores[c]||0),0); }
@@ -3105,6 +3121,10 @@ function renderDrawState(){
 // ─── 座位表 ───
 function seatKey(c,r){ return c+'-'+r; }
 function totalSeatsCount(){ return (seatingChart.colSizes||[]).reduce((a,n)=>a+n,0); }
+function toggleSeatingView(){
+  seatingViewFromBoard = !seatingViewFromBoard;
+  renderSeatingChart();
+}
 function renderSeatingChart(){
   const grid = document.getElementById('seatingGrid');
   if(!grid) return;
@@ -3113,8 +3133,21 @@ function renderSeatingChart(){
   grid.style.removeProperty('grid-template-columns');
   const colSizes = seatingChart.colSizes || [];
   let html = '';
-  // 畫面由左到右依序顯示「最後一排」到「第一排」（例如 6 排時：排六在最左邊、排一在最右邊，靠近陽台）
-  for(let c=colSizes.length-1; c>=0; c--){
+
+  const labelEl = document.getElementById('seatingBoardLabel');
+  const btnLabelEl = document.getElementById('seatingViewLabel');
+  if(labelEl) labelEl.textContent = seatingViewFromBoard ? '🧑‍🏫 老師視角（站在講台看全班）' : '🖊️ 黑板（這一側是講台方向）';
+  if(btnLabelEl) btnLabelEl.textContent = seatingViewFromBoard ? '切換成學生視角' : '切換成黑板視角';
+
+  // 學生視角：排六在最左邊、排一在最右邊（靠陽台）。黑板視角是老師面對全班，左右相反，所以順序倒過來
+  const order = [];
+  if(seatingViewFromBoard){
+    for(let c=0; c<colSizes.length; c++) order.push(c);
+  } else {
+    for(let c=colSizes.length-1; c>=0; c--) order.push(c);
+  }
+
+  order.forEach(c=>{
     const count = colSizes[c];
     html += `<div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;">
       <div style="text-align:center;font-size:.7rem;font-weight:800;color:#94a3b8;">第${c+1}排</div>`;
@@ -3131,7 +3164,7 @@ function renderSeatingChart(){
       </div>`;
     }
     html += `</div>`;
-  }
+  });
   grid.innerHTML = html;
   renderSeatingUnplaced();
 }
@@ -3926,8 +3959,8 @@ function loadYT(){}
 async function initApp() {
   document.getElementById('loadingOverlay').style.display = 'flex';
 
-  // 逾時保護：最多等 8 秒，超過就繼續執行
-  const timeout = new Promise(resolve => setTimeout(resolve, 8000));
+  // 逾時保護：現在改成平行讀取，最多等 12 秒（比單項讀取的 10 秒逾時再多一點緩衝），超過就繼續執行
+  const timeout = new Promise(resolve => setTimeout(resolve, 12000));
   try {
     await Promise.race([loadData(), timeout]);
   } catch(e) {
