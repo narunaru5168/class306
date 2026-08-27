@@ -1451,27 +1451,34 @@
 
 <!-- ─────────────── SEATING CHART ─────────────── -->
 <div id="page-seating" class="page">
-  <div style="display:flex;align-items:center;margin-bottom:16px;">
-    <span class="section-title" style="margin-bottom:0;">🪑 座位表</span>
-  </div>
-  <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;">點座位可以指派學生；選一位已經坐在別的位子的學生，會自動跟原位子的人互換</div>
+  <div id="seatingNormalControls">
+    <div style="display:flex;align-items:center;margin-bottom:16px;">
+      <span class="section-title" style="margin-bottom:0;">🪑 座位表</span>
+    </div>
+    <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;">點座位可以指派學生；選一位已經坐在別的位子的學生，會自動跟原位子的人互換</div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-    <button class="btn btn-primary" style="font-size:.82rem;padding:8px 16px;" onclick="shuffleSeating()">🎲 完全隨機排座位</button>
-    <button class="btn" style="background:#fff9e6;border:2px solid #fbbf24;color:#b45309;font-size:.82rem;padding:8px 16px;" onclick="shuffleSeatingByGender()">🚻 男女交錯排座位</button>
-    <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="openSeatingSizeModal()">📐 調整座位表大小</button>
-    <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <button class="btn btn-primary" style="font-size:.82rem;padding:8px 16px;" onclick="shuffleSeating()">🎲 完全隨機排座位</button>
+      <button class="btn" style="background:#fff9e6;border:2px solid #fbbf24;color:#b45309;font-size:.82rem;padding:8px 16px;" onclick="shuffleSeatingByGender()">🚻 男女交錯排座位</button>
+      <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="openSeatingSizeModal()">📐 調整座位表大小</button>
+      <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
+    </div>
   </div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;background:#1e293b;color:#fff;border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;">
     <span id="seatingBoardLabel" style="font-weight:800;">🖊️ 黑板（這一側是講台方向）</span>
-    <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;font-size:.75rem;padding:5px 12px;" onclick="toggleSeatingView()">🔄 <span id="seatingViewLabel">切換成黑板視角</span></button>
+    <div style="display:flex;gap:6px;">
+      <button class="btn" style="background:rgba(255,255,255,.2);color:#fff;font-size:.75rem;padding:5px 12px;" onclick="toggleSeatingView()">🔄 <span id="seatingViewLabel">切換成黑板視角</span></button>
+      <button class="btn" style="background:rgba(255,255,255,.3);color:#fff;font-size:.75rem;padding:5px 12px;font-weight:800;" onclick="toggleSeatingProjectorMode()">🖥️ <span id="seatingProjectorLabel">投影模式</span></button>
+    </div>
   </div>
 
   <div id="seatingGrid" style="display:grid;gap:8px;margin-bottom:20px;"></div>
 
-  <div class="section-title" style="font-size:1rem;">🙋 尚未安排座位</div>
-  <div id="seatingUnplacedList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+  <div id="seatingNormalFooter">
+    <div class="section-title" style="font-size:1rem;">🙋 尚未安排座位</div>
+    <div id="seatingUnplacedList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+  </div>
 </div>
 
 <!-- ─────────────── SEAT ASSIGN MODAL ─────────────── -->
@@ -1619,6 +1626,7 @@ let drawState = { drawnIds: [], excludeMode: true }; // 幸運籤筒：本輪已
 let seatingChart = { colSizes: [5,4,5,4,4,4], seats: {} }; // 座位表：colSizes 是每一排（直排）各坐幾人，seats 用 "col-row" 當 key 存學生 id
 let seatAssignTarget = null; // 目前正在編輯哪個座位（"row-col"）
 let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=黑板視角（老師站講台看全班，左右相反）
+let seatingProjectorMode = false; // 投影模式：隱藏操作按鈕，座位格子放到接近全螢幕
 let currentGradeType = '國語';
 let addStarTarget = null;
 let dartsLeft = 3;
@@ -3128,12 +3136,22 @@ function toggleSeatingView(){
   seatingViewFromBoard = !seatingViewFromBoard;
   renderSeatingChart();
 }
+function toggleSeatingProjectorMode(){
+  seatingProjectorMode = !seatingProjectorMode;
+  const normalControls = document.getElementById('seatingNormalControls');
+  const normalFooter = document.getElementById('seatingNormalFooter');
+  const label = document.getElementById('seatingProjectorLabel');
+  if(normalControls) normalControls.style.display = seatingProjectorMode ? 'none' : 'block';
+  if(normalFooter) normalFooter.style.display = seatingProjectorMode ? 'none' : 'block';
+  if(label) label.textContent = seatingProjectorMode ? '結束投影模式' : '投影模式';
+  renderSeatingChart();
+}
 function renderSeatingChart(){
   const grid = document.getElementById('seatingGrid');
   if(!grid) return;
   grid.style.display = 'flex';
-  grid.style.gap = '6px';
-  grid.style.height = 'min(64vh, 560px)';
+  grid.style.gap = seatingProjectorMode ? '10px' : '6px';
+  grid.style.height = seatingProjectorMode ? 'min(85vh, 900px)' : 'min(64vh, 560px)';
   grid.style.removeProperty('grid-template-columns');
   const colSizes = seatingChart.colSizes || [];
   let html = '';
@@ -3151,20 +3169,24 @@ function renderSeatingChart(){
     for(let c=colSizes.length-1; c>=0; c--) order.push(c);
   }
 
+  const nameFontSize = seatingProjectorMode ? '1.7rem' : '1.05rem';
+  const labelFontSize = seatingProjectorMode ? '1rem' : '.68rem';
+  const cellGap = seatingProjectorMode ? '8px' : '4px';
+
   order.forEach(c=>{
     const count = colSizes[c];
-    html += `<div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;height:100%;">
-      <div style="text-align:center;font-size:.68rem;font-weight:800;color:#94a3b8;flex-shrink:0;">第${c+1}排</div>
-      <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;">`;
+    html += `<div style="display:flex;flex-direction:column;gap:${cellGap};flex:1;min-width:0;height:100%;">
+      <div style="text-align:center;font-size:${labelFontSize};font-weight:800;color:#94a3b8;flex-shrink:0;">第${c+1}排</div>
+      <div style="display:flex;flex-direction:column;gap:${cellGap};flex:1;min-height:0;">`;
     for(let r=0; r<count; r++){
       const key = seatKey(c,r);
       const sid = seatingChart.seats[key];
       const stu = sid!=null ? students.find(s=>s.id===sid) : null;
-      html += `<div onclick="openSeatAssignModal('${key}')"
+      html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"
         style="flex:1;min-height:0;border-radius:8px;border:2px solid ${stu?'#5BB8F5':'#e2e8f0'};background:${stu?'#eff6ff':'#f8fafc'};
-        display:flex;align-items:center;justify-content:center;cursor:pointer;padding:2px 1px;text-align:center;overflow:hidden;">
+        display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':'pointer'};padding:2px 1px;text-align:center;overflow:hidden;">
         ${stu
-          ? `<div style="font-weight:900;font-size:1.05rem;line-height:1.1;color:#0369a1;">${stu.seatNo||''}${stu.name}</div>`
+          ? `<div style="font-weight:900;font-size:${nameFontSize};line-height:1.1;color:#0369a1;">${stu.seatNo||''}${stu.name}</div>`
           : `<div style="font-size:.68rem;color:#cbd5e1;">空位</div>`}
       </div>`;
     }
