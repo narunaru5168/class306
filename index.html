@@ -141,89 +141,89 @@
   /* ── SEAT NUMBER BADGE ── */
   .seat-badge {
     position: absolute;
-    top: 10px; left: 12px;
+    top: 6px; left: 6px;
     background: linear-gradient(135deg, #5BB8F5, #A855F7);
     color: #fff;
     border-radius: 50%;
-    width: 30px; height: 30px;
+    width: 22px; height: 22px;
     display: flex; align-items: center; justify-content: center;
-    font-size: .82rem; font-weight: 900;
+    font-size: .68rem; font-weight: 900;
     font-family: 'Baloo 2', cursive;
     box-shadow: 0 2px 8px rgba(91,184,245,.4);
     letter-spacing: -.5px;
   }
 
   /* ── STUDENT GRID ── */
-  #studentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+  #studentGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(142px, 1fr)); gap: 8px; }
   .student-card {
     background:
       repeating-linear-gradient(135deg, rgba(120,90,40,.03) 0px, rgba(120,90,40,.03) 1px, transparent 1px, transparent 7px),
       radial-gradient(circle at 20% 12%, rgba(255,255,255,.55), transparent 45%),
       linear-gradient(160deg, #fdf9ee, #f4ecd9 65%, #ecdfc0);
-    border-radius: 16px;
+    border-radius: 14px;
     box-shadow: var(--shadow), inset 0 0 0 1px rgba(171,140,92,.22);
-    padding: 12px 10px 10px;
+    padding: 9px 7px 7px;
     text-align: center;
     position: relative;
-    border-top: 5px solid var(--sky);
+    border-top: 4px solid var(--sky);
     transition: transform .2s;
   }
   .student-card:hover { transform: translateY(-4px); }
   .student-card .avatar {
-    width: 56px; height: 56px;
+    width: 42px; height: 42px;
     border-radius: 50%;
-    margin: 0 auto 3px;
+    margin: 0 auto 2px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.55rem;
+    font-size: 1.2rem;
     background: radial-gradient(circle at 35% 30%, #f7ecd3, #e9d9b6 65%, #d8c395);
     border: 2px dashed #ab8c5c;
     box-shadow: 0 3px 8px rgba(120,90,40,.22), inset 0 0 0 3px #fdf8ec;
   }
   .student-card .avatar-stamp-caption {
     font-family: 'Courier New', monospace;
-    font-size: .58rem;
-    letter-spacing: .5px;
+    font-size: .5rem;
+    letter-spacing: .3px;
     color: #9c7b45;
-    margin-bottom: 6px;
+    margin-bottom: 3px;
     text-transform: uppercase;
   }
-  .student-card .name { font-weight: 900; font-size: 1.25rem; margin-bottom: 2px; }
-  .student-card .sid { font-size: .78rem; color: #94a3b8; margin-bottom: 6px; }
+  .student-card .name { font-weight: 900; font-size: 1rem; margin-bottom: 1px; }
+  .student-card .sid { font-size: .68rem; color: #94a3b8; margin-bottom: 3px; }
   .student-card .stars {
-    font-size: 1.05rem;
+    font-size: .92rem;
     font-weight: 900;
     color: var(--dark);
-    margin-bottom: 6px;
+    margin-bottom: 3px;
   }
-  .student-card .stars span { color: var(--sun); font-size: 1.2rem; }
-  .star-btn-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
-  .star-add { background: linear-gradient(135deg,#FFD93D,#FF914D); border: none; border-radius: 50px; padding: 5px 12px; font-size: .78rem; font-weight: 800; cursor: pointer; color: #fff; transition: transform .15s; }
+  .student-card .stars span { color: var(--sun); font-size: 1.05rem; }
+  .star-btn-row { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+  .star-add { background: linear-gradient(135deg,#FFD93D,#FF914D); border: none; border-radius: 50px; padding: 4px 9px; font-size: .7rem; font-weight: 800; cursor: pointer; color: #fff; transition: transform .15s; }
   .star-add:hover { transform: scale(1.08); }
-  .star-sub { background: linear-gradient(135deg,#a1a1aa,#71717a); border: none; border-radius: 50px; padding: 5px 10px; font-size: .78rem; font-weight: 800; cursor: pointer; color: #fff; }
-  .badge-row { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; min-height: 24px; }
-  .badge { font-size: .75rem; background: #f1f5f9; border-radius: 20px; padding: 2px 8px; font-weight: 700; }
+  .star-sub { background: linear-gradient(135deg,#a1a1aa,#71717a); border: none; border-radius: 50px; padding: 4px 8px; font-size: .7rem; font-weight: 800; cursor: pointer; color: #fff; }
+  .badge-row { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-bottom: 3px; min-height: 18px; }
+  .badge { font-size: .64rem; background: #f1f5f9; border-radius: 20px; padding: 1px 6px; font-weight: 700; }
   .del-btn {
-    position: absolute; top: 8px; right: 8px;
-    background: #fee2e2; border: none; border-radius: 50%; width: 24px; height: 24px;
-    font-size: .85rem; cursor: pointer; color: #ef4444; display: flex; align-items: center; justify-content: center;
+    position: absolute; top: 6px; right: 6px;
+    background: #fee2e2; border: none; border-radius: 50%; width: 20px; height: 20px;
+    font-size: .72rem; cursor: pointer; color: #ef4444; display: flex; align-items: center; justify-content: center;
   }
-  .level-bar-wrap { height: 6px; background: #e2e8f0; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  .level-bar-wrap { height: 5px; background: #e2e8f0; border-radius: 10px; margin-bottom: 5px; overflow: hidden; }
   .level-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--sun), var(--coral)); transition: width .4s; }
 
   /* ── LEADERBOARD ── */
   .lb-row {
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 16px; border-radius: 14px; margin-bottom: 8px;
-    background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.06);
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border-radius: 10px; margin-bottom: 0;
+    background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.06);
     transition: transform .15s;
   }
   .lb-row:hover { transform: translateX(4px); }
-  .lb-rank { font-family: 'Baloo 2', cursive; font-size: 1.4rem; font-weight: 900; min-width: 36px; text-align: center; }
+  .lb-rank { font-family: 'Baloo 2', cursive; font-size: 1rem; font-weight: 900; min-width: 26px; text-align: center; }
   .lb-rank.gold { color: #f59e0b; }
   .lb-rank.silver { color: #94a3b8; }
   .lb-rank.bronze { color: #b45309; }
-  .lb-name { font-weight: 800; flex: 1; }
-  .lb-stars { font-weight: 900; color: var(--dark); }
+  .lb-name { font-weight: 800; flex: 1; font-size: .82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lb-stars { font-weight: 900; color: var(--dark); font-size: .82rem; white-space:nowrap; }
   .lb-stars .s { color: var(--sun); }
 
   /* ── GRADE TABLE ── */
@@ -426,8 +426,8 @@
   .repair-indicator { font-size:.75rem; font-weight:800; color:#d97706; background:#fef9c3; border-radius:8px; padding:3px 8px; margin-bottom:5px; }
 
   /* ── 學生卡片新按鈕 ── */
-  .extra-btn-row { display:flex; gap:5px; justify-content:center; flex-wrap:wrap; margin-top:5px; }
-  .ebtn { border:none; border-radius:50px; font-size:.72rem; font-weight:800; cursor:pointer; padding:4px 9px; transition:transform .15s; }
+  .extra-btn-row { display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin-top:5px; }
+  .ebtn { border:none; border-radius:50%; font-size:.85rem; font-weight:800; cursor:pointer; width:26px; height:26px; display:flex; align-items:center; justify-content:center; transition:transform .15s; }
   .ebtn:hover { transform:scale(1.08); }
   .ebtn-trait { background:#ede9fe; color:#7c3aed; }
   .ebtn-role  { background:#fef9c3; color:#854d0e; }
@@ -1356,7 +1356,7 @@
                 flex-shrink:0;align-self:flex-end;pointer-events:none;"
          alt="" aria-hidden="true">
   </div>
-  <div id="leaderboard"></div>
+  <div id="leaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;"></div>
 </div>
 
 <!-- ─────────────── CORRECTION TRACKER ─────────────── -->
@@ -3713,6 +3713,26 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
 </table>
 
   </div>
+
+  <div class="section-title" style="font-size:1.1rem;margin-top:24px;">🗂️ 六、學年任務分配（老師輪值工作）</div>
+  <div class="card" style="margin-bottom:12px;cursor:pointer;background:linear-gradient(135deg,#fdf2f8,#fbcfe8);border-left:6px solid #ec4899;"
+       onclick="const p=document.getElementById('planYearTasks'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-weight:800;font-size:.95rem;">📋 三、四年級考卷／評審輪值分配表（點我展開）</div>
+      <div class="arrow" style="font-size:1.1rem;">▼</div>
+    </div>
+  </div>
+  <div id="planYearTasks" style="display:none;overflow-x:auto;margin-bottom:16px;">
+    <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#831843;">➢ 三、四年級國語、數學考試分配表</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;"><thead><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">考試內容</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">三上</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">三下</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">四上</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">四下</th></tr></thead><tbody><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">國期中複習考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">國期中考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">國期末複習考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">國期末考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">數學期中考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">數學期末考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td></tr></tbody></table>
+    <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#831843;">➢ 數學單元卷</div>
+    <div style="font-weight:800;font-size:.85rem;margin:10px 0 4px;color:#166534;">三上</div><table style="width:100%;border-collapse:collapse;margin-bottom:10px;"><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">單元</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L1</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L2</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L3</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L4</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L5</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L6</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L7</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L8</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L9</th></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">班級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td></tr></table><div style="font-weight:800;font-size:.85rem;margin:10px 0 4px;color:#166534;">三下</div><table style="width:100%;border-collapse:collapse;margin-bottom:10px;"><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">單元</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L1</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L2</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L3</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L4</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L5</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L6</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L7</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L8</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L9</th></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">班級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td></tr></table><div style="font-weight:800;font-size:.85rem;margin:10px 0 4px;color:#166534;">四上</div><table style="width:100%;border-collapse:collapse;margin-bottom:10px;"><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">單元</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L1</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L2</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L3</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L4</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L5</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L6</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L7</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L8</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L9</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L10</th></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">班級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td></tr></table><div style="font-weight:800;font-size:.85rem;margin:10px 0 4px;color:#166534;">四下</div><table style="width:100%;border-collapse:collapse;margin-bottom:10px;"><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">單元</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L1</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L2</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L3</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L4</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L5</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L6</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L7</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L8</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L9</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">L10</th></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">班級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">303</td></tr></table>
+    <div style="font-weight:800;font-size:.9rem;margin:16px 0 6px;color:#831843;">➢ 社會考卷</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;"><thead><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">考試內容</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">四上</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">四下</th></tr></thead><tbody><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">社會期中複習考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">304</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">社會期中考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">306</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">301</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">社會期末複習考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">307</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">社會期末考</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302</td></tr></tbody></table>
+    <div style="font-weight:800;font-size:.9rem;margin:16px 0 6px;color:#831843;">➢ 作文、檔案評審</div>
+    <table style="width:100%;border-collapse:collapse;"><thead><tr><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">項目</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">年級</th><th style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:7px 6px;border:1px solid #e2e8f0;font-size:.8rem;">班級</th></tr></thead><tbody><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">作文</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">三年級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302、301</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">作文</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">四年級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305、306</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">檔案</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">三年級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">305、306</td></tr><tr><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;font-weight:800;">檔案</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">四年級</td><td style="padding:6px;border:1px solid #e2e8f0;text-align:center;font-size:.8rem;">302、301</td></tr></tbody></table>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -4200,8 +4220,8 @@ function renderStudents(){
       <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
       <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
-      <div style="font-size:.72rem;font-weight:800;color:#0ea5a4;margin-bottom:4px;">📚 已讀 ${readingCountFor(s.id)} 本書</div>
-      <div style="font-size:.72rem;font-weight:800;color:${isWastingChance(s)?'#dc2626':(chancesLeft(s)>0?'#16a34a':'#94a3b8')};margin-bottom:4px;">
+      <div style="font-size:.62rem;font-weight:800;color:#0ea5a4;margin-bottom:2px;">📚已讀${readingCountFor(s.id)}本</div>
+      <div style="font-size:.62rem;font-weight:800;color:${isWastingChance(s)?'#dc2626':(chancesLeft(s)>0?'#16a34a':'#94a3b8')};margin-bottom:3px;">
         ${isWastingChance(s) ? `⚠️ 已達上限，快提醒他來抽選！` : (chancesLeft(s)>0 ? `🎟️ 可抽選 ${chancesLeft(s)} 次` : `🎟️ ${chanceProgressText(s)}`)}
       </div>
       <div class="star-btn-row">
@@ -4209,11 +4229,11 @@ function renderStudents(){
         <button class="star-sub" onclick="openSubStarModal(${s.id})">－</button>
       </div>
       <div class="extra-btn-row">
-        <button class="ebtn ebtn-trait" onclick="openTraitModal(${s.id})">🏅 特質</button>
-        <button class="ebtn ebtn-role"  onclick="openRoleModal(${s.id})">👑 角色</button>
-        <button class="ebtn ebtn-note"  onclick="toggleNote(${s.id})">📝 備忘</button>
-        <button class="ebtn ebtn-star"  onclick="openRecognitionModal(${s.id})">🌟 認可</button>
-        <button class="ebtn" style="background:#e0f2fe;color:#0369a1;" onclick="openGrowthChart(${s.id})">📈 成長圖</button>
+        <button class="ebtn ebtn-trait" title="特質" onclick="openTraitModal(${s.id})">🏅</button>
+        <button class="ebtn ebtn-role"  title="角色" onclick="openRoleModal(${s.id})">👑</button>
+        <button class="ebtn ebtn-note"  title="備忘" onclick="toggleNote(${s.id})">📝</button>
+        <button class="ebtn ebtn-star"  title="認可" onclick="openRecognitionModal(${s.id})">🌟</button>
+        <button class="ebtn" style="background:#e0f2fe;color:#0369a1;" title="成長圖" onclick="openGrowthChart(${s.id})">📈</button>
       </div>
       <div class="student-note" id="note-${s.id}" style="display:none;">
         <textarea placeholder="老師私人備忘（學生看不到）" onblur="saveNote(${s.id},this.value)">${s.note||''}</textarea>
@@ -5844,7 +5864,7 @@ function renderLeaderboard(){
     const rankIcon=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
     const div=document.createElement('div');
     div.className='lb-row';
-    div.innerHTML=`<div class="lb-rank ${rankClass}">${rankIcon}</div><div style="font-size:1.4rem">${s.avatar}</div><div class="lb-name">${s.name} <span style="font-size:.82rem;color:#94a3b8;">${s.sid}</span></div><div class="lb-stars"><span class="s">⭐</span> ${s.stars}</div>`;
+    div.innerHTML=`<div class="lb-rank ${rankClass}">${rankIcon}</div><div style="font-size:1rem;flex-shrink:0;">${s.avatar}</div><div class="lb-name">${s.name} <span style="font-size:.68rem;color:#94a3b8;">${s.sid}</span></div><div class="lb-stars"><span class="s">⭐</span>${s.stars}</div>`;
     lb.appendChild(div);
   });
   if(!sorted.length) lb.innerHTML='<div style="text-align:center;padding:40px;color:#94a3b8;font-weight:700;">還沒有學生喔！</div>';
