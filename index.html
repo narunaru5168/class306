@@ -1285,7 +1285,6 @@
     <div class="card" style="border-top:4px solid #A855F7;">
       <div style="font-weight:800;margin-bottom:8px;">🎭 自主選擇類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">給孩子掌控感</span></div>
       <div style="font-size:.85rem;line-height:1.9;color:#444;">
-        🪑 今天的座位任你選<br>
         🎨 自由選一件事做 10 分鐘<br>
         🎵 幫全班選一首午餐音樂<br>
         📖 小日記放假一天
@@ -5885,7 +5884,6 @@ function renderLeaderboard(){
 // 顏色對應下方「獎勵清單說明」的四大類，方便老師和學生一眼對照
 // 🎭 自主選擇類 = 紫色 #A855F7　🌟 身份榮耀類 = 金色 #FFD93D　🤝 連結歸屬類 = 天藍 #5BB8F5　🎲 驚喜/趣味類 = 珊瑚 #FF6B6B
 const wheelSegments=[
-  {label:'🪑 座位任你選',   color:'#A855F7', weight:2}, // 🎭 自主選擇類
   {label:'🎨 自由做10分鐘', color:'#A855F7', weight:2}, // 🎭 自主選擇類
   {label:'🎵 幫全班選一首午餐音樂', color:'#A855F7', weight:2}, // 🎭 自主選擇類
   {label:'📖 小日記放假一天', color:'#A855F7', weight:2}, // 🎭 自主選擇類
@@ -5999,6 +5997,11 @@ function spinWheel(){
       students.forEach(st=>{ st.stars+=1; });
       save(); renderStudents(); updateStats();
     }
+    // 特殊獎勵：榮譽公告 → 直接跳出認可輸入框，不用再跑去夥伴名冊找人
+    if(result.label.includes('榮譽公告')){
+      const s=students.find(x=>x.id==sid);
+      if(s) setTimeout(()=>{ openRecognitionModal(s.id); }, 900);
+    }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
   }
@@ -6019,7 +6022,7 @@ const dartZones=[
   {r:90, score:4,  label:'👍 4分！不錯！',  color:'#6BCB77'},
   {r:130,score:1,  label:'💪 1分！繼續加油',color:'#5BB8F5'},
 ];
-const dartRewards={10:'👑 今日獵人隊長！',7:'📣 榮譽公告！',4:'🪑 座位任你選！',1:'💪 加 1 顆星！'};
+const dartRewards={10:'👑 今日獵人隊長！',7:'📣 榮譽公告！',4:'🎨 自由做10分鐘！',1:'💪 加 1 顆星！'};
 let dartThrows=[];
 function drawDart(){
   const canvas=document.getElementById('dartCanvas');
