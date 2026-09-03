@@ -4241,7 +4241,7 @@ function renderStudents(){
       <div class="extra-btn-row">
         <button class="ebtn ebtn-trait" title="特質" onclick="openTraitModal(${s.id})">🏅</button>
         <button class="ebtn ebtn-role"  title="角色" onclick="openRoleModal(${s.id})">👑</button>
-        <button class="ebtn ebtn-note"  title="備忘" onclick="toggleNote(${s.id})">📝</button>
+        <button class="ebtn ebtn-note"  title="${s.note && s.note.trim() ? '已有備忘紀錄，點擊查看' : '備忘'}" style="position:relative;" onclick="toggleNote(${s.id})">📝${s.note && s.note.trim() ? '<span style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#ef4444;border-radius:50%;border:1.5px solid #fff;"></span>' : ''}</button>
         <button class="ebtn ebtn-star"  title="認可" onclick="openRecognitionModal(${s.id})">🌟</button>
         <button class="ebtn" style="background:#e0f2fe;color:#0369a1;" title="成長圖" onclick="openGrowthChart(${s.id})">📈</button>
       </div>
@@ -4668,6 +4668,20 @@ function saveNote(id, value){
   if(!s) return;
   s.note=value;
   save();
+  // 立即更新這顆按鈕上的小紅點，不整個重新渲染（避免把正在編輯的備忘框關掉）
+  const btn = document.querySelector(`[onclick="toggleNote(${id})"]`);
+  if(btn){
+    const hasNote = !!(value && value.trim());
+    let dot = btn.querySelector('span');
+    if(hasNote && !dot){
+      dot = document.createElement('span');
+      dot.style.cssText = 'position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#ef4444;border-radius:50%;border:1.5px solid #fff;';
+      btn.appendChild(dot);
+    } else if(!hasNote && dot){
+      dot.remove();
+    }
+    btn.title = hasNote ? '已有備忘紀錄，點擊查看' : '備忘';
+  }
 }
 
 // ⑥ 特別認可
@@ -6486,10 +6500,31 @@ function loadYT(){}
 async function initApp() {
   document.getElementById('loadingOverlay').style.display = 'flex';
 
-  // 逾時保護：現在改成平行讀取，最多等 12 秒（比單項讀取的 10 秒逾時再多一點緩衝），超過就繼續執行
-  const timeout = new Promise(resolve => setTimeout(resolve, 12000));
+  // 每一項資料自己內建最多等 10 秒（fetchField 裡設定），全部平行進行，
+  // 所以理論上 loadData() 整體不會超過 10-11 秒。這裡的保護只是最後一道防線，
+  // 拉長到 25 秒避免跟內層逾時卡得太近、誤判成失敗而放棄等待。
+  const timeout = new Promise(resolve => setTimeout(()=>resolve('__TIMEOUT__'), 25000));
   try {
-    await Promise.race([loadData(), timeout]);
+    const race = await Promise.race([loadData(), timeout]);
+    if (race === '__TIMEOUT__') {
+      console.warn('資料載入超過 25 秒，改用本機備份，並提醒老師');
+      cloudSyncHadIssue = true;
+      students = JSON.parse(localStorage.getItem('cls_students')||'[]');
+      grades = JSON.parse(localStorage.getItem('cls_grades')||'[]');
+      classMilestoneClaimed = parseInt(localStorage.getItem('cls_classMilestone')||'0');
+      classTrophies = JSON.parse(localStorage.getItem('cls_classTrophies')||'[]');
+      dutyRoles = JSON.parse(localStorage.getItem('cls_dutyRoles')||'[]');
+      correctionTrackers = JSON.parse(localStorage.getItem('cls_correctionTrackers')||'[]');
+      teamScores = JSON.parse(localStorage.getItem('cls_teamScores')||'[]');
+      teamCategories = JSON.parse(localStorage.getItem('cls_teamCategories')||'[]');
+      weeklyTodos = JSON.parse(localStorage.getItem('cls_weeklyTodos')||'{}');
+      readingLog = JSON.parse(localStorage.getItem('cls_readingLog')||'[]');
+      navLabels = JSON.parse(localStorage.getItem('cls_navLabels')||'{}');
+      siteTitle = localStorage.getItem('cls_siteTitle') || SITE_TITLE_DEFAULT;
+      drawState = JSON.parse(localStorage.getItem('cls_drawState')||'{"drawnIds":[],"excludeMode":true}');
+      seatingChart = JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
+      cleaningZones = JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
+    }
   } catch(e) {
     console.warn('載入失敗，使用空資料', e);
     students = [];
@@ -6631,6 +6666,13 @@ async function initApp() {
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';
+
+  // 如果剛才載入過程中偵測到雲端連線不穩，明確提醒老師（避免無聲無息地顯示舊資料或空白）
+  if (cloudSyncHadIssue) {
+    setTimeout(()=>{
+      toast('⚠️ 雲端連線不太穩定，畫面可能不是最新資料，建議重新整理頁面再確認一次');
+    }, 600);
+  }
 }
 initApp().catch(() => {
   document.getElementById('loadingOverlay').style.display = 'none';
