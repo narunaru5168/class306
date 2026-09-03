@@ -1286,8 +1286,9 @@
       <div style="font-weight:800;margin-bottom:8px;">🎭 自主選擇類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">給孩子掌控感</span></div>
       <div style="font-size:.85rem;line-height:1.9;color:#444;">
         🪑 今天的座位任你選<br>
-        📋 明天的班級小任務你來指派<br>
-        🎨 自由選一件事做 10 分鐘
+        🎨 自由選一件事做 10 分鐘<br>
+        🎵 幫全班選一首午餐音樂<br>
+        📖 小日記放假一天
       </div>
     </div>
 
@@ -1295,17 +1296,19 @@
       <div style="font-weight:800;margin-bottom:8px;">🌟 身份榮耀類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">呼應成長獵人主題</span></div>
       <div style="font-size:.85rem;line-height:1.9;color:#444;">
         👑 今日獵人隊長(當一天小幫手/小組長)<br>
-        🏅 專屬稱號徽章(可自訂,如「認真獵人」)<br>
-        📣 榮譽公告(在班級榮譽牆公開一句話)
+        📣 榮譽公告(在班級榮譽牆公開一句話)<br>
+        🎤 上台分享今天做得很棒的事<br>
+        🏅 自訂一個屬於自己的稱號
       </div>
     </div>
 
     <div class="card" style="border-top:4px solid var(--sky);">
       <div style="font-weight:800;margin-bottom:8px;">🤝 連結歸屬類 <span style="font-weight:400;font-size:.78rem;color:#94a3b8;">強化同儕連結</span></div>
       <div style="font-size:.85rem;line-height:1.9;color:#444;">
-        🎉 幫全班加一個「班級任務」進度<br>
         👥 和好朋友合作完成下個任務<br>
-        💌 寫一張感謝卡給任何一位同學
+        💌 寫一張感謝卡給任何一位同學<br>
+        🔄 這節課跟好朋友換位子坐<br>
+        💬 找一位同學說一句感謝或鼓勵的話
       </div>
     </div>
 
@@ -1314,7 +1317,8 @@
       <div style="font-size:.85rem;line-height:1.9;color:#444;">
         🎲 再轉一次!<br>
         ⭐ 加 3 顆星<br>
-        🎁 神秘任務卡(隨機小挑戰,完成有額外驚喜)
+        🌟 感謝有你,全班加一顆星<br>
+        🙏 找一位老師說一句感謝的話(非導師)
       </div>
     </div>
 
@@ -5883,12 +5887,21 @@ function renderLeaderboard(){
 const wheelSegments=[
   {label:'🪑 座位任你選',   color:'#A855F7', weight:2}, // 🎭 自主選擇類
   {label:'🎨 自由做10分鐘', color:'#A855F7', weight:2}, // 🎭 自主選擇類
+  {label:'🎵 幫全班選一首午餐音樂', color:'#A855F7', weight:2}, // 🎭 自主選擇類
+  {label:'📖 小日記放假一天', color:'#A855F7', weight:2}, // 🎭 自主選擇類
   {label:'👑 今日獵人隊長', color:'#FFD93D', weight:1}, // 🌟 身份榮耀類
   {label:'📣 榮譽公告',     color:'#FFD93D', weight:2}, // 🌟 身份榮耀類
+  {label:'🎤 上台分享今天做得很棒的事', color:'#FFD93D', weight:2}, // 🌟 身份榮耀類
+  {label:'🏅 自訂一個屬於自己的稱號', color:'#FFD93D', weight:2}, // 🌟 身份榮耀類
   {label:'👥 和好友合作任務', color:'#5BB8F5', weight:2}, // 🤝 連結歸屬類
   {label:'💌 寫感謝卡給同學', color:'#5BB8F5', weight:2}, // 🤝 連結歸屬類
+  {label:'🔄 這節課跟好朋友換位子坐', color:'#5BB8F5', weight:2}, // 🤝 連結歸屬類
+  {label:'💬 找一位同學說一句感謝或鼓勵的話', color:'#5BB8F5', weight:2}, // 🤝 連結歸屬類
   {label:'🎲 再轉一次',     color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
+  {label:'🎲 再轉一次！',   color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類（多加一格，提高再抽一次的機率）
   {label:'⭐ 加3顆星',      color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
+  {label:'🌟 感謝有你，全班加一顆星', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
+  {label:'🙏 找一位老師說一句感謝的話（非導師）', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
 ];
 let wheelAngle=0, spinning=false;
 function drawWheel(angle=0){
@@ -5980,6 +5993,11 @@ function spinWheel(){
     if(result.label.includes('加3顆星')){
       const s=students.find(x=>x.id==sid);
       if(s){ s.stars+=3; save(); renderStudents(); updateStats(); }
+    }
+    // 特殊獎勵：全班加一顆星
+    if(result.label.includes('全班加一顆星')){
+      students.forEach(st=>{ st.stars+=1; });
+      save(); renderStudents(); updateStats();
     }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
