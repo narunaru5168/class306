@@ -684,10 +684,11 @@
 <div class="modal-overlay" id="roleModal">
   <div class="modal" style="max-width:460px;">
     <h3>👑 設定班級角色：<span id="roleModalName"></span></h3>
-    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">角色讓每個孩子都有正式的班級身份，把能量導向正面出口。</p>
+    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">角色讓每個孩子都有正式的班級身份，把能量導向正面出口。點卡片上的 ✏️ 可以自訂名稱與描述。</p>
     <div class="pick-grid" id="roleGrid"></div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="saveRole()">✅ 確認角色</button>
+      <button class="btn" style="background:#fff;border:1px solid #cbd5e1;color:#555;" onclick="resetClassRoles()">↺ 還原預設角色</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('roleModal')">取消</button>
     </div>
   </div>
@@ -3906,6 +3907,7 @@ async function save() {
   await saveField('class306/drawState', drawState, 'cls_drawState');
   await saveField('class306/seatingChart', seatingChart, 'cls_seatingChart');
   await saveField('class306/cleaningZones', cleaningZones, 'cls_cleaningZones');
+  await saveField('class306/classRoles', classRoles, 'cls_classRoles');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -3926,7 +3928,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -3943,6 +3945,7 @@ async function loadData() {
     fetchField('class306/drawState', { drawnIds: [], excludeMode: true }),
     fetchField('class306/seatingChart', { colSizes: [5,4,5,4,4,4], seats: {} }),
     fetchField('class306/cleaningZones', []),
+    fetchField('class306/classRoles', []),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -3960,6 +3963,7 @@ async function loadData() {
   drawState = dsVal !== null ? dsVal : JSON.parse(localStorage.getItem('cls_drawState')||'{"drawnIds":[],"excludeMode":true}');
   seatingChart = scVal !== null ? scVal : JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
   cleaningZones = czVal !== null ? czVal : JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
+  classRoles = crVal !== null ? crVal : JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
 }
 
 
@@ -4498,7 +4502,7 @@ function renderGrowthChart(){
 }
 
 // ─── 六大心理功能常數 ───
-const CLASS_ROLES = [
+const CLASS_ROLES_DEFAULT = [
   {id:'questioner', emoji:'🔍', label:'調查獵人',  desc:'擅長發問與探索真相'},
   {id:'thinker',    emoji:'🧠', label:'戰略獵人',  desc:'思考縝密分析能力強'},
   {id:'creator',    emoji:'🎨', label:'收藏獵人',  desc:'充滿創意與獨特品味'},
@@ -4508,6 +4512,12 @@ const CLASS_ROLES = [
   {id:'timekeeper', emoji:'⏰', label:'考古獵人',  desc:'重視規律與時間管理'},
   {id:'encourager', emoji:'🥊', label:'武鬥獵人',  desc:'充滿鬥志為同學加油'},
 ];
+let classRoles = []; // 可自訂名稱/描述，內容跟 CLASS_ROLES_DEFAULT 同結構，存在雲端
+function ensureClassRoles(){
+  if(!classRoles || classRoles.length===0){
+    classRoles = CLASS_ROLES_DEFAULT.map(r=>({...r}));
+  }
+}
 const TRAIT_BADGES = [
   {id:'curious',     emoji:'🔍', label:'好奇探索家',  desc:'愛問問題，喜歡探索新事物'},
   {id:'creative',    emoji:'🎨', label:'創意小天才',  desc:'總有新點子，用不同方式解決問題'},
@@ -4529,26 +4539,56 @@ const REPAIR_TASKS = [
   '幫助一位同學解決學習問題',
 ];
 
-function getRoleEmoji(roleId){ const r=CLASS_ROLES.find(x=>x.id===roleId); return r?r.emoji:''; }
-function getRoleLabel(roleId){ const r=CLASS_ROLES.find(x=>x.id===roleId); return r?r.label:''; }
+function getRoleEmoji(roleId){ ensureClassRoles(); const r=classRoles.find(x=>x.id===roleId); return r?r.emoji:''; }
+function getRoleLabel(roleId){ ensureClassRoles(); const r=classRoles.find(x=>x.id===roleId); return r?r.label:''; }
 
 // ① 班級角色
 let roleTarget=null, selectedRole='';
 function openRoleModal(id){
+  ensureClassRoles();
   roleTarget=id;
   const s=students.find(x=>x.id===id);
   document.getElementById('roleModalName').textContent=s.name;
   selectedRole=s.role||'';
+  renderRoleGrid();
+  openModal('roleModal');
+}
+function renderRoleGrid(){
   const grid=document.getElementById('roleGrid');
   grid.innerHTML='';
-  CLASS_ROLES.forEach(r=>{
+  classRoles.forEach(r=>{
     const d=document.createElement('div');
     d.className='pick-card'+(selectedRole===r.id?' chosen':'');
-    d.innerHTML=`<div class="p-icon">${r.emoji}</div><div class="p-name">${r.label}</div><div class="p-desc">${r.desc}</div>`;
-    d.onclick=()=>{ selectedRole=r.id; grid.querySelectorAll('.pick-card').forEach(c=>c.classList.remove('chosen')); d.classList.add('chosen'); };
+    d.style.position='relative';
+    d.innerHTML=`<button type="button" style="position:absolute;top:4px;right:4px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;" title="編輯這個角色">✏️</button><div class="p-icon">${r.emoji}</div><div class="p-name">${r.label}</div><div class="p-desc">${r.desc}</div>`;
+    d.querySelector('button').onclick=(e)=>{ e.stopPropagation(); editClassRole(r.id); };
+    d.addEventListener('click', (e)=>{
+      if(e.target.tagName==='BUTTON') return;
+      selectedRole=r.id; grid.querySelectorAll('.pick-card').forEach(c=>c.classList.remove('chosen')); d.classList.add('chosen');
+    });
     grid.appendChild(d);
   });
-  openModal('roleModal');
+}
+function editClassRole(roleId){
+  const r=classRoles.find(x=>x.id===roleId);
+  if(!r) return;
+  const newLabel=prompt('修改角色名稱：', r.label);
+  if(newLabel===null || !newLabel.trim()) return;
+  const newEmoji=prompt('修改角色 emoji（可直接貼一個表情符號）：', r.emoji);
+  if(newEmoji===null) return;
+  const newDesc=prompt('修改角色描述：', r.desc);
+  if(newDesc===null) return;
+  r.label=newLabel.trim();
+  r.emoji=newEmoji.trim()||r.emoji;
+  r.desc=newDesc.trim();
+  save(); renderRoleGrid(); renderStudents();
+  toast(`✏️ 角色已更新為「${r.emoji} ${r.label}」`);
+}
+function resetClassRoles(){
+  if(!confirm('確定要把全部班級角色還原成預設值嗎？自訂的名稱、描述都會被覆蓋')) return;
+  classRoles = CLASS_ROLES_DEFAULT.map(r=>({...r}));
+  save(); renderRoleGrid(); renderStudents();
+  toast('↺ 已還原預設角色');
 }
 function saveRole(){
   const s=students.find(x=>x.id===roleTarget);
@@ -6531,6 +6571,7 @@ async function initApp() {
       drawState = JSON.parse(localStorage.getItem('cls_drawState')||'{"drawnIds":[],"excludeMode":true}');
       seatingChart = JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
       cleaningZones = JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
+      classRoles = JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
     }
   } catch(e) {
     console.warn('載入失敗，使用空資料', e);
