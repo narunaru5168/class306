@@ -887,6 +887,10 @@
         </select>
       </div>
     </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>備註（選填）</label>
+      <input type="text" id="addStarNote" placeholder="例如：認真學習 → 這次是主動整理錯題本">
+    </div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="confirmAddStar()">⭐ 確認給星</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('addStarModal')">取消</button>
@@ -4734,6 +4738,7 @@ function openAddStar(id){
   const s=students.find(x=>x.id===id);
   document.getElementById('addStarName').textContent=s.name;
   document.getElementById('addStarReason').selectedIndex=0;
+  document.getElementById('addStarNote').value='';
   syncAddStarAmt();
   openModal('addStarModal');
 }
@@ -4792,9 +4797,11 @@ function confirmAddStar(){
   const s=students.find(x=>x.id===addStarTarget);
   const amt=parseInt(document.getElementById('addStarAmt').value)||1;
   const reason=document.getElementById('addStarReason').value;
+  const note=document.getElementById('addStarNote').value.trim();
+  const fullReason = note ? `${reason} — ${note}` : reason;
   grantStars(s, amt);
   s.log=s.log||[];
-  s.log.push({id:generateId(), reason,amt,date:new Date().toLocaleDateString('zh-TW')});
+  s.log.push({id:generateId(), reason:fullReason,amt,date:new Date().toLocaleDateString('zh-TW')});
   // auto badge
   if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
   if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
@@ -4802,7 +4809,7 @@ function confirmAddStar(){
   if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
   save(); renderStudents(); updateStats();
   closeModal('addStarModal');
-  toast(`⭐ ${s.name} 獲得 ${amt} 顆星！（${reason}）`);
+  toast(`⭐ ${s.name} 獲得 ${amt} 顆星！（${fullReason}）`);
   if(amt>=3) confetti();
 }
 
