@@ -698,10 +698,11 @@
 <div class="modal-overlay" id="traitModal">
   <div class="modal" style="max-width:460px;">
     <h3>🏅 給予特質徽章：<span id="traitModalName"></span></h3>
-    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">特質徽章肯定孩子的人格特質，不只是學業表現。</p>
+    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">特質徽章肯定孩子的人格特質，不只是學業表現。點卡片上的 ✏️ 可以自訂名稱與描述。</p>
     <div class="pick-grid" id="traitGrid"></div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="saveTrait()">🏅 給予徽章</button>
+      <button class="btn" style="background:#fff;border:1px solid #cbd5e1;color:#555;" onclick="resetTraitBadges()">↺ 還原預設特質</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('traitModal')">取消</button>
     </div>
   </div>
@@ -1686,6 +1687,60 @@
     <div class="modal-btns">
       <button class="btn btn-success" onclick="confirmAddToCleaningZone()">加入</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('cleaningAssignModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── MUTUAL AID GROUPS ─────────────── -->
+<div id="page-mutualaid" class="page">
+  <div style="display:flex;align-items:center;margin-bottom:10px;">
+    <span class="section-title" style="margin-bottom:0;">🤝 班級互助小組</span>
+  </div>
+  <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;line-height:1.7;">
+    每組有一位「組長」，職責是<strong>先關心、先幫忙組員</strong>，不是管人；組長會定期輪替，讓每個人都有機會練習。<br>
+    遇到小狀況鼓勵組內先互相幫忙、想辦法解決，真的解決不了再來找老師——這裡的紀錄純粹是給老師參考，不計分、不排名。
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <button class="btn" style="background:#fff9e6;border:2px solid #fbbf24;color:#b45309;font-size:.82rem;padding:8px 16px;" onclick="syncMutualAidWithSeating()">🔗 依照座位表自動分組（每排一組）</button>
+    <button class="btn btn-primary" style="font-size:.82rem;padding:8px 16px;" onclick="randomAssignMutualAid()">🎲 隨機重新分組</button>
+    <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.82rem;padding:8px 16px;" onclick="addMutualAidGroup()">＋ 新增小組</button>
+  </div>
+
+  <div id="mutualAidGroupList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;"></div>
+
+  <div class="section-title" style="font-size:1rem;margin-top:20px;">🙋 尚未分組</div>
+  <div id="mutualAidUnassignedList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+</div>
+
+<!-- ─────────────── MUTUAL AID ASSIGN MODAL ─────────────── -->
+<div class="modal-overlay" id="mutualAidAssignModal">
+  <div class="modal" style="max-width:400px;">
+    <h3>➕ 新增學生到小組</h3>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>選擇學生</label>
+      <select id="mutualAidAssignSelect"></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="confirmAddToMutualAidGroup()">加入</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('mutualAidAssignModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── MUTUAL AID NOTE MODAL ─────────────── -->
+<div class="modal-overlay" id="mutualAidNoteModal">
+  <div class="modal" style="max-width:420px;">
+    <h3>📝 記一筆互助</h3>
+    <div style="font-size:.82rem;color:#94a3b8;margin-bottom:10px;">點一下常見情境快速記錄，或在下方自己輸入</div>
+    <div id="mutualAidQuickNoteList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>其他情況（自己輸入）</label>
+      <input type="text" id="mutualAidNoteCustom" placeholder="例如：小明忘記帶課本，小華主動借他">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="confirmCustomMutualAidNote()">送出</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('mutualAidNoteModal')">取消</button>
     </div>
   </div>
 </div>
@@ -3849,11 +3904,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -3864,6 +3919,8 @@ let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=
 let seatingProjectorMode = false; // 投影模式：隱藏操作按鈕，座位格子放到接近全螢幕
 let cleaningZones = []; // { id, name, targetCount, studentIds:[] } 打掃區域分配
 let cleaningAssignTarget = null; // 目前正在加人到哪個打掃區域
+let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助小組（組長會輪替）
+let mutualAidAssignTarget = null; // 目前正在加人到哪個互助小組
 let currentGradeType = '國語';
 let addStarTarget = null;
 let dartsLeft = 3;
@@ -3908,6 +3965,8 @@ async function save() {
   await saveField('class306/seatingChart', seatingChart, 'cls_seatingChart');
   await saveField('class306/cleaningZones', cleaningZones, 'cls_cleaningZones');
   await saveField('class306/classRoles', classRoles, 'cls_classRoles');
+  await saveField('class306/traitBadges', traitBadges, 'cls_traitBadges');
+  await saveField('class306/mutualAidGroups', mutualAidGroups, 'cls_mutualAidGroups');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -3928,7 +3987,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -3946,6 +4005,8 @@ async function loadData() {
     fetchField('class306/seatingChart', { colSizes: [5,4,5,4,4,4], seats: {} }),
     fetchField('class306/cleaningZones', []),
     fetchField('class306/classRoles', []),
+    fetchField('class306/traitBadges', []),
+    fetchField('class306/mutualAidGroups', []),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -3964,6 +4025,8 @@ async function loadData() {
   seatingChart = scVal !== null ? scVal : JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
   cleaningZones = czVal !== null ? czVal : JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
   classRoles = crVal !== null ? crVal : JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
+  traitBadges = tbVal !== null ? tbVal : JSON.parse(localStorage.getItem('cls_traitBadges')||'[]');
+  mutualAidGroups = maVal !== null ? maVal : JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
 }
 
 
@@ -4044,6 +4107,7 @@ function showPage(name) {
   if(name==='draw') renderDrawState();
   if(name==='seating') renderSeatingChart();
   if(name==='cleaning') renderCleaningZones();
+  if(name==='mutualaid') renderMutualAidGroups();
 }
 function confetti() {
   const colors = ['#FFD93D','#FF6B6B','#6BCB77','#5BB8F5','#A855F7','#FFB347','#4DD9AC'];
@@ -4518,7 +4582,7 @@ function ensureClassRoles(){
     classRoles = CLASS_ROLES_DEFAULT.map(r=>({...r}));
   }
 }
-const TRAIT_BADGES = [
+const TRAIT_BADGES_DEFAULT = [
   {id:'curious',     emoji:'🔍', label:'好奇探索家',  desc:'愛問問題，喜歡探索新事物'},
   {id:'creative',    emoji:'🎨', label:'創意小天才',  desc:'總有新點子，用不同方式解決問題'},
   {id:'kind',        emoji:'💝', label:'超級貼心人',  desc:'注意到別人的感受，很溫柔體貼'},
@@ -4528,6 +4592,12 @@ const TRAIT_BADGES = [
   {id:'responsible', emoji:'🛡️', label:'責任小達人',  desc:'認真完成每件事，值得大家信賴'},
   {id:'positive',    emoji:'☀️', label:'正能量小太陽', desc:'帶給大家好心情，笑容感染力超強'},
 ];
+let traitBadges = []; // 可自訂名稱/描述，結構同 TRAIT_BADGES_DEFAULT，存在雲端
+function ensureTraitBadges(){
+  if(!traitBadges || traitBadges.length===0){
+    traitBadges = TRAIT_BADGES_DEFAULT.map(t=>({...t}));
+  }
+}
 const REPAIR_TASKS = [
   '幫老師整理書本或教具',
   '寫一封道歉信給受影響的同學',
@@ -4600,25 +4670,55 @@ function saveRole(){
 // ② 特質徽章
 let traitTarget=null, selectedTrait='';
 function openTraitModal(id){
+  ensureTraitBadges();
   traitTarget=id;
   const s=students.find(x=>x.id===id);
   document.getElementById('traitModalName').textContent=s.name;
   selectedTrait='';
+  renderTraitGrid();
+  openModal('traitModal');
+}
+function renderTraitGrid(){
   const grid=document.getElementById('traitGrid');
   grid.innerHTML='';
-  TRAIT_BADGES.forEach(t=>{
+  traitBadges.forEach(t=>{
     const d=document.createElement('div');
-    d.className='pick-card';
-    d.innerHTML=`<div class="p-icon">${t.emoji}</div><div class="p-name">${t.label}</div><div class="p-desc">${t.desc}</div>`;
-    d.onclick=()=>{ selectedTrait=t.id; grid.querySelectorAll('.pick-card').forEach(c=>c.classList.remove('chosen')); d.classList.add('chosen'); };
+    d.className='pick-card'+(selectedTrait===t.id?' chosen':'');
+    d.style.position='relative';
+    d.innerHTML=`<button type="button" style="position:absolute;top:4px;right:4px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;" title="編輯這個特質">✏️</button><div class="p-icon">${t.emoji}</div><div class="p-name">${t.label}</div><div class="p-desc">${t.desc}</div>`;
+    d.querySelector('button').onclick=(e)=>{ e.stopPropagation(); editTraitBadge(t.id); };
+    d.addEventListener('click', (e)=>{
+      if(e.target.tagName==='BUTTON') return;
+      selectedTrait=t.id; grid.querySelectorAll('.pick-card').forEach(c=>c.classList.remove('chosen')); d.classList.add('chosen');
+    });
     grid.appendChild(d);
   });
-  openModal('traitModal');
+}
+function editTraitBadge(traitId){
+  const t=traitBadges.find(x=>x.id===traitId);
+  if(!t) return;
+  const newLabel=prompt('修改特質名稱：', t.label);
+  if(newLabel===null || !newLabel.trim()) return;
+  const newEmoji=prompt('修改特質 emoji（可直接貼一個表情符號）：', t.emoji);
+  if(newEmoji===null) return;
+  const newDesc=prompt('修改特質描述：', t.desc);
+  if(newDesc===null) return;
+  t.label=newLabel.trim();
+  t.emoji=newEmoji.trim()||t.emoji;
+  t.desc=newDesc.trim();
+  save(); renderTraitGrid();
+  toast(`✏️ 特質已更新為「${t.emoji} ${t.label}」`);
+}
+function resetTraitBadges(){
+  if(!confirm('確定要把全部特質徽章還原成預設值嗎？自訂的名稱、描述都會被覆蓋')) return;
+  traitBadges = TRAIT_BADGES_DEFAULT.map(t=>({...t}));
+  save(); renderTraitGrid();
+  toast('↺ 已還原預設特質');
 }
 function saveTrait(){
   if(!selectedTrait){ toast('⚠️ 請選擇一個特質徽章'); return; }
   const s=students.find(x=>x.id===traitTarget);
-  const t=TRAIT_BADGES.find(x=>x.id===selectedTrait);
+  const t=traitBadges.find(x=>x.id===selectedTrait);
   s.traitBadges=s.traitBadges||[];
   s.traitBadges.push({...t, date:new Date().toLocaleDateString()});
   save(); renderStudents(); closeModal('traitModal');
@@ -5879,6 +5979,209 @@ function clearAllCleaning(){
   toast('🗑 已清空所有分配');
 }
 
+// ─── 班級互助小組（組長輪替、互相照顧、先自行解決再找老師）───
+function ensureMutualAidDefaults(){
+  if(mutualAidGroups.length===0){
+    mutualAidGroups = ['一','二','三','四','五','六'].map(n=>({id:generateId(), name:`第${n}組`, studentIds:[], leaderIndex:0, log:[]}));
+  }
+}
+function syncMutualAidWithSeating(){
+  if(!seatingChart || !seatingChart.colSizes || seatingChart.colSizes.length===0){
+    toast('⚠️ 請先到「座位表」設定好座位，才能同步分組');
+    return;
+  }
+  if(!confirm('確定要依照目前的座位表重新分組嗎？（每一排變成一組，現有分組成員會被取代，但互助紀錄／成長階段會盡量保留）')) return;
+
+  const colSizes = seatingChart.colSizes;
+  const newGroups = [];
+  for(let c=0; c<colSizes.length; c++){
+    const groupName = `第${c+1}排`;
+    const existing = mutualAidGroups.find(g=>g.name===groupName);
+    const studentIds = [];
+    for(let r=0; r<colSizes[c]; r++){
+      const sid = seatingChart.seats[seatKey(c,r)];
+      if(sid!=null) studentIds.push(sid);
+    }
+    newGroups.push({
+      id: existing ? existing.id : generateId(),
+      name: groupName,
+      studentIds,
+      leaderIndex: existing ? (existing.leaderIndex||0) : 0,
+      log: existing ? (existing.log||[]) : [],
+    });
+  }
+  mutualAidGroups = newGroups;
+  save(); renderMutualAidGroups();
+  toast('🔗 已依照座位表重新分組！同排的人現在是同一組');
+}
+function mutualAidTier(count){
+  if(count>=10) return {emoji:'🌳', label:'茁壯小組'};
+  if(count>=5)  return {emoji:'🌿', label:'成長中小組'};
+  if(count>=1)  return {emoji:'🌱', label:'發芽小組'};
+  return {emoji:'🌰', label:'種子小組'};
+}
+function renderMutualAidGroups(){
+  ensureMutualAidDefaults();
+  const wrap = document.getElementById('mutualAidGroupList');
+  if(!wrap) return;
+  wrap.innerHTML = mutualAidGroups.map(g=>{
+    const members = (g.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
+    const leaderIdx = members.length>0 ? ((g.leaderIndex||0) % members.length + members.length) % members.length : 0;
+    const leader = members[leaderIdx];
+    const logCount = (g.log||[]).length;
+    const tier = mutualAidTier(logCount);
+    const chips = members.map((s,i)=>{
+      const isLeader = i===leaderIdx;
+      return `<span style="background:${isLeader?'#fef3c7':'#eff6ff'};color:${isLeader?'#92400e':'#0369a1'};border-radius:16px;padding:3px 9px;font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
+        ${isLeader?'👑 ':''}${s.seatNo||''}${s.name}
+        <span style="cursor:pointer;opacity:.6;" onclick="removeFromMutualAidGroup(${g.id},${s.id})">✕</span>
+      </span>`;
+    }).join('');
+    return `
+    <div class="card" style="padding:14px 16px;margin-bottom:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-weight:800;font-size:.95rem;cursor:pointer;" onclick="renameMutualAidGroup(${g.id})">${g.name} <span style="font-size:.7em;opacity:.5;">✏️</span></div>
+        <button class="del-btn" style="position:static;" onclick="removeMutualAidGroup(${g.id})">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <span style="font-size:1.3rem;">${tier.emoji}</span>
+        <span style="font-size:.76rem;font-weight:800;color:#166534;">${tier.label}</span>
+        <span style="font-size:.7rem;color:#94a3b8;">（累積互助 ${logCount} 次）</span>
+      </div>
+      <div style="font-size:.8rem;font-weight:800;color:#7c3aed;margin-bottom:8px;">
+        ${leader ? `👑 本輪組長：${leader.seatNo||''}號 ${leader.name}` : '尚無組員，無法指派組長'}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;min-height:24px;">
+        ${chips || '<span style="font-size:.78rem;color:#cbd5e1;">尚未加入學生</span>'}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn" style="background:#fef3c7;color:#92400e;font-size:.75rem;padding:5px 11px;" onclick="rotateMutualAidLeader(${g.id})">🔄 換組長</button>
+        <button class="btn" style="background:#eff6ff;color:#0369a1;font-size:.75rem;padding:5px 11px;" onclick="openAddToMutualAidGroupModal(${g.id})">＋ 加人</button>
+        <button class="btn" style="background:#f0fdf4;color:#16a34a;font-size:.75rem;padding:5px 11px;" onclick="openMutualAidNoteModal(${g.id})">📝 記一筆互助</button>
+      </div>
+      ${(g.log && g.log.length>0) ? `
+        <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #e2e8f0;">
+          ${[...g.log].reverse().slice(0,3).map(l=>`<div style="font-size:.74rem;color:#64748b;margin-bottom:3px;">📌 ${l.date}：${l.note}</div>`).join('')}
+        </div>` : ''}
+    </div>`;
+  }).join('');
+  renderMutualAidUnassigned();
+}
+function renderMutualAidUnassigned(){
+  const wrap = document.getElementById('mutualAidUnassignedList');
+  if(!wrap) return;
+  const assignedIds = new Set(mutualAidGroups.flatMap(g=>g.studentIds||[]));
+  const unassigned = seatSortedStudents().filter(s=>!assignedIds.has(s.id));
+  wrap.innerHTML = unassigned.length
+    ? unassigned.map(s=>`<span style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
+    : `<div style="font-size:.8rem;color:#94a3b8;">🎉 全部都分組了</div>`;
+}
+function openAddToMutualAidGroupModal(groupId){
+  mutualAidAssignTarget = groupId;
+  const group = mutualAidGroups.find(g=>g.id===groupId);
+  if(!group) return;
+  const sel = document.getElementById('mutualAidAssignSelect');
+  const sorted = seatSortedStudents().filter(s=>!(group.studentIds||[]).includes(s.id));
+  if(sorted.length===0){ toast('全班學生都已經在這個小組了'); return; }
+  sel.innerHTML = sorted.map(s=>`<option value="${s.id}">${s.seatNo||''}號 ${s.name}</option>`).join('');
+  openModal('mutualAidAssignModal');
+}
+function confirmAddToMutualAidGroup(){
+  const sel = document.getElementById('mutualAidAssignSelect');
+  if(!sel.value) return;
+  const sid = students.find(s=>s.id==sel.value).id;
+  const group = mutualAidGroups.find(g=>g.id===mutualAidAssignTarget);
+  if(!group) return;
+  mutualAidGroups.forEach(g=>{ g.studentIds = (g.studentIds||[]).filter(id=>id!==sid); }); // 一人一組
+  group.studentIds = group.studentIds || [];
+  group.studentIds.push(sid);
+  save(); renderMutualAidGroups();
+  closeModal('mutualAidAssignModal');
+  toast('✅ 已加入小組');
+}
+function removeFromMutualAidGroup(groupId, studentId){
+  const group = mutualAidGroups.find(g=>g.id===groupId);
+  if(!group) return;
+  group.studentIds = (group.studentIds||[]).filter(id=>id!==studentId);
+  save(); renderMutualAidGroups();
+}
+function addMutualAidGroup(){
+  const name = prompt('新增小組名稱？（例如：第七組）');
+  if(!name || !name.trim()) return;
+  mutualAidGroups.push({id:generateId(), name:name.trim(), studentIds:[], leaderIndex:0, log:[]});
+  save(); renderMutualAidGroups();
+  toast(`🤝 已新增小組：${name.trim()}`);
+}
+function renameMutualAidGroup(id){
+  const g = mutualAidGroups.find(x=>x.id===id);
+  if(!g) return;
+  const name = prompt('修改小組名稱：', g.name);
+  if(name===null || !name.trim()) return;
+  g.name = name.trim();
+  save(); renderMutualAidGroups();
+}
+function removeMutualAidGroup(id){
+  if(!confirm('確定要刪除這個小組嗎？裡面的學生會變成未分組')) return;
+  mutualAidGroups = mutualAidGroups.filter(g=>g.id!==id);
+  save(); renderMutualAidGroups();
+}
+function rotateMutualAidLeader(groupId){
+  const g = mutualAidGroups.find(x=>x.id===groupId);
+  if(!g) return;
+  const members = g.studentIds||[];
+  if(members.length===0){ toast('這組還沒有學生，無法輪替組長'); return; }
+  g.leaderIndex = ((g.leaderIndex||0) + 1) % members.length;
+  save(); renderMutualAidGroups();
+  const newLeaderId = members[g.leaderIndex];
+  const newLeader = students.find(s=>s.id===newLeaderId);
+  toast(`🔄 已換組長：${newLeader?newLeader.name:''}`);
+}
+const MUTUAL_AID_QUICK_NOTES = [
+  '主動幫忙同學',
+  '耐心教導同學',
+  '互相提醒功課/物品',
+  '一起完成打掃工作',
+  '安慰鼓勵心情不好的同學',
+  '借用品給需要的同學',
+];
+let mutualAidNoteTarget = null;
+function openMutualAidNoteModal(groupId){
+  mutualAidNoteTarget = groupId;
+  document.getElementById('mutualAidNoteCustom').value = '';
+  const wrap = document.getElementById('mutualAidQuickNoteList');
+  wrap.innerHTML = MUTUAL_AID_QUICK_NOTES.map(n=>
+    `<button type="button" class="btn" style="background:#f0fdf4;color:#16a34a;font-size:.8rem;padding:8px 12px;text-align:left;" onclick="quickAddMutualAidNote('${n.replace(/'/g,"\\'")}')">✓ ${n}</button>`
+  ).join('');
+  openModal('mutualAidNoteModal');
+}
+function quickAddMutualAidNote(text){
+  const g = mutualAidGroups.find(x=>x.id===mutualAidNoteTarget);
+  if(!g) return;
+  g.log = g.log || [];
+  g.log.push({date:new Date().toLocaleDateString('zh-TW'), note:text});
+  save(); renderMutualAidGroups();
+  closeModal('mutualAidNoteModal');
+  toast('📝 已記錄一筆互助！');
+}
+function confirmCustomMutualAidNote(){
+  const text = document.getElementById('mutualAidNoteCustom').value.trim();
+  if(!text){ toast('⚠️ 請輸入內容'); return; }
+  quickAddMutualAidNote(text);
+}
+function randomAssignMutualAid(){
+  ensureMutualAidDefaults();
+  if(!students.length){ toast('⚠️ 請先新增學生！'); return; }
+  if(!confirm('確定要重新隨機分組嗎？目前的分組會被打亂重排（組長輪替進度會歸零）')) return;
+  const shuffled = [...students].sort(()=>Math.random()-0.5);
+  const groupCount = mutualAidGroups.length || 6;
+  mutualAidGroups.forEach(g=>{ g.studentIds = []; g.leaderIndex = 0; });
+  shuffled.forEach((s,i)=>{
+    mutualAidGroups[i % groupCount].studentIds.push(s.id);
+  });
+  save(); renderMutualAidGroups();
+  toast('🎲 已重新隨機分組！');
+}
+
 // ─── GRADES ───
 function setGradeType(type,el){
   currentGradeType=type;
@@ -6572,6 +6875,8 @@ async function initApp() {
       seatingChart = JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
       cleaningZones = JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
       classRoles = JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
+      traitBadges = JSON.parse(localStorage.getItem('cls_traitBadges')||'[]');
+      mutualAidGroups = JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
     }
   } catch(e) {
     console.warn('載入失敗，使用空資料', e);
