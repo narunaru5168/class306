@@ -5995,8 +5995,10 @@ function syncMutualAidWithSeating(){
   const colSizes = seatingChart.colSizes;
   const newGroups = [];
   for(let c=0; c<colSizes.length; c++){
-    const groupName = `第${c+1}排`;
-    const existing = mutualAidGroups.find(g=>g.name===groupName);
+    // 用「這組是座位表第幾排產生的」來比對，不要用名稱字串比對
+    // （名稱可能被老師自己改過，用名稱比對會對不起來、誤判成新小組，把累積的紀錄清空）
+    const existing = mutualAidGroups.find(g=>g.seatingColIndex===c);
+    const groupName = existing ? existing.name : `第${c+1}排`;
     const studentIds = [];
     for(let r=0; r<colSizes[c]; r++){
       const sid = seatingChart.seats[seatKey(c,r)];
@@ -6005,6 +6007,7 @@ function syncMutualAidWithSeating(){
     newGroups.push({
       id: existing ? existing.id : generateId(),
       name: groupName,
+      seatingColIndex: c,
       studentIds,
       leaderIndex: existing ? (existing.leaderIndex||0) : 0,
       log: existing ? (existing.log||[]) : [],
@@ -6931,7 +6934,11 @@ async function initApp() {
   } catch(e) {}
 
   // 初次使用：預載三年六班名冊
-  if (!students || students.length === 0) {
+  // ⚠️ 重要：只有在「這次雲端資料真的有正常讀到」的情況下才做這件事。
+  // 如果剛才讀取資料的過程中有偵測到連線不穩（cloudSyncHadIssue），
+  // 絕對不能自動把「空名單」存回雲端 —— 那很可能只是暫時讀取失敗，
+  // 硬存回去等於把老師原本正確的星星資料整個覆蓋掉、清空歸零。
+  if ((!students || students.length === 0) && !cloudSyncHadIssue) {
     const avatarsBoy  = ['🦁','🐯','🦊','🐻','🐼','🐸','🦄','🐲'];
     const avatarsGirl = ['🌸','🦋','🌺','🌈','🦩','🐝','🌙','⭐'];
     let boyIdx = 0, girlIdx = 0;
@@ -6969,10 +6976,12 @@ async function initApp() {
       students.push({ id: generateId(), sid:r.sid, seatNo:r.no, name:r.name, gender:r.gender, avatar, stars:0, badges:[], log:[] });
     });
     try { await save(); } catch(e) {}
+  } else if ((!students || students.length === 0) && cloudSyncHadIssue) {
+    console.warn('偵測到雲端連線不穩，且學生名單目前是空的 —— 為了安全，這次不會自動存回一份空白名單，避免覆蓋掉原本的資料。請重新整理頁面再試一次。');
   }
 
   // 初次使用：預載九種範例任務（刻意用「工作」取代「幹部」，弱化位階感，每項一樣重要）
-  if (!dutyRoles || dutyRoles.length === 0) {
+  if ((!dutyRoles || dutyRoles.length === 0) && !cloudSyncHadIssue) {
     dutyRoles = [
       { id: generateId(), name: '🚶 排路隊長', dutyIndex: 0 },
       { id: generateId(), name: '🧹 擦黑板小天使', dutyIndex: 0 },
