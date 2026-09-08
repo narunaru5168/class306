@@ -727,6 +727,9 @@
     <div id="repairTaskSection" style="display:none;">
       <div style="font-weight:700;font-size:.88rem;color:#d97706;margin-bottom:6px;">🔧 指派修復任務（完成後可賺回星星）</div>
       <div class="repair-list" id="repairList"></div>
+      <div id="repairCustomWrap" style="display:none;margin-top:8px;">
+        <input type="text" id="repairCustomInput" placeholder="輸入自訂的修復任務內容..." oninput="updateCustomRepair(this.value)" style="width:100%;">
+      </div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-danger" onclick="confirmSubStar()">確認扣星</button>
@@ -4817,6 +4820,8 @@ function openSubStarModal(id){
   document.getElementById('subStarName').textContent=s.name;
   document.getElementById('subStarAmt').value=1;
   document.getElementById('repairTaskSection').style.display='none';
+  document.getElementById('repairCustomWrap').style.display='none';
+  document.getElementById('repairCustomInput').value='';
   document.getElementById('sub-type-normal').classList.add('active');
   document.getElementById('sub-type-behavior').classList.remove('active');
   openModal('subStarModal');
@@ -4835,10 +4840,30 @@ function setSubType(type, el){
       const d=document.createElement('div');
       d.className='repair-item';
       d.innerHTML=`<span>🔧</span><span style="font-size:.85rem;font-weight:700;">${task}</span>`;
-      d.onclick=()=>{ selectedRepair=task; list.querySelectorAll('.repair-item').forEach(r=>r.classList.remove('chosen')); d.classList.add('chosen'); };
+      d.onclick=()=>{
+        selectedRepair=task;
+        list.querySelectorAll('.repair-item').forEach(r=>r.classList.remove('chosen'));
+        d.classList.add('chosen');
+        document.getElementById('repairCustomWrap').style.display='none';
+      };
       list.appendChild(d);
     });
+    const customItem=document.createElement('div');
+    customItem.className='repair-item';
+    customItem.innerHTML=`<span>✏️</span><span style="font-size:.85rem;font-weight:700;">自己輸入</span>`;
+    customItem.onclick=()=>{
+      selectedRepair='';
+      list.querySelectorAll('.repair-item').forEach(r=>r.classList.remove('chosen'));
+      customItem.classList.add('chosen');
+      const wrap=document.getElementById('repairCustomWrap');
+      wrap.style.display='block';
+      document.getElementById('repairCustomInput').focus();
+    };
+    list.appendChild(customItem);
   } else { repairSec.style.display='none'; }
+}
+function updateCustomRepair(text){
+  selectedRepair = text.trim();
 }
 function confirmSubStar(){
   const s=students.find(x=>x.id===subStarTarget);
