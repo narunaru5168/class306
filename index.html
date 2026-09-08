@@ -1779,6 +1779,33 @@
   </div>
 </div>
 
+<!-- ─────────────── CLASS OFFICERS（班級幹部登記表）─────────────── -->
+<div id="page-officers" class="page">
+  <div style="display:flex;align-items:center;margin-bottom:10px;">
+    <span class="section-title" style="margin-bottom:0;">🎗️ 班級幹部登記表</span>
+  </div>
+  <div style="font-size:.85rem;color:#94a3b8;margin-bottom:16px;line-height:1.7;">
+    對照學校要求的職稱與職掌，指派學生擔任。每個職位下方的「💡 建議候選人」是根據學生目前已經被標記過的<strong>角色、特質徽章</strong>自動抓出的參考名單，僅供參考，最終還是要老師自己判斷最合適的人選。
+  </div>
+
+  <div id="officerList" style="display:flex;flex-direction:column;gap:14px;"></div>
+</div>
+
+<!-- ─────────────── OFFICER ASSIGN MODAL ─────────────── -->
+<div class="modal-overlay" id="officerAssignModal">
+  <div class="modal" style="max-width:400px;">
+    <h3>➕ 指派幹部</h3>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>選擇學生</label>
+      <select id="officerAssignSelect"></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="confirmAssignOfficer()">指派</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('officerAssignModal')">取消</button>
+    </div>
+  </div>
+</div>
+
 <div id="page-teachingplan" class="page">
   <div style="display:flex;align-items:center;margin-bottom:10px;">
     <span class="section-title" style="margin-bottom:0;">📋 教學進度規劃（老師專用）</span>
@@ -3939,11 +3966,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -3956,6 +3983,34 @@ let cleaningZones = []; // { id, name, targetCount, studentIds:[] } 打掃區域
 let cleaningAssignTarget = null; // 目前正在加人到哪個打掃區域
 let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助小組（組長會輪替）
 let mutualAidAssignTarget = null; // 目前正在加人到哪個互助小組
+let classOfficers = {}; // { positionId: [studentId, ...] } 班級幹部指派名單
+let officerAssignTarget = null; // 目前正在指派哪個幹部職位
+const OFFICER_POSITIONS = [
+  { id:'banzhang', title:'班長',
+    duties:['協助老師、代表班級處理各項事務','轉達班級老師各項重要訊息','班級重大事件通報'],
+    suggestTraits:['responsible','helpful'], suggestRoles:['peacemaker','thinker'] },
+  { id:'fubanzhang', title:'副班長',
+    duties:['協助老師記錄學生出缺席情況','代理班長不在時各項事務處理','協助班長處理班級事務'],
+    suggestTraits:['responsible','persist'], suggestRoles:['timekeeper','questioner'] },
+  { id:'fengji', title:'風紀股長',
+    duties:['協助老師維持班級學生室內、室外秩序','協助傳達【學務處－生教組】所轉達給班級的事項','協助班長處理班級事務'],
+    suggestTraits:['brave','responsible'], suggestRoles:['encourager'] },
+  { id:'weisheng', title:'衛生股長',
+    duties:['協助老師班級內、外掃區環境檢查','協助傳達【學務處－衛生組】所轉達給班級的事項','協助班長處理班級事務'],
+    suggestTraits:['responsible'], suggestRoles:['eco'] },
+  { id:'wenhua', title:'文化股長',
+    duties:['協助老師各項藝文活動、作業收繳事務','協助傳達【教務處】所轉達給班級的事項','協助班長處理班級事務'],
+    suggestTraits:['creative'], suggestRoles:['creator'] },
+  { id:'jingjian', title:'經建股長',
+    duties:['協助老師各項費用收款、班級設備維修','協助傳達所轉達給班級的事項','協助班長處理班級事務'],
+    suggestTraits:['responsible'], suggestRoles:['timekeeper'] },
+  { id:'kangle', title:'康樂股長',
+    duties:['協助老師體育器材、班際運動競賽活動','協助傳達【學務處】所轉達給班級的事項','協助班長處理班級事務'],
+    suggestTraits:['positive'], suggestRoles:['encourager'] },
+  { id:'minzheng', title:'民政股長（書香列車長）',
+    duties:['協助老師檢視班級或適用【圖書館外借閱箱】內容資料','協助班級傳達、傳遞工作','協助班長輔導室完成轉達傳遞事項'],
+    suggestTraits:['kind','helpful'], suggestRoles:['helper','peacemaker'] },
+];
 let currentGradeType = '國語';
 let addStarTarget = null;
 let dartsLeft = 3;
@@ -4002,6 +4057,7 @@ async function save() {
   await saveField('class306/classRoles', classRoles, 'cls_classRoles');
   await saveField('class306/traitBadges', traitBadges, 'cls_traitBadges');
   await saveField('class306/mutualAidGroups', mutualAidGroups, 'cls_mutualAidGroups');
+  await saveField('class306/classOfficers', classOfficers, 'cls_classOfficers');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -4022,7 +4078,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal, coVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4042,6 +4098,7 @@ async function loadData() {
     fetchField('class306/classRoles', []),
     fetchField('class306/traitBadges', []),
     fetchField('class306/mutualAidGroups', []),
+    fetchField('class306/classOfficers', {}),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4062,6 +4119,7 @@ async function loadData() {
   classRoles = crVal !== null ? crVal : JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
   traitBadges = tbVal !== null ? tbVal : JSON.parse(localStorage.getItem('cls_traitBadges')||'[]');
   mutualAidGroups = maVal !== null ? maVal : JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
+  classOfficers = coVal !== null ? coVal : JSON.parse(localStorage.getItem('cls_classOfficers')||'{}');
 }
 
 
@@ -4194,6 +4252,7 @@ function showPage(name) {
   if(name==='seating') renderSeatingChart();
   if(name==='cleaning') renderCleaningZones();
   if(name==='mutualaid') renderMutualAidGroups();
+  if(name==='officers') renderOfficers();
 }
 function confetti() {
   const colors = ['#FFD93D','#FF6B6B','#6BCB77','#5BB8F5','#A855F7','#FFB347','#4DD9AC'];
@@ -5940,6 +5999,7 @@ function ensureCleaningDefaults(){
       {id:generateId(), name:'🚪 走廊', targetCount:3, studentIds:[]},
       {id:generateId(), name:'🚰 洗手台', targetCount:3, studentIds:[]},
       {id:generateId(), name:'🌤️ 陽台', targetCount:3, studentIds:[]},
+      {id:generateId(), name:'🌿 植物角', targetCount:1, studentIds:[]},
     ];
   }
 }
@@ -6326,6 +6386,77 @@ function randomAssignMutualAid(){
   });
   save(); renderMutualAidGroups();
   toast('🎲 已重新隨機分組！');
+}
+
+// ─── 班級幹部登記表 ───
+function renderOfficers(){
+  const wrap = document.getElementById('officerList');
+  if(!wrap) return;
+  wrap.innerHTML = OFFICER_POSITIONS.map(pos=>{
+    const assignedIds = classOfficers[pos.id] || [];
+    const assigned = assignedIds.map(id=>students.find(s=>s.id===id)).filter(Boolean);
+    const chips = assigned.map(s=>`
+      <span style="background:#eff6ff;color:#0369a1;border-radius:16px;padding:4px 10px;font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;">
+        ${s.seatNo||''}${s.name}
+        <span style="cursor:pointer;opacity:.6;" onclick="removeOfficer('${pos.id}',${s.id})">✕</span>
+      </span>`).join('');
+    const suggested = students.filter(s=>{
+      if(assignedIds.includes(s.id)) return false;
+      const roleMatch = pos.suggestRoles && pos.suggestRoles.includes(s.role);
+      const traitMatch = pos.suggestTraits && (s.traitBadges||[]).some(tb=>pos.suggestTraits.includes(tb.id));
+      return roleMatch || traitMatch;
+    }).slice(0,5);
+    const suggestChips = suggested.map(s=>`
+      <span onclick="quickAssignOfficer('${pos.id}',${s.id})" style="cursor:pointer;background:#fef3c7;color:#92400e;border-radius:16px;padding:4px 10px;font-size:.78rem;font-weight:700;">
+        ${s.seatNo||''}${s.name} 👆
+      </span>`).join('');
+    return `
+    <div class="card" style="padding:16px 18px;margin-bottom:0;">
+      <div style="font-weight:800;font-size:1rem;margin-bottom:6px;">${pos.title}</div>
+      <div style="font-size:.76rem;color:#94a3b8;margin-bottom:10px;line-height:1.8;">
+        ${pos.duties.map((d,i)=>`${i+1}. ${d}`).join('<br>')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:26px;">
+        ${chips || '<span style="font-size:.78rem;color:#cbd5e1;">尚未指派</span>'}
+      </div>
+      <button class="btn" style="background:#eff6ff;color:#0369a1;font-size:.78rem;padding:5px 12px;margin-bottom:10px;" onclick="openOfficerAssignModal('${pos.id}')">＋ 指派學生</button>
+      ${suggested.length>0 ? `
+        <div style="border-top:1px dashed #e2e8f0;padding-top:8px;">
+          <div style="font-size:.74rem;color:#94a3b8;margin-bottom:6px;">💡 建議候選人（點名字快速指派）：</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${suggestChips}</div>
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+function openOfficerAssignModal(posId){
+  officerAssignTarget = posId;
+  const assignedIds = classOfficers[posId] || [];
+  const sel = document.getElementById('officerAssignSelect');
+  const sorted = seatSortedStudents().filter(s=>!assignedIds.includes(s.id));
+  if(sorted.length===0){ toast('全班學生都已經指派到這個職位了'); return; }
+  sel.innerHTML = sorted.map(s=>`<option value="${s.id}">${s.seatNo||''}號 ${s.name}</option>`).join('');
+  openModal('officerAssignModal');
+}
+function confirmAssignOfficer(){
+  const sel = document.getElementById('officerAssignSelect');
+  if(!sel.value) return;
+  const sid = students.find(s=>s.id==sel.value).id;
+  classOfficers[officerAssignTarget] = classOfficers[officerAssignTarget] || [];
+  classOfficers[officerAssignTarget].push(sid);
+  save(); renderOfficers();
+  closeModal('officerAssignModal');
+  toast('✅ 已指派');
+}
+function quickAssignOfficer(posId, sid){
+  classOfficers[posId] = classOfficers[posId] || [];
+  if(classOfficers[posId].includes(sid)) return;
+  classOfficers[posId].push(sid);
+  save(); renderOfficers();
+  toast('✅ 已指派');
+}
+function removeOfficer(posId, sid){
+  classOfficers[posId] = (classOfficers[posId]||[]).filter(id=>id!==sid);
+  save(); renderOfficers();
 }
 
 // ─── GRADES ───
@@ -7032,6 +7163,7 @@ async function initApp() {
       classRoles = JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
       traitBadges = JSON.parse(localStorage.getItem('cls_traitBadges')||'[]');
       mutualAidGroups = JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
+      classOfficers = JSON.parse(localStorage.getItem('cls_classOfficers')||'{}');
     }
   } catch(e) {
     console.warn('載入失敗，使用空資料', e);
