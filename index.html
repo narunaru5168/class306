@@ -1199,6 +1199,7 @@
       <div style="font-weight:800;font-size:.9rem;color:#0369a1;">已選 <span id="batchCount">0</span> 位學生</div>
       <button class="btn btn-primary" style="padding:6px 14px;font-size:.82rem;" onclick="openBatchStarModal('add')">＋ 批次加星星</button>
       <button class="btn btn-danger" style="padding:6px 14px;font-size:.82rem;" onclick="openBatchStarModal('sub')">－ 批次扣星星</button>
+      <button class="btn" style="background:#fef3c7;color:#92400e;padding:6px 14px;font-size:.82rem;" onclick="batchGrantSpinChance()">🎟️ 批次補發抽選機會</button>
       <button class="btn" style="background:#fff;color:#555;padding:6px 14px;font-size:.82rem;" onclick="batchSelectAll()">全選</button>
       <button class="btn" style="background:#fff;color:#555;padding:6px 14px;font-size:.82rem;" onclick="toggleBatchMode()">取消</button>
     </div>
@@ -4351,6 +4352,15 @@ function confirmBatchStar(){
     : `－ ${targets.length} 位學生各扣除 ${amt} 顆星（${reason}）`);
   toggleBatchMode();
 }
+function batchGrantSpinChance(){
+  const targets = students.filter(s=>batchSelected.has(s.id));
+  if(targets.length===0){ toast('⚠️ 請先勾選至少一位學生'); return; }
+  if(!confirm(`確定要幫這 ${targets.length} 位學生各補發 1 次抽選機會嗎？\n\n${targets.map(s=>s.name).join('、')}`)) return;
+  targets.forEach(s=>{ s.spinChances = (s.spinChances||0) + 1; });
+  save(); renderStudents(); populateWheelSelect();
+  toast(`🎟️ 已幫 ${targets.length} 位學生補發抽選機會！`);
+  toggleBatchMode();
+}
 
 function renderStudents(){
   const grid=document.getElementById('studentGrid');
@@ -6089,7 +6099,7 @@ function clearAllCleaning(){
 // ─── 班級互助小組（組長輪替、互相照顧、先自行解決再找老師）───
 function ensureMutualAidDefaults(){
   if(mutualAidGroups.length===0){
-    mutualAidGroups = ['一','二','三','四','五','六'].map(n=>({id:generateId(), name:`第${n}組`, studentIds:[], leaderIndex:0, log:[]}));
+    mutualAidGroups = ['一','二','三','四','五','六'].map(n=>({id:generateId(), name:`第${n}組`, studentIds:[], leaderIndex:0, log:[], celebratedTiers:[]}));
   }
 }
 function syncMutualAidWithSeating(){
@@ -6118,6 +6128,7 @@ function syncMutualAidWithSeating(){
       studentIds,
       leaderIndex: existing ? (existing.leaderIndex||0) : 0,
       log: existing ? (existing.log||[]) : [],
+      celebratedTiers: existing ? (existing.celebratedTiers||[]) : [],
     });
   }
   mutualAidGroups = newGroups;
@@ -6218,7 +6229,7 @@ function removeFromMutualAidGroup(groupId, studentId){
 function addMutualAidGroup(){
   const name = prompt('新增小組名稱？（例如：第七組）');
   if(!name || !name.trim()) return;
-  mutualAidGroups.push({id:generateId(), name:name.trim(), studentIds:[], leaderIndex:0, log:[]});
+  mutualAidGroups.push({id:generateId(), name:name.trim(), studentIds:[], leaderIndex:0, log:[], celebratedTiers:[]});
   save(); renderMutualAidGroups();
   toast(`🤝 已新增小組：${name.trim()}`);
 }
@@ -6264,14 +6275,39 @@ function openMutualAidNoteModal(groupId){
   ).join('');
   openModal('mutualAidNoteModal');
 }
+const MUTUAL_AID_MILESTONES = [
+  { count: 1,  stars: 0, label: '🌱 發芽小組' },
+  { count: 5,  stars: 2, label: '🌿 成長中小組' },
+  { count: 10, stars: 3, label: '🌳 茁壯小組' },
+];
 function quickAddMutualAidNote(text){
   const g = mutualAidGroups.find(x=>x.id===mutualAidNoteTarget);
   if(!g) return;
   g.log = g.log || [];
   g.log.push({date:new Date().toLocaleDateString('zh-TW'), note:text});
+  g.celebratedTiers = g.celebratedTiers || [];
+
+  const newCount = g.log.length;
+  const hitMilestone = MUTUAL_AID_MILESTONES.find(m => newCount>=m.count && !g.celebratedTiers.includes(m.count));
+
   save(); renderMutualAidGroups();
   closeModal('mutualAidNoteModal');
-  toast('📝 已記錄一筆互助！');
+
+  if(hitMilestone){
+    g.celebratedTiers.push(hitMilestone.count);
+    const members = (g.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
+    if(hitMilestone.stars > 0){
+      members.forEach(s=>{ s.stars += hitMilestone.stars; });
+      renderStudents(); updateStats();
+    }
+    save();
+    setTimeout(()=>{
+      confetti();
+      toast(`🎉 ${g.name} 一起達成「${hitMilestone.label}」！${hitMilestone.stars>0 ? `全組每人 +${hitMilestone.stars} 顆星！` : '繼續加油！'}`);
+    }, 300);
+  } else {
+    toast('📝 已記錄一筆互助！');
+  }
 }
 function confirmCustomMutualAidNote(){
   const text = document.getElementById('mutualAidNoteCustom').value.trim();
@@ -6475,6 +6511,15 @@ function spinWheel(){
     if(result.label.includes('榮譽公告')){
       const s=students.find(x=>x.id==sid);
       if(s) setTimeout(()=>{ openRecognitionModal(s.id); }, 900);
+    }
+    // 特殊獎勵：再轉一次 → 免費退回一次抽選機會，不然學生會發現機會用完了轉不動
+    if(result.label.includes('再轉一次')){
+      const s=students.find(x=>x.id==sid);
+      if(s){
+        s.spinChances = (s.spinChances||0) + 1;
+        save(); renderStudents(); populateWheelSelect();
+        document.getElementById('wheelStudent').value = sid;
+      }
     }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
