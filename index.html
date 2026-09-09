@@ -752,6 +752,17 @@
   </div>
 </div>
 
+<!-- ── 修復任務清單 Modal ── -->
+<div class="modal-overlay" id="repairTasksModal">
+  <div class="modal" style="max-width:440px;">
+    <h3>🔧 修復任務：<span id="repairTasksModalName"></span></h3>
+    <div id="repairTasksModalList" style="margin-bottom:14px;"></div>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('repairTasksModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 特別認可 Modal ── -->
 <div class="modal-overlay" id="recognitionModal">
   <div class="modal" style="max-width:420px;">
@@ -4480,7 +4491,7 @@ function renderStudents(){
       <div class="sid">學號 ${s.sid}</div>
       <div class="trait-badge-row">${(s.traitBadges||[]).slice(-5).map(b=>`<span title="${b.label}">${b.emoji}</span>`).join('')}</div>
       <div class="badge-row">${(s.badges||[]).slice(-3).map(b=>`<span class="badge">${b}</span>`).join('')}</div>
-      ${(s.repairTasks||[]).filter(t=>!t.done).length>0?`<div class="repair-indicator">🔧 有修復任務待完成</div>`:''}
+      ${(s.repairTasks||[]).filter(t=>!t.done).length>0?`<div class="repair-indicator" onclick="openRepairTasksModal(${s.id})" style="cursor:pointer;" title="點擊查看並標記完成">🔧 有修復任務待完成</div>`:''}
       <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
       <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
@@ -5004,6 +5015,26 @@ function confirmSubStar(){
 }
 
 // 完成修復任務
+function openRepairTasksModal(studentId){
+  const s = students.find(x=>x.id===studentId);
+  if(!s) return;
+  document.getElementById('repairTasksModalName').textContent = s.name;
+  const list = document.getElementById('repairTasksModalList');
+  const pending = (s.repairTasks||[]).map((t,i)=>({...t, idx:i})).filter(t=>!t.done);
+  if(pending.length===0){
+    list.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:20px;">🎉 目前沒有待完成的修復任務</div>`;
+  } else {
+    list.innerHTML = pending.map(t=>`
+      <div style="background:#fff7ed;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-weight:800;font-size:.9rem;color:#9a3412;">🔧 ${t.task}</div>
+          <div style="font-size:.74rem;color:#94a3b8;margin-top:2px;">${t.date}指派，完成後可退回 ${t.deductedStars||1} 顆星</div>
+        </div>
+        <button class="btn btn-success" style="font-size:.78rem;padding:6px 12px;flex-shrink:0;" onclick="completeRepair(${studentId},${t.idx}); openRepairTasksModal(${studentId});">✅ 標記完成</button>
+      </div>`).join('');
+  }
+  openModal('repairTasksModal');
+}
 function completeRepair(studentId, taskIdx){
   const s=students.find(x=>x.id===studentId);
   if(!s||!s.repairTasks[taskIdx]) return;
