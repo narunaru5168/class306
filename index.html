@@ -4819,19 +4819,16 @@ function renderRoleGrid(){
   });
 }
 function addClassRole(){
-  const label = prompt('新增角色名稱？（例如：音樂獵人）');
+  const label = prompt('新增角色名稱？（例如：音樂獵人）\n\n之後可以再點卡片上的 ✏️ 補上 emoji 跟描述');
   if(!label || !label.trim()) return;
-  const emoji = prompt('這個角色的 emoji？（可直接貼一個表情符號）', '🎵');
-  if(emoji===null) return;
-  const desc = prompt('角色描述？（一句話說明這個角色的特質）', '');
   classRoles.push({
     id: 'custom_' + generateId(),
-    emoji: emoji.trim() || '🌟',
+    emoji: '🌟',
     label: label.trim(),
-    desc: (desc||'').trim() || '（尚未填寫描述）'
+    desc: '（尚未填寫描述）'
   });
   save(); renderRoleGrid();
-  toast(`👑 已新增角色：${label.trim()}`);
+  toast(`👑 已新增角色：${label.trim()}，可以點 ✏️ 補上 emoji 跟描述`);
 }
 function removeClassRole(roleId){
   const r=classRoles.find(x=>x.id===roleId);
@@ -6481,18 +6478,16 @@ function renderOfficers(){
   }).join('');
 }
 function addOfficerPosition(){
-  const title = prompt('新增幹部職稱？（例如：圖書股長）');
+  const title = prompt('新增幹部職稱？（例如：圖書股長）\n\n之後可以再點職掌內容補上詳細說明');
   if(!title || !title.trim()) return;
-  const dutiesRaw = prompt('職掌內容？（每一項用換行分開，例如：\n協助老師整理圖書\n登記借閱紀錄）', '');
-  const duties = (dutiesRaw||'').split('\n').map(d=>d.trim()).filter(Boolean);
   officerPositions.push({
     id: 'custom_' + generateId(),
     title: title.trim(),
-    duties: duties.length ? duties : ['（尚未填寫職掌）'],
+    duties: ['（尚未填寫職掌）'],
     suggestTraits: [], suggestRoles: []
   });
   save(); renderOfficers();
-  toast(`🎗️ 已新增職位：${title.trim()}`);
+  toast(`🎗️ 已新增職位：${title.trim()}，可以點職掌內容補上說明`);
 }
 function renameOfficerPosition(posId){
   const pos = officerPositions.find(p=>p.id===posId);
