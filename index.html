@@ -603,6 +603,15 @@
     border: 1px solid #86efac;
   }
 
+  /* 任務追蹤：桌面固定 4 欄，螢幕變窄時自動改回彈性欄數 */
+  .correction-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: start; }
+  @media (max-width: 900px) {
+    .correction-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  }
+  @media (max-width: 460px) {
+    .correction-grid { grid-template-columns: 1fr; }
+  }
+
   /* Drive Modal */
   #driveModal .modal { max-width: 560px; max-height: 80vh; overflow-y: auto; }
   .drive-modal-section { margin-bottom: 18px; }
@@ -1425,7 +1434,7 @@
   </div>
 
   <div style="font-size:.85rem;color:#94a3b8;margin-bottom:16px;">點座號切換「已完成／未完成」，可以同時開好幾份追蹤表，也不限訂正用途——閱讀任務、學習闖關、作業檢核都可以用</div>
-  <div id="correctionTrackerList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;align-items:start;"></div>
+  <div id="correctionTrackerList" class="correction-grid"></div>
   <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.85rem;padding:10px 18px;margin-top:8px;" onclick="addCorrectionTracker()">＋ 新增追蹤表</button>
 </div>
 
