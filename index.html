@@ -694,7 +694,8 @@
 <div class="modal-overlay" id="roleModal">
   <div class="modal" style="max-width:460px;">
     <h3>👑 設定班級角色：<span id="roleModalName"></span></h3>
-    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">角色讓每個孩子都有正式的班級身份，把能量導向正面出口。點卡片上的 ✏️ 可以自訂名稱與描述。</p>
+    <p style="font-size:.83rem;color:#64748b;margin-bottom:4px;">角色讓每個孩子都有正式的班級身份，把能量導向正面出口。點卡片上的 ✏️ 可以自訂名稱與描述，點 ✕ 可以刪除。</p>
+    <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.78rem;padding:6px 12px;margin-bottom:10px;" onclick="addClassRole()">＋ 新增角色</button>
     <div class="pick-grid" id="roleGrid"></div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="saveRole()">✅ 確認角色</button>
@@ -4807,14 +4808,40 @@ function renderRoleGrid(){
     const d=document.createElement('div');
     d.className='pick-card'+(selectedRole===r.id?' chosen':'');
     d.style.position='relative';
-    d.innerHTML=`<button type="button" style="position:absolute;top:4px;right:4px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;" title="編輯這個角色">✏️</button><div class="p-icon">${r.emoji}</div><div class="p-name">${r.label}</div><div class="p-desc">${r.desc}</div>`;
-    d.querySelector('button').onclick=(e)=>{ e.stopPropagation(); editClassRole(r.id); };
+    d.innerHTML=`<button type="button" class="role-edit-btn" style="position:absolute;top:4px;right:26px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;" title="編輯這個角色">✏️</button><button type="button" class="role-del-btn" style="position:absolute;top:4px;right:4px;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;color:#dc2626;" title="刪除這個角色">✕</button><div class="p-icon">${r.emoji}</div><div class="p-name">${r.label}</div><div class="p-desc">${r.desc}</div>`;
+    d.querySelector('.role-edit-btn').onclick=(e)=>{ e.stopPropagation(); editClassRole(r.id); };
+    d.querySelector('.role-del-btn').onclick=(e)=>{ e.stopPropagation(); removeClassRole(r.id); };
     d.addEventListener('click', (e)=>{
       if(e.target.tagName==='BUTTON') return;
       selectedRole=r.id; grid.querySelectorAll('.pick-card').forEach(c=>c.classList.remove('chosen')); d.classList.add('chosen');
     });
     grid.appendChild(d);
   });
+}
+function addClassRole(){
+  const label = prompt('新增角色名稱？（例如：音樂獵人）');
+  if(!label || !label.trim()) return;
+  const emoji = prompt('這個角色的 emoji？（可直接貼一個表情符號）', '🎵');
+  if(emoji===null) return;
+  const desc = prompt('角色描述？（一句話說明這個角色的特質）', '');
+  classRoles.push({
+    id: 'custom_' + generateId(),
+    emoji: emoji.trim() || '🌟',
+    label: label.trim(),
+    desc: (desc||'').trim() || '（尚未填寫描述）'
+  });
+  save(); renderRoleGrid();
+  toast(`👑 已新增角色：${label.trim()}`);
+}
+function removeClassRole(roleId){
+  const r=classRoles.find(x=>x.id===roleId);
+  if(!r) return;
+  if(!confirm(`確定要刪除「${r.label}」這個角色嗎？目前有這個角色的學生，角色欄位會變成空白`)) return;
+  classRoles = classRoles.filter(x=>x.id!==roleId);
+  students.forEach(s=>{ if(s.role===roleId) s.role=''; });
+  if(selectedRole===roleId) selectedRole='';
+  save(); renderRoleGrid(); renderStudents();
+  toast(`🗑 已刪除「${r.label}」`);
 }
 function editClassRole(roleId){
   const r=classRoles.find(x=>x.id===roleId);
@@ -4832,7 +4859,7 @@ function editClassRole(roleId){
   toast(`✏️ 角色已更新為「${r.emoji} ${r.label}」`);
 }
 function resetClassRoles(){
-  if(!confirm('確定要把全部班級角色還原成預設值嗎？自訂的名稱、描述都會被覆蓋')) return;
+  if(!confirm('確定要把全部班級角色還原成預設值嗎？自訂新增、修改的角色都會被覆蓋')) return;
   classRoles = CLASS_ROLES_DEFAULT.map(r=>({...r}));
   save(); renderRoleGrid(); renderStudents();
   toast('↺ 已還原預設角色');
