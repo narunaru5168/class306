@@ -57,12 +57,16 @@
     flex-direction: column;
     gap: 6px;
   }
-  .topbar nav .nav-row {
+  .topbar .nav-row {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
   }
-  .topbar nav button {
+  .topbar .nav-row-full {
+    flex-basis: 100%;
+    width: 100%;
+  }
+  .topbar .nav-row button {
     background: rgba(255,255,255,0.18);
     border: none;
     border-radius: 50px;
@@ -76,7 +80,7 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .topbar nav button:hover, .topbar nav button.active {
+  .topbar .nav-row button:hover, .topbar .nav-row button.active {
     background: rgba(255,255,255,0.35);
     transform: translateY(-1px);
   }
@@ -354,17 +358,17 @@
 
   @media (max-width: 600px) {
     .topbar { padding: 0 10px; height: auto; min-height: 56px; flex-wrap: wrap; }
-    .topbar nav button { padding: 6px 10px; font-size: .74rem; }
+    .topbar .nav-row button { padding: 6px 10px; font-size: .74rem; }
     .topbar .logo { font-size: 1rem; flex-shrink: 0; }
     .topbar nav {
       flex: 1 1 100%;
       padding-bottom: 6px;
     }
-    .topbar nav .nav-row { justify-content: flex-start; gap: 4px; }
+    .topbar .nav-row { justify-content: flex-start; gap: 4px; }
   }
   @media (max-width: 420px) {
-    .topbar nav button { padding: 5px 6px; font-size: .62rem; }
-    .topbar nav .nav-row { gap: 3px; }
+    .topbar .nav-row button { padding: 5px 6px; font-size: .62rem; }
+    .topbar .nav-row { gap: 3px; }
   }
 
   /* ── GRADE SHEET TABLE ── */
@@ -846,8 +850,8 @@
   </div>
   <nav>
     <div class="nav-row" id="navRow1"></div>
-    <div class="nav-row" id="navRow2"></div>
-</nav>
+  </nav>
+  <div class="nav-row nav-row-full" id="navRow2"></div>
 </header>
 
 <!-- ─────────────── DATA RESTORE MODAL（緊急救援用）─────────────── -->
@@ -4262,7 +4266,7 @@ function resetNavSettings(){
 function showPage(name) {
   currentPageName = name;
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.topbar nav button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.topbar .nav-row button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   event && event.target.classList.add('active');
   if(name==='rank') renderLeaderboard();
