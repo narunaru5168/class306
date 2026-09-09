@@ -5370,7 +5370,7 @@ function renderCorrectionTrackers(){
     const boxes = sorted.map(s=>{
       const done = doneSeats.includes(s.seatNo);
       return `<button type="button" onclick="toggleCorrectionSeat(${t.id},'${s.seatNo}')" title="${s.name}"
-        style="width:44px;height:44px;border-radius:10px;font-weight:800;font-size:.95rem;cursor:pointer;
+        style="aspect-ratio:1;width:100%;border-radius:8px;font-weight:800;font-size:.78rem;cursor:pointer;
         border:2px solid ${done?'#7c3aed':'#c4b5fd'};
         background:${done?'#7c3aed':'#ede9fe'};color:${done?'#fff':'#6d28d9'};">${s.seatNo||'?'}</button>`;
     }).join('');
@@ -5385,7 +5385,7 @@ function renderCorrectionTrackers(){
           style="width:100%;border:1.5px dashed #d8b4fe;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#6d28d9;margin-bottom:14px;background:#faf5ff;"
           onchange="updateCorrectionDesc(${t.id}, this.value)">
         <div style="font-size:.85rem;font-weight:800;color:#7c3aed;margin-bottom:10px;">已完成 ${doneCount} / ${total} 位</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-bottom:14px;">${boxes}</div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:14px;">${boxes}</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div style="background:#f0fdf4;border-radius:10px;padding:10px 12px;">
             <div style="font-size:.78rem;font-weight:800;color:#16a34a;margin-bottom:4px;">✅ 已完成（${doneStudents.length} 位）</div>
