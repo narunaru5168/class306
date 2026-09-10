@@ -763,6 +763,29 @@
   </div>
 </div>
 
+<!-- ── 行為觀察紀錄 Modal ── -->
+<div class="modal-overlay" id="behaviorLogModal">
+  <div class="modal" style="max-width:460px;">
+    <h3>🔍 行為觀察紀錄：<span id="behaviorLogModalName"></span></h3>
+    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:10px;">老師私人紀錄，學生看不到。點一下常見情境快速記錄，或在下方自己輸入，方便之後回頭看有沒有規律。</div>
+    <div id="behaviorLogQuickList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>其他情況（自己輸入）</label>
+      <input type="text" id="behaviorLogCustom" placeholder="例如：下課跟同學追逐奔跑">
+    </div>
+    <div class="modal-btns" style="margin-bottom:14px;">
+      <button class="btn btn-success" onclick="confirmCustomBehaviorLog()">送出</button>
+    </div>
+    <div style="border-top:1px solid #e2e8f0;padding-top:10px;">
+      <div style="font-size:.8rem;font-weight:800;color:#555;margin-bottom:8px;">📋 歷史紀錄</div>
+      <div id="behaviorLogHistory" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('behaviorLogModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 特別認可 Modal ── -->
 <div class="modal-overlay" id="recognitionModal">
   <div class="modal" style="max-width:420px;">
@@ -1027,11 +1050,11 @@
     </div>
     <div class="stat-chip">
       <div class="val" id="statStars">0</div>
-      <div class="lbl">⭐ 今日總星星</div>
+      <div class="lbl">⭐ 全班總星星</div>
     </div>
     <div class="stat-chip">
       <div class="val" id="statKing">-</div>
-      <div class="lbl">👑 今日之星</div>
+      <div class="lbl">👑 目前之星</div>
     </div>
     <div class="stat-chip">
       <div class="val" id="statMissions">0</div>
@@ -4057,6 +4080,7 @@ const AVATARS_GIRL = ['🌸','🦋','🌺','🌈','🦩','🐝','🌙','⭐','�
 
 // ─── 儲存（Firebase 優先，失敗就用 localStorage）───
 let cloudSyncHadIssue = false;
+let rosterWasAutoSeeded = false; // 這次載入時，學生名單是空的、用預設名單頂替顯示（沒有存回雲端）
 async function saveField(path, value, localKey){
   let ok = false;
   if (useCloud && db) {
@@ -4509,6 +4533,7 @@ function renderStudents(){
         <button class="ebtn ebtn-note"  title="${s.note && s.note.trim() ? '已有備忘紀錄，點擊查看' : '備忘'}" style="position:relative;" onclick="toggleNote(${s.id})">📝${s.note && s.note.trim() ? '<span style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#ef4444;border-radius:50%;border:1.5px solid #fff;"></span>' : ''}</button>
         <button class="ebtn ebtn-star"  title="認可" onclick="openRecognitionModal(${s.id})">🌟</button>
         <button class="ebtn" style="background:#e0f2fe;color:#0369a1;" title="成長圖" onclick="openGrowthChart(${s.id})">📈</button>
+        <button class="ebtn" style="background:#fef2f2;color:#dc2626;position:relative;" title="${(s.behaviorLog&&s.behaviorLog.length>0) ? '已有觀察紀錄，點擊查看' : '行為觀察紀錄'}" onclick="openBehaviorLogModal(${s.id})">🔍${(s.behaviorLog&&s.behaviorLog.length>0) ? '<span style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#dc2626;border-radius:50%;border:1.5px solid #fff;"></span>' : ''}</button>
       </div>
       <div class="student-note" id="note-${s.id}" style="display:none;">
         <textarea placeholder="老師私人備忘（學生看不到）" onblur="saveNote(${s.id},this.value)">${s.note||''}</textarea>
@@ -5043,6 +5068,64 @@ function completeRepair(studentId, taskIdx){
   save(); renderStudents(); updateStats();
   toast(`✅ ${s.name} 完成修復任務，星星賺回來了！`);
   confetti();
+}
+
+// 🔍 行為觀察紀錄（老師私人用，學生看不到，用來追蹤有沒有規律，不計分不扣星）
+const BEHAVIOR_LOG_QUICK_OPTIONS = [
+  '教室內快跑、追逐',
+  '和同學打鬧',
+  '上課一直講話、分心',
+  '情緒比較浮躁、坐不住',
+  '需要多次提醒才配合',
+];
+let behaviorLogTarget = null;
+function openBehaviorLogModal(studentId){
+  const s = students.find(x=>x.id===studentId);
+  if(!s) return;
+  behaviorLogTarget = studentId;
+  document.getElementById('behaviorLogModalName').textContent = s.name;
+  document.getElementById('behaviorLogCustom').value = '';
+  const quickWrap = document.getElementById('behaviorLogQuickList');
+  quickWrap.innerHTML = BEHAVIOR_LOG_QUICK_OPTIONS.map(o=>
+    `<button type="button" class="btn" style="background:#fef2f2;color:#dc2626;font-size:.8rem;padding:8px 12px;text-align:left;" onclick="quickAddBehaviorLog('${o.replace(/'/g,"\\'")}')">✓ ${o}</button>`
+  ).join('');
+  renderBehaviorLogHistory(s);
+  openModal('behaviorLogModal');
+}
+function renderBehaviorLogHistory(s){
+  const wrap = document.getElementById('behaviorLogHistory');
+  const entries = s.behaviorLog || [];
+  if(entries.length===0){
+    wrap.innerHTML = `<div style="font-size:.78rem;color:#94a3b8;">目前還沒有紀錄</div>`;
+    return;
+  }
+  wrap.innerHTML = [...entries].reverse().map((e,revIdx)=>{
+    const realIdx = entries.length - 1 - revIdx;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed #f1f5f9;">
+      <div style="font-size:.78rem;color:#555;"><span style="color:#94a3b8;">${e.date}</span>　${e.note}</div>
+      <span onclick="removeBehaviorLog(${s.id},${realIdx})" style="cursor:pointer;color:#cbd5e1;font-size:.8rem;flex-shrink:0;">✕</span>
+    </div>`;
+  }).join('');
+}
+function quickAddBehaviorLog(text){
+  const s = students.find(x=>x.id===behaviorLogTarget);
+  if(!s) return;
+  s.behaviorLog = s.behaviorLog || [];
+  s.behaviorLog.push({date:new Date().toLocaleDateString('zh-TW'), note:text});
+  save(); renderStudents(); renderBehaviorLogHistory(s);
+  toast('🔍 已記錄一筆觀察');
+}
+function confirmCustomBehaviorLog(){
+  const text = document.getElementById('behaviorLogCustom').value.trim();
+  if(!text){ toast('⚠️ 請輸入內容'); return; }
+  quickAddBehaviorLog(text);
+  document.getElementById('behaviorLogCustom').value = '';
+}
+function removeBehaviorLog(studentId, idx){
+  const s = students.find(x=>x.id===studentId);
+  if(!s || !s.behaviorLog || !s.behaviorLog[idx]) return;
+  s.behaviorLog.splice(idx, 1);
+  save(); renderStudents(); renderBehaviorLogHistory(s);
 }
 
 // ④ 成長追蹤
@@ -6725,7 +6808,7 @@ function spinWheel(){
   if(!sid){toast('⚠️ 請先選擇學生！');return;}
   const stu=students.find(x=>x.id==sid);
   if(!stu || chancesLeft(stu)<=0){
-    toast(`⚠️ ${stu?stu.name:'該生'}目前沒有可用的抽選機會，還差 ${5-(stu?(stu.chanceProgress||0):0)} 顆星`);
+    toast(`⚠️ ${stu?stu.name:'該生'}目前沒有可用的抽選機會，還差 ${CHANCE_THRESHOLD-(stu?(stu.chanceProgress||0):0)} 顆星`);
     return;
   }
   stu.spinChances -= 1;
@@ -6870,7 +6953,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(dartsLeft===3){
       const stu=students.find(x=>x.id==sid);
       if(!stu || chancesLeft(stu)<=0){
-        toast(`⚠️ ${stu?stu.name:'該生'}目前沒有可用的抽選機會，還差 ${5-(stu?(stu.chanceProgress||0):0)} 顆星`);
+        toast(`⚠️ ${stu?stu.name:'該生'}目前沒有可用的抽選機會，還差 ${CHANCE_THRESHOLD-(stu?(stu.chanceProgress||0):0)} 顆星`);
         return;
       }
       stu.spinChances -= 1;
@@ -7352,9 +7435,10 @@ async function initApp() {
   // 初次使用：預載三年六班名冊
   // ⚠️ 重要：只有在「這次雲端資料真的有正常讀到」的情況下才做這件事。
   // 如果剛才讀取資料的過程中有偵測到連線不穩（cloudSyncHadIssue），
-  // 絕對不能自動把「空名單」存回雲端 —— 那很可能只是暫時讀取失敗，
-  // 硬存回去等於把老師原本正確的星星資料整個覆蓋掉、清空歸零。
-  if ((!students || students.length === 0) && !cloudSyncHadIssue) {
+  // 絕對不能自動把「空名單」存回雲端 —— 就算讀取過程完全沒有報錯，雲端資料庫本身還是有可能
+  // 短暫回傳「看起來是空的」結果（這是正常的連線特性，不代表資料真的不見）。
+  // 所以這裡只在畫面上用預設名單顯示，永遠不主動存回雲端，避免把老師原本正確的資料整個覆蓋掉。
+  if (!students || students.length === 0) {
     const avatarsBoy  = ['🦁','🐯','🦊','🐻','🐼','🐸','🦄','🐲'];
     const avatarsGirl = ['🌸','🦋','🌺','🌈','🦩','🐝','🌙','⭐'];
     let boyIdx = 0, girlIdx = 0;
@@ -7391,13 +7475,13 @@ async function initApp() {
       const avatar = isBoy ? avatarsBoy[boyIdx++ % avatarsBoy.length] : avatarsGirl[girlIdx++ % avatarsGirl.length];
       students.push({ id: generateId(), sid:r.sid, seatNo:r.no, name:r.name, gender:r.gender, avatar, stars:0, badges:[], log:[] });
     });
-    try { await save(); } catch(e) {}
-  } else if ((!students || students.length === 0) && cloudSyncHadIssue) {
-    console.warn('偵測到雲端連線不穩，且學生名單目前是空的 —— 為了安全，這次不會自動存回一份空白名單，避免覆蓋掉原本的資料。請重新整理頁面再試一次。');
+    rosterWasAutoSeeded = true;
+    console.warn('學生名單目前是空的，畫面先用預設名單顯示，但不會自動存回雲端，避免覆蓋掉原本的資料。請重新整理頁面確認。');
   }
 
   // 初次使用：預載九種範例任務（刻意用「工作」取代「幹部」，弱化位階感，每項一樣重要）
-  if ((!dutyRoles || dutyRoles.length === 0) && !cloudSyncHadIssue) {
+  // 同樣不自動存回雲端，只在畫面上顯示預設清單
+  if (!dutyRoles || dutyRoles.length === 0) {
     dutyRoles = [
       { id: generateId(), name: '🚶 排路隊長', dutyIndex: 0 },
       { id: generateId(), name: '🧹 擦黑板小天使', dutyIndex: 0 },
@@ -7409,7 +7493,6 @@ async function initApp() {
       { id: generateId(), name: '📋 收發簿本小幫手', dutyIndex: 0 },
       { id: generateId(), name: '🪑 桌椅排列檢查員', dutyIndex: 0 },
     ];
-    try { await save(); } catch(e) {}
   }
 
   // 恢復已儲存的 Apps Script 網址和成績表格
@@ -7450,6 +7533,16 @@ async function initApp() {
     setTimeout(()=>{
       toast('⚠️ 雲端連線不太穩定，畫面可能不是最新資料，建議重新整理頁面再確認一次');
     }, 600);
+  }
+
+  // 名單被自動用預設值頂替顯示時，用不會自動消失的明顯警示條提醒老師，避免誤以為資料真的不見了就開始操作
+  if (rosterWasAutoSeeded) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#dc2626;color:#fff;padding:12px 16px;text-align:center;font-weight:800;font-size:.9rem;box-shadow:0 2px 10px rgba(0,0,0,.2);';
+    banner.innerHTML = `⚠️ 目前顯示的是空白預設名單，不是你原本的資料！請先重新整理頁面確認，如果重整後還是空白，再用左上角 🛟 資料還原 &nbsp;
+      <button onclick="location.reload()" style="background:#fff;color:#dc2626;border:none;border-radius:20px;padding:4px 14px;font-weight:800;cursor:pointer;margin-left:8px;">🔄 立即重新整理</button>
+      <button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:20px;padding:4px 14px;font-weight:800;cursor:pointer;margin-left:6px;">我知道了</button>`;
+    document.body.prepend(banner);
   }
 }
 initApp().catch(() => {
