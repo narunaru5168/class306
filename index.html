@@ -5509,6 +5509,8 @@ function renderCorrectionTrackers(){
     const doneCount = doneSeats.length;
     const doneStudents = sorted.filter(s=>doneSeats.includes(s.seatNo));
     const undoneStudents = sorted.filter(s=>!doneSeats.includes(s.seatNo));
+    const reward = t.rewardStars!=null ? t.rewardStars : 1;
+    const penalty = t.penaltyStars!=null ? t.penaltyStars : 1;
     const boxes = sorted.map(s=>{
       const done = doneSeats.includes(s.seatNo);
       return `<button type="button" onclick="toggleCorrectionSeat(${t.id},'${s.seatNo}')" title="${s.name}"
@@ -5528,7 +5530,7 @@ function renderCorrectionTrackers(){
           onchange="updateCorrectionDesc(${t.id}, this.value)">
         <div style="font-size:.85rem;font-weight:800;color:#7c3aed;margin-bottom:10px;">已完成 ${doneCount} / ${total} 位</div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:14px;">${boxes}</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
           <div style="background:#f0fdf4;border-radius:10px;padding:10px 12px;">
             <div style="font-size:.78rem;font-weight:800;color:#16a34a;margin-bottom:4px;">✅ 已完成（${doneStudents.length} 位）</div>
             <div style="font-size:.8rem;color:#555;line-height:1.6;">${doneStudents.length ? doneStudents.map(s=>s.name).join('、') : '目前還沒有人完成'}</div>
@@ -5537,6 +5539,15 @@ function renderCorrectionTrackers(){
             <div style="font-size:.78rem;font-weight:800;color:#dc2626;margin-bottom:4px;">⭕ 未完成（${undoneStudents.length} 位）</div>
             <div style="font-size:.8rem;color:#555;line-height:1.6;">${undoneStudents.length ? undoneStudents.map(s=>s.name).join('、') : '🎉 全部都完成了！'}</div>
           </div>
+        </div>
+        <div style="border-top:1px dashed #e2e8f0;padding-top:10px;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;font-size:.8rem;color:#555;">
+            <span>完成加</span>
+            <input type="number" min="0" value="${reward}" style="width:50px;padding:4px 6px;" onchange="updateCorrectionStarSetting(${t.id},'rewardStars',this.value)"> <span>顆星／未完成扣</span>
+            <input type="number" min="0" value="${penalty}" style="width:50px;padding:4px 6px;" onchange="updateCorrectionStarSetting(${t.id},'penaltyStars',this.value)"> <span>顆星</span>
+          </div>
+          <button class="btn" style="background:#7c3aed;color:#fff;font-size:.8rem;padding:7px 14px;" onclick="settleCorrectionTracker(${t.id})">🎯 結算加扣星星</button>
+          ${t.settled ? `<span style="font-size:.72rem;color:#94a3b8;margin-left:8px;">✓ 已結算過（${t.settledAt||''}）</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -5548,10 +5559,44 @@ function updateCorrectionDesc(id, desc){
   t.desc = desc;
   save();
 }
+function updateCorrectionStarSetting(id, field, value){
+  const t = correctionTrackers.find(x=>x.id===id);
+  if(!t) return;
+  t[field] = Math.max(0, parseInt(value)||0);
+  save();
+}
+function settleCorrectionTracker(id){
+  const t = correctionTrackers.find(x=>x.id===id);
+  if(!t) return;
+  const sorted = seatSortedStudents();
+  const doneSeats = t.doneSeats||[];
+  const doneStudents = sorted.filter(s=>doneSeats.includes(s.seatNo));
+  const undoneStudents = sorted.filter(s=>!doneSeats.includes(s.seatNo));
+  const reward = t.rewardStars!=null ? t.rewardStars : 1;
+  const penalty = t.penaltyStars!=null ? t.penaltyStars : 1;
+  const warnAgain = t.settled ? '\n\n⚠️ 這份追蹤表已經結算過一次，再結算一次會重複加扣星星！' : '';
+  if(!confirm(`確定要結算「${t.name}」嗎？\n\n✅ 已完成 ${doneStudents.length} 位，每人 +${reward} 顆星\n⭕ 未完成 ${undoneStudents.length} 位，每人 -${penalty} 顆星${warnAgain}`)) return;
+
+  doneStudents.forEach(s=>{
+    if(reward>0) grantStars(s, reward);
+    s.log = s.log||[];
+    s.log.push({id:generateId(), reason:`📝 ${t.name}（已完成）`, amt:reward, date:new Date().toLocaleDateString('zh-TW')});
+  });
+  undoneStudents.forEach(s=>{
+    const actual = Math.min(penalty, s.stars);
+    s.stars = Math.max(0, s.stars - penalty);
+    s.log = s.log||[];
+    s.log.push({id:generateId(), reason:`📝 ${t.name}（未完成）`, amt:-actual, date:new Date().toLocaleDateString('zh-TW')});
+  });
+  t.settled = true;
+  t.settledAt = new Date().toLocaleDateString('zh-TW');
+  save(); renderStudents(); updateStats(); renderCorrectionTrackers();
+  toast(`🎯 已結算「${t.name}」！完成 +${reward}顆星、未完成 -${penalty}顆星`);
+}
 function addCorrectionTracker(){
   const name = prompt('這份追蹤表叫什麼名字？（例如：第3課習寫本、閱讀任務闖關、數學習作P.12…可以是任何用途）');
   if(!name || !name.trim()) return;
-  correctionTrackers.push({id:generateId(), name:name.trim(), doneSeats:[], desc:''});
+  correctionTrackers.push({id:generateId(), name:name.trim(), doneSeats:[], desc:'', rewardStars:1, penaltyStars:1, settled:false});
   save(); renderCorrectionTrackers();
   toast(`📝 已新增追蹤表：${name.trim()}`);
 }
