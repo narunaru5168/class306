@@ -53,16 +53,11 @@
     letter-spacing: 1px;
     display: flex; align-items: center; gap: 8px;
   }
-  .topbar nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
   .topbar .nav-row {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    flex: 1 1 auto;
     min-width: 0;
   }
   .topbar .nav-row-full {
@@ -364,11 +359,12 @@
     .topbar { padding: 0 10px; height: auto; min-height: 56px; flex-wrap: wrap; }
     .topbar .nav-row button { padding: 6px 10px; font-size: .74rem; }
     .topbar .logo { font-size: 1rem; flex-shrink: 0; }
-    .topbar nav {
+    .topbar .nav-row {
       flex: 1 1 100%;
+      justify-content: flex-start;
+      gap: 4px;
       padding-bottom: 6px;
     }
-    .topbar .nav-row { justify-content: flex-start; gap: 4px; }
   }
   @media (max-width: 420px) {
     .topbar .nav-row button { padding: 5px 6px; font-size: .62rem; }
@@ -886,9 +882,7 @@
     <button onclick="openNavSettingsModal()" title="設定選單名稱" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">⚙️</button>
     <button onclick="openRestoreModal()" title="資料還原（緊急救援用）" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🛟</button>
   </div>
-  <nav>
-    <div class="nav-row" id="navRow1"></div>
-  </nav>
+  <div class="nav-row" id="navRow1"></div>
   <div class="nav-row nav-row-full" id="navRow2"></div>
 </header>
 
