@@ -56,15 +56,18 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
   }
   .topbar .nav-row {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    min-width: 0;
   }
   .topbar .nav-row-full {
     flex-basis: 100%;
     width: 100%;
+    min-width: 0;
   }
   .topbar .nav-row button {
     background: rgba(255,255,255,0.18);
@@ -1865,6 +1868,29 @@
   </div>
   <div style="font-size:.85rem;color:#94a3b8;margin-bottom:4px;">115學年度上學期　306班　教學進度總覽表</div>
   <div style="font-size:.82rem;color:#94a3b8;margin-bottom:16px;">導師：盧筱諼老師　｜　國語：翰林版　數學：康軒版　社會：翰林版</div>
+
+  <div class="card" style="margin-bottom:12px;cursor:pointer;background:linear-gradient(135deg,#fce7f3,#fbcfe8);border-left:6px solid #ec4899;"
+       onclick="const p=document.getElementById('planResourceLinks'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-weight:800;font-size:.95rem;">🔗 教科書廠商資源連結（點我展開）</div>
+      <div class="arrow" style="font-size:1.1rem;">▼</div>
+    </div>
+  </div>
+  <div id="planResourceLinks" style="display:none;margin-bottom:16px;">
+    <div class="card" style="padding:14px 16px;margin-bottom:8px;">
+      <div style="font-weight:800;font-size:.88rem;color:#831843;margin-bottom:8px;">📘 翰林（國語、社會）</div>
+      <a href="https://sites.google.com/hanlin.com.tw/m614-1/%E9%A6%96%E9%A0%81" target="_blank" style="display:block;font-size:.84rem;color:#0369a1;text-decoration:underline;line-height:1.8;">115上學期「電子書ISO檔」及「隱藏卷」資源</a>
+    </div>
+    <div class="card" style="padding:14px 16px;margin-bottom:8px;">
+      <div style="font-weight:800;font-size:.88rem;color:#831843;margin-bottom:8px;">📗 康軒（數學）</div>
+      <a href="https://drive.google.com/drive/folders/1by9Osi9tHYUNOH-KvG778fM39cW9m7uw" target="_blank" style="display:block;font-size:.84rem;color:#0369a1;text-decoration:underline;line-height:1.8;">115（一）康軒隱藏卷</a>
+    </div>
+    <div class="card" style="padding:14px 16px;margin-bottom:0;">
+      <div style="font-weight:800;font-size:.88rem;color:#831843;margin-bottom:8px;">📙 南一（綜合）</div>
+      <a href="https://drive.google.com/drive/folders/1IhzlKq5kq5EzyfzX66PSvoDO3OE69GEv?usp=drive_link" target="_blank" style="display:block;font-size:.84rem;color:#0369a1;text-decoration:underline;line-height:1.8;margin-bottom:4px;">電子書 題庫 大補帖</a>
+      <a href="https://drive.google.com/drive/folders/1iXbbvri0tdDQyGhlNdehkwMQMdhfb-9X?usp=drive_link" target="_blank" style="display:block;font-size:.84rem;color:#0369a1;text-decoration:underline;line-height:1.8;">單元卷 段考卷</a>
+    </div>
+  </div>
 
   <div class="card" style="margin-bottom:12px;cursor:pointer;background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-left:6px solid var(--sky);"
        onclick="const p=document.getElementById('planWeeklySchedule'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
@@ -7352,10 +7378,10 @@ function renderMusicList(){
        onmouseout="this.style.background='rgba(255,255,255,.07)'"
        onclick="toast('🎵 已開啟 YouTube！')">
       <div style="width:6px;height:6px;border-radius:50%;background:#5BB8F5;flex-shrink:0;"></div>
-      <span style="flex:1;color:#fff;font-weight:700;font-size:.82rem;">${s.icon} ${s.name}</span>
-      <span style="font-size:.72rem;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 8px;color:#94a3b8;">${s.tag}</span>
+      <span style="flex:1;min-width:0;color:#fff;font-weight:700;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.icon} ${s.name}</span>
+      <span style="font-size:.72rem;background:rgba(255,255,255,.1);border-radius:20px;padding:2px 8px;color:#94a3b8;flex-shrink:0;white-space:nowrap;">${s.tag}</span>
       <span style="font-size:.78rem;background:linear-gradient(135deg,#5BB8F5,#A855F7);
-             color:#fff;border-radius:20px;padding:2px 10px;font-weight:800;flex-shrink:0;">▶ 開啟</span>
+             color:#fff;border-radius:20px;padding:2px 10px;font-weight:800;flex-shrink:0;white-space:nowrap;">▶ 開啟</span>
     </a>`).join('');
 }
 
