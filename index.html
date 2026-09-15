@@ -1338,6 +1338,7 @@
       <canvas id="wheelCanvas" width="260" height="260"></canvas>
       <button class="btn btn-sun" onclick="spinWheel()" id="spinBtn" style="margin-top:12px;">🌀 轉動轉盤！</button>
       <div class="reward-result" id="wheelResult"></div>
+      <button class="btn" id="undoSpinBtn" style="display:none;background:#fee2e2;color:#dc2626;font-size:.8rem;padding:6px 14px;margin-top:8px;" onclick="undoLastWheelSpin()">↩️ 撤銷剛剛這次抽選</button>
       <div style="margin-top:12px;font-size:.78rem;color:#94a3b8;text-align:center;">✨ 轉盤結果由機率決定，鼓勵繼續努力！</div>
     </div>
 
@@ -1351,6 +1352,7 @@
       <div style="margin-top:8px;font-size:.82rem;color:#64748b;font-weight:700;">點擊靶心挑戰！還剩 <span id="dartsLeft">3</span> 支飛鏢</div>
       <button class="btn btn-success" onclick="resetDart()" style="margin-top:8px;">🔄 重新挑戰</button>
       <div class="dart-result" id="dartResult"></div>
+      <button class="btn" id="undoDartBtn" style="display:none;background:#fee2e2;color:#dc2626;font-size:.8rem;padding:6px 14px;margin-top:8px;" onclick="undoLastDartThrow()">↩️ 撤銷剛剛這次挑戰</button>
       <div style="margin-top:10px;font-size:.78rem;color:#94a3b8;text-align:center;">🎯 射飛鏢訓練專注力，得分依落點決定！</div>
     </div>
   </div>
@@ -6868,6 +6870,7 @@ function drawWheel(angle=0){
   ctx.textBaseline='middle';
   ctx.fillText('🌟',cx,cy);
 }
+let lastSpinRecord = null;
 function spinWheel(){
   if(spinning) return;
   const sid=document.getElementById('wheelStudent').value;
@@ -6878,11 +6881,13 @@ function spinWheel(){
     return;
   }
   stu.spinChances -= 1;
+  const spinChanceDeltas = { [stu.id]: -1 }; // 記錄抽選機會的變化，撤銷時要精確加回去
   save(); renderStudents(); populateWheelSelect();
   document.getElementById('wheelStudent').value = sid;
   spinning=true;
   document.getElementById('spinBtn').disabled=true;
   document.getElementById('wheelResult').style.display='none';
+  document.getElementById('undoSpinBtn').style.display='none';
   const extra=Math.PI*2*(8+Math.random()*8);
   const target=wheelAngle+extra;
   const dur=3000; const start=performance.now();
@@ -6908,14 +6913,18 @@ function spinWheel(){
     const res=document.getElementById('wheelResult');
     res.style.display='block';
     res.textContent='🎉 恭喜！'+result.label;
+
+    const starDeltas = {}; // { studentId: 累積變化量 }，撤銷時逐一反向套用
+    function addStarDelta(id, amt){ starDeltas[id] = (starDeltas[id]||0) + amt; }
+
     // if stars reward
     if(result.label.includes('加3顆星')){
       const s=students.find(x=>x.id==sid);
-      if(s){ s.stars+=3; save(); renderStudents(); updateStats(); }
+      if(s){ s.stars+=3; addStarDelta(s.id, 3); save(); renderStudents(); updateStats(); }
     }
     // 特殊獎勵：全班加一顆星
     if(result.label.includes('全班加一顆星')){
-      students.forEach(st=>{ st.stars+=1; });
+      students.forEach(st=>{ st.stars+=1; addStarDelta(st.id, 1); });
       save(); renderStudents(); updateStats();
     }
     // 特殊獎勵：榮譽公告 → 直接跳出認可輸入框，不用再跑去夥伴名冊找人
@@ -6928,14 +6937,38 @@ function spinWheel(){
       const s=students.find(x=>x.id==sid);
       if(s){
         s.spinChances = (s.spinChances||0) + 1;
+        spinChanceDeltas[s.id] = (spinChanceDeltas[s.id]||0) + 1;
         save(); renderStudents(); populateWheelSelect();
         document.getElementById('wheelStudent').value = sid;
       }
     }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
+
+    // 記錄這次抽選的所有影響，方便一鍵撤銷
+    lastSpinRecord = { studentId: sid, studentName: stu.name, resultLabel: result.label, starDeltas, spinChanceDeltas };
+    document.getElementById('undoSpinBtn').style.display = 'inline-block';
   }
   requestAnimationFrame(step);
+}
+function undoLastWheelSpin(){
+  if(!lastSpinRecord){ toast('⚠️ 沒有可以撤銷的抽選紀錄'); return; }
+  if(!confirm(`確定要撤銷「${lastSpinRecord.studentName}」剛剛抽到的「${lastSpinRecord.resultLabel}」嗎？\n\n星星、抽選機會都會恢復成抽選前的狀態。`)) return;
+
+  Object.entries(lastSpinRecord.starDeltas).forEach(([id, delta])=>{
+    const s = students.find(x=>x.id==id);
+    if(s) s.stars = Math.max(0, s.stars - delta);
+  });
+  Object.entries(lastSpinRecord.spinChanceDeltas).forEach(([id, delta])=>{
+    const s = students.find(x=>x.id==id);
+    if(s) s.spinChances = Math.max(0, (s.spinChances||0) - delta);
+  });
+
+  save(); renderStudents(); updateStats(); populateWheelSelect();
+  document.getElementById('wheelResult').style.display = 'none';
+  document.getElementById('undoSpinBtn').style.display = 'none';
+  toast(`↩️ 已撤銷「${lastSpinRecord.studentName}」的這次抽選`);
+  lastSpinRecord = null;
 }
 function populateWheelSelect(){
   const sel=document.getElementById('wheelStudent');
@@ -7009,13 +7042,30 @@ function resetDart(){
   dartsLeft=3; dartThrows=[]; dartScoreTotal=0;
   document.getElementById('dartsLeft').textContent=dartsLeft;
   document.getElementById('dartResult').style.display='none';
+  document.getElementById('undoDartBtn').style.display='none';
   drawDart();
+}
+let lastDartRecord = null;
+function undoLastDartThrow(){
+  if(!lastDartRecord){ toast('⚠️ 沒有可以撤銷的挑戰紀錄'); return; }
+  if(!confirm(`確定要撤銷「${lastDartRecord.studentName}」剛剛射飛鏢的結果嗎？\n\n星星、抽選機會都會恢復成挑戰前的狀態。`)) return;
+  const s = students.find(x=>x.id==lastDartRecord.studentId);
+  if(s){
+    s.stars = Math.max(0, s.stars - lastDartRecord.starsAdded);
+    s.spinChances = Math.max(0, (s.spinChances||0) - lastDartRecord.spinChanceDelta);
+  }
+  save(); renderStudents(); updateStats(); populateDartSelect();
+  document.getElementById('dartResult').style.display = 'none';
+  document.getElementById('undoDartBtn').style.display = 'none';
+  toast(`↩️ 已撤銷「${lastDartRecord.studentName}」的這次飛鏢挑戰`);
+  lastDartRecord = null;
 }
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dartCanvas').addEventListener('click',function(e){
     if(dartsLeft<=0) return;
     const sid=document.getElementById('dartStudent').value;
     if(!sid){toast('⚠️ 請先選擇學生！');return;}
+    let spinChanceDelta = 0;
     if(dartsLeft===3){
       const stu=students.find(x=>x.id==sid);
       if(!stu || chancesLeft(stu)<=0){
@@ -7023,8 +7073,10 @@ document.addEventListener('DOMContentLoaded',()=>{
         return;
       }
       stu.spinChances -= 1;
+      spinChanceDelta = -1;
       save(); renderStudents(); populateDartSelect();
       document.getElementById('dartStudent').value = sid;
+      document.getElementById('undoDartBtn').style.display = 'none';
     }
     const rect=this.getBoundingClientRect();
     const dx=e.clientX-rect.left-130, dy=e.clientY-rect.top-130;
@@ -7051,6 +7103,8 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(s){ s.stars+=starsToAdd; save(); renderStudents(); updateStats(); }
       toast(`🎯 ${s?s.name:''} 射飛鏢得 ${dartScoreTotal} 分！`);
       confetti();
+      lastDartRecord = { studentId: sid, studentName: s?s.name:'', starsAdded: starsToAdd, spinChanceDelta };
+      document.getElementById('undoDartBtn').style.display = 'inline-block';
     }
   });
 });
