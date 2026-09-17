@@ -940,7 +940,7 @@
 
 <!-- MODAL: 加分 -->
 <div class="modal-overlay" id="addStarModal">
-  <div class="modal">
+  <div class="modal" onkeydown="if(event.key==='Enter' && event.target.tagName!=='SELECT'){event.preventDefault();confirmAddStar();}">
     <h3>⭐ 給予星星</h3>
     <div class="form-group" style="margin-bottom:12px;">
       <label>學生：<span id="addStarName"></span></label>
@@ -984,7 +984,7 @@
 
 <!-- ─────────────── BATCH STAR MODAL ─────────────── -->
 <div class="modal-overlay" id="batchStarModal">
-  <div class="modal">
+  <div class="modal" onkeydown="if(event.key==='Enter' && event.target.tagName!=='SELECT'){event.preventDefault();confirmBatchStar();}">
     <h3 id="batchStarTitle">⭐ 批次給予星星</h3>
     <div class="form-group" style="margin-bottom:10px;">
       <label>對象：<span id="batchStarNames" style="font-weight:700;color:#555;font-size:.85rem;"></span></label>
@@ -5895,9 +5895,18 @@ function confirmReadingLog(){
   if(!book){ toast('⚠️ 請輸入書名'); return; }
   const s = students.find(x=>x.id==sid);
   readingLog.push({id:generateId(), studentId:sid, studentName:s?s.name:'', book, mood:readingLogMoodSelected, note, date:new Date().toLocaleDateString('zh-TW')});
-  save(); renderReadingLogList(); renderStudents();
+  if(s){
+    grantStars(s, 3);
+    s.log=s.log||[];
+    s.log.push({id:generateId(), reason:`📚 閱讀打卡（${book}）`, amt:3, date:new Date().toLocaleDateString('zh-TW')});
+    if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
+    if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
+    if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
+    if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
+  }
+  save(); renderReadingLogList(); renderStudents(); updateStats();
   closeModal('readingLogModal');
-  toast(`📚 已記錄 ${s?s.name:''} 的閱讀打卡！`);
+  toast(`📚 已記錄 ${s?s.name:''} 的閱讀打卡！並獲得 3 顆星⭐`);
 }
 function renderReadingLogList(){
   const wrap = document.getElementById('readingLogList');
