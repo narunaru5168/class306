@@ -313,6 +313,7 @@ function resetState(){
   snake = [{x:6,y:5},{x:5,y:5},{x:4,y:5}];
   dir = {x:1,y:0};
   nextDir = {x:1,y:0};
+  tiles = [];
   score = 0;
   roundIdx = 0;
   roundQueue = shuffle(getActiveRounds());
@@ -384,12 +385,12 @@ function tick(){
       spawnTiles();
     } else {
       score = Math.max(0, score - 5);
-      if(snake.length > 3) snake.pop();
       tiles.splice(hitIdx,1);
-      const round = currentRound();
       const pos = randomFreeCell();
       tiles.push({ x: pos.x, y: pos.y, word: tile.word, correct: false });
-      snake.pop();
+      const preLen = snake.length - 1; // 蛇在這次 unshift 之前的長度
+      if(preLen > 3){ snake.pop(); snake.pop(); } // 淨縮短一節
+      else { snake.pop(); } // 維持最短 3 節，不再縮短
     }
     updateStats();
   } else {
