@@ -4125,7 +4125,15 @@ async function saveField(path, value, localKey){
   }
   if (!ok) localStorage.setItem(localKey, typeof value==='string' ? value : JSON.stringify(value));
 }
-async function save() {
+let saveChain = Promise.resolve();
+function save() {
+  // 排隊依序執行，避免像抽轉盤這種「先扣機會、幾秒後才加星星」的情況，
+  // 讓比較舊的那次雲端寫入晚完成、把比較新的星星資料蓋掉。
+  const run = () => doSaveAll().catch(e => console.error('儲存失敗', e));
+  saveChain = saveChain.then(run, run);
+  return saveChain;
+}
+async function doSaveAll() {
   await saveField('class306/students', students, 'cls_students');
   await saveField('class306/grades', grades, 'cls_grades');
   await saveField('class306/classMilestone', classMilestoneClaimed, 'cls_classMilestone');
@@ -7118,6 +7126,32 @@ let appsScriptUrl = localStorage.getItem('cls_appsUrl') || '';
 let gradeSheetData = {};
 let currentGradeSheet = '306國語';
 
+// ─── 依「單元」自動配色（例如 L1、L2 是不同單元，就給不同顏色區塊）───
+const UNIT_COLOR_PALETTE = [
+  {bg:'#e0f2fe', bd:'#38bdf8'}, {bg:'#fce7f3', bd:'#f472b6'},
+  {bg:'#fef9c3', bd:'#eab308'}, {bg:'#dcfce7', bd:'#22c55e'},
+  {bg:'#ede9fe', bd:'#a78bfa'}, {bg:'#ffedd5', bd:'#fb923c'},
+  {bg:'#e0e7ff', bd:'#6366f1'}, {bg:'#fee2e2', bd:'#f87171'},
+  {bg:'#ccfbf1', bd:'#2dd4bf'}, {bg:'#fae8ff', bd:'#e879f9'},
+];
+function extractUnitKey(header){
+  if(!header) return '';
+  const h = String(header).trim();
+  const m = h.match(/^([Ll]\s*\d+)/) || h.match(/(第\s*\d+\s*[課单元組组])/) || h.match(/(單元\s*\d+)/) || h.match(/(Unit\s*\d+)/i);
+  if(m) return m[1].toUpperCase().replace(/\s+/g,'');
+  return h; // 抓不到規律的話，整個標題自成一組
+}
+function hashStr(s){
+  let h=0;
+  for(let i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))|0; }
+  return Math.abs(h);
+}
+function unitColorFor(header){
+  const key = extractUnitKey(header);
+  if(!key) return null;
+  return UNIT_COLOR_PALETTE[hashStr(key) % UNIT_COLOR_PALETTE.length];
+}
+
 function saveAppsUrl(){
   const v = document.getElementById('appsScriptUrl').value.trim();
   if(!v){ toast('⚠️ 請貼上 Apps Script 網址'); return; }
@@ -7242,7 +7276,12 @@ function renderGradeSheet(){
   data.headers.forEach((h,ci)=>{
     const th=document.createElement('th');
     th.textContent=h||'';
-    if(ci>=3){ th.title='雙擊可改名'; th.ondblclick=()=>editHeader(th,ci,h); }
+    if(ci>=3){
+      th.title='雙擊可改名';
+      th.ondblclick=()=>editHeader(th,ci,h);
+      const uc=unitColorFor(h);
+      if(uc){ th.style.background=uc.bg; th.style.borderBottom='3px solid '+uc.bd; }
+    }
     htr.appendChild(th);
   });
   thead.appendChild(htr); table.appendChild(thead);
@@ -7258,7 +7297,11 @@ function renderGradeSheet(){
         const n=parseFloat(display);
         td.classList.add(n>=90?'score-good':n>=70?'score-ok':'score-bad');
       }
-      if(ci>=3){ td.style.cursor='pointer'; td.title='點擊編輯'; td.onclick=()=>editCell(td,ri,ci,display); }
+      if(ci>=3){
+        td.style.cursor='pointer'; td.title='點擊編輯'; td.onclick=()=>editCell(td,ri,ci,display);
+        const uc=unitColorFor(h);
+        if(uc){ td.style.background=uc.bg; }
+      }
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
