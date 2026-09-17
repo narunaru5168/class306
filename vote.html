@@ -255,6 +255,17 @@
       <button class="btn btn-sun btn-sm" id="revealBtn" hidden>🔓 公布目前票數</button>
     </div>
 
+    <div class="card" id="voterGateCard">
+      <div class="section-title" style="font-size:1.1rem;">👤 投票前，先選自己的名字</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <select id="voterSelect" style="flex:1;min-width:180px;border:2px solid #e2e8f0;border-radius:12px;padding:10px 14px;font-family:'Nunito',sans-serif;font-size:.95rem;background:#fff;outline:none;">
+          <option value="">— 請選擇你的名字 —</option>
+        </select>
+        <span class="status-pill num" id="voterProgress">0 / 0 人已投票</span>
+      </div>
+      <div id="voterGateNote" style="font-size:.78rem;color:#94a3b8;margin-top:8px;"></div>
+    </div>
+
     <div class="card" id="hiddenTallyCard" hidden>
       <div class="reveal-locked">
         <div class="big">🤫</div>
@@ -407,6 +418,7 @@
       showLive: document.getElementById("showLiveCheck").checked,
       revealed: false,
       startedAt: Date.now(),
+      votedBy: [],
       options: options.map(function(o, i){
         return { id: "o" + i + "_" + Date.now(), label: o.label, link: o.link, disabled: !!o.disabled, votes: 0 };
       })
@@ -439,10 +451,13 @@
     document.getElementById("totalVotesCount").textContent = total;
     document.getElementById("totalOptCount").textContent = votable.length + " / " + activeBox.options.length;
 
+    renderVoterGate();
+
     var canSeeResults = activeBox.showLive || activeBox.revealed;
     revealBtn.hidden = activeBox.showLive || activeBox.revealed;
     hiddenTallyCard.hidden = canSeeResults;
     optGrid.hidden = !canSeeResults;
+    voterGateCard.hidden = !canSeeResults;
 
     if (!canSeeResults) return;
 
@@ -516,13 +531,69 @@
 
   function castVote(id, evt){
     if (writeLock) return;
+    var voterKey = voterSelect.value;
+    if (!voterKey) { toastMsg("⚠️ 請先選自己的名字，再投票"); return; }
+    var votedBy = activeBox.votedBy || [];
+    if (votedBy.indexOf(voterKey) !== -1) { toastMsg("你已經投過票囉！"); renderVoterGate(); return; }
     writeLock = true;
     var opt = activeBox.options.filter(function(o){ return o.id === id; })[0];
     if (!opt || opt.disabled) { writeLock = false; return; }
     opt.votes = (opt.votes || 0) + 1;
+    activeBox.votedBy = votedBy.concat([voterKey]);
     starBurst(evt);
+    voterSelect.value = "";
     saveBox(activeBox).then(function(){ writeLock = false; });
     renderActive();
+  }
+
+  // ───────────────────── VOTER GATE (一人一票) ─────────────────────
+  var voterGateCard = document.getElementById("voterGateCard");
+  var voterSelect = document.getElementById("voterSelect");
+  var voterProgress = document.getElementById("voterProgress");
+  var voterGateNote = document.getElementById("voterGateNote");
+  var roster = [];
+
+  function studentKey(s){ return s.sid ? String(s.sid) : ((s.seatNo||"") + "_" + (s.name||"")); }
+
+  function loadRoster(){
+    function apply(list){
+      roster = Array.isArray(list) ? list : (list ? Object.keys(list).map(function(k){ return list[k]; }) : []);
+      renderVoterGate();
+    }
+    if (useCloud && db) {
+      db.ref("class306/students").on("value", function(snap){
+        apply(snap && snap.exists && snap.exists() ? snap.val() : null);
+      }, function(){
+        try { apply(JSON.parse(localStorage.getItem("cls_students") || "[]")); }
+        catch(e){ apply([]); }
+      });
+    } else {
+      try { apply(JSON.parse(localStorage.getItem("cls_students") || "[]")); }
+      catch(e){ apply([]); }
+    }
+  }
+
+  function renderVoterGate(){
+    if (!activeBox || !voterSelect) return;
+    var voted = activeBox.votedBy || [];
+    voterProgress.textContent = voted.length + " / " + roster.length + " 人已投票";
+    var remaining = roster.filter(function(s){ return voted.indexOf(studentKey(s)) === -1; });
+    var currentVal = voterSelect.value;
+    remaining = remaining.slice().sort(function(a,b){ return (parseInt(a.seatNo)||99) - (parseInt(b.seatNo)||99); });
+    voterSelect.innerHTML = '<option value="">— 請選擇你的名字 —</option>' +
+      remaining.map(function(s){
+        var k = studentKey(s);
+        return '<option value="' + escapeHtml(k) + '">' + escapeHtml((s.seatNo ? s.seatNo + "號 " : "") + s.name) + '</option>';
+      }).join("");
+    if (remaining.some(function(s){ return studentKey(s) === currentVal; })) voterSelect.value = currentVal;
+
+    if (roster.length && remaining.length === 0) {
+      voterGateNote.textContent = "🎉 全班都投票完了！";
+      voterSelect.disabled = true;
+    } else {
+      voterGateNote.textContent = roster.length ? "" : "⚠️ 找不到班級名冊，暫時無法核對身份";
+      voterSelect.disabled = false;
+    }
   }
 
   function starBurst(evt){
@@ -631,6 +702,7 @@
     }
     addOptRow("", "");
     addOptRow("", "");
+    loadRoster();
   }
 
   init();
