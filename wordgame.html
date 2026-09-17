@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐍 語詞貪食蛇｜成長獵人訓練所</title>
+<title>🎮 語詞練習遊戲｜成長獵人訓練所</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -61,6 +61,9 @@
   .btn-success { background: linear-gradient(135deg, var(--grass), var(--mint)); color: #fff; }
   .btn-flat { background:#eef2f7; color:var(--dark); }
 
+  .mode-tab { background:#eef2f7; color:var(--dark); }
+  .mode-tab.active { background: linear-gradient(135deg, var(--sky), var(--purple)); color:#fff; }
+
   select {
     font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:700; color:var(--dark);
     border:2px solid #e2e8f0; border-radius:12px; padding:10px 14px; background:#fff; outline:none;
@@ -114,25 +117,77 @@
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .swatch { width:14px; height:14px; border-radius:4px; display:inline-block; }
 
+  .quiz-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:6px; }
+  .quiz-option {
+    font-family:'Baloo 2',cursive; font-size:1.25rem; font-weight:800; color:var(--dark);
+    padding: 26px 14px; border-radius:18px; border:3px solid #e2e8f0; background:#fff;
+    cursor:pointer; transition: transform .12s, box-shadow .12s, background .15s, border-color .15s;
+  }
+  .quiz-option:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+  .quiz-option:active { transform: scale(.97); }
+  .quiz-option.correct { background:#dcfce7; border-color:#22c55e; color:#16a34a; }
+  .quiz-option.wrong { background:#fee2e2; border-color:#ef4444; color:#dc2626; }
+  @media (max-width: 520px) {
+    .quiz-grid { grid-template-columns: 1fr; }
+  }
+
+  .memory-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:12px; margin-top:10px; }
+  .memory-card {
+    aspect-ratio: 1/1; border-radius:14px; background: linear-gradient(135deg, var(--sky), var(--purple));
+    display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,.15);
+    font-family:'Baloo 2',cursive; font-weight:800; font-size:.82rem; color:#fff; text-align:center; padding:8px;
+    transition: transform .15s; user-select:none; line-height:1.3;
+  }
+  .memory-card:active { transform: scale(.95); }
+  .memory-card.flipped { background:#fff; color:var(--dark); border:2px solid var(--purple); }
+  .memory-card.matched { background:#dcfce7; color:#16a34a; border:2px solid #22c55e; cursor:default; }
+
   @media (max-width: 700px) {
     .question-banner { font-size: .95rem; }
   }
+
+  .toast {
+    position: fixed; top: 18px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: linear-gradient(135deg, var(--sun), var(--peach)); color: var(--dark);
+    font-family:'Baloo 2',cursive; font-weight:800; font-size:1.1rem;
+    padding: 12px 26px; border-radius: 50px; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 999;
+    max-width: 90vw; text-align:center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <div class="logo">🐍 語詞貪食蛇</div>
+  <div class="logo">🎮 語詞練習遊戲</div>
   <a class="home-link" href="index.html">⬅ 回冒險基地</a>
 </header>
+
+<div class="toast" id="toast"></div>
 
 <div class="wrap">
 
   <div class="card">
     <div class="section-title">📖 選擇練習範圍</div>
-    <div class="lead">內容取自翰林三上國語第一課到第十二課的習作練習題，蛇吃到正確答案就會變長加分，吃錯會扣分變短，適合上課時投影出來讓學生輪流上台操作。</div>
+    <div class="lead">內容取自翰林三上國語第一課到第十二課的習作練習題，可以切換下面三種遊戲模式輪流玩，比較不會玩膩。</div>
     <div class="controls-row">
       <select id="lessonSelect"></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">🎮 選擇遊戲模式</div>
+    <div class="controls-row">
+      <button class="btn mode-tab active" data-mode="snake" onclick="switchMode('snake')">🐍 貪食蛇</button>
+      <button class="btn mode-tab" data-mode="quiz" onclick="switchMode('quiz')">🎯 選擇搶答（觸控友善）</button>
+      <button class="btn mode-tab" data-mode="memory" onclick="switchMode('memory')">🃏 記憶配對（觸控友善）</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ 貪食蛇模式 ══════════════ -->
+  <div class="card mode-panel" id="modeSnake">
+    <div class="controls-row" style="margin-bottom:14px;">
       <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;">
         ⏱️ 每格秒數
         <input type="number" id="speedSeconds" min="0.2" max="5" step="0.1" value="1.5"
@@ -142,10 +197,10 @@
       <button class="btn btn-primary" onclick="startGame()">▶️ 開始遊戲</button>
       <span class="stat-pill">⭐ 分數：<span id="scoreVal">0</span></span>
       <span class="stat-pill">📝 第 <span id="roundVal">0</span> 題</span>
+      <span class="stat-pill">🔥 連續：<span id="comboVal">0</span></span>
+      <span class="stat-pill">🏆 最高分：<span id="bestVal">0</span></span>
     </div>
-  </div>
 
-  <div class="card">
     <div class="question-banner" id="questionBanner">選好課次後按「開始遊戲」，題目會出現在這裡 👀</div>
 
     <div class="game-shell">
@@ -175,11 +230,45 @@
     </div>
   </div>
 
+  <!-- ══════════════ 選擇搶答模式 ══════════════ -->
+  <div class="card mode-panel hidden" id="modeQuiz">
+    <div class="lead">看句子挑出正確的字詞，答對越多連續題分數越高。適合用電子白板讓學生直接上台點選。</div>
+    <div class="controls-row" style="margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="startQuiz()">▶️ 開始搶答</button>
+      <button class="btn btn-flat" onclick="stopQuiz()">🏁 結束本回合</button>
+      <span class="stat-pill">⭐ 分數：<span id="quizScoreVal">0</span></span>
+      <span class="stat-pill">🔥 連續：<span id="quizComboVal">0</span></span>
+      <span class="stat-pill">🏆 最高分：<span id="quizBestVal">0</span></span>
+    </div>
+    <div class="question-banner" id="quizBanner">選好課次後按「開始搶答」🎯</div>
+    <div class="quiz-grid" id="quizGrid"></div>
+  </div>
+
+  <!-- ══════════════ 記憶配對模式 ══════════════ -->
+  <div class="card mode-panel hidden" id="modeMemory">
+    <div class="lead">翻牌找出「字詞」和「句子」的配對，翻的次數越少越厲害，全螢幕觸控操作最適合這個模式。</div>
+    <div class="controls-row" style="margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;">
+        🧩 配對組數
+        <select id="memoryPairCount">
+          <option value="4">4 組（較快）</option>
+          <option value="6" selected>6 組</option>
+          <option value="8">8 組（較難）</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" onclick="startMemory()">▶️ 開始配對</button>
+      <span class="stat-pill">👣 翻牌次數：<span id="memoryTriesVal">0</span></span>
+      <span class="stat-pill">🏆 最少次數紀錄：<span id="memoryBestVal">—</span></span>
+    </div>
+    <div class="memory-grid" id="memoryGrid"></div>
+    <div id="memoryWinBanner" class="hidden" style="text-align:center;margin-top:14px;font-family:'Baloo 2',cursive;font-size:1.25rem;color:var(--dark);"></div>
+  </div>
+
 </div>
 
 <script>
 // ─────────────────────────────────────────────────────────
-// 翰林三上國語 第一課～第六課 練習題資料（取材自習作）
+// 翰林三上國語 第一課～第十二課 練習題資料（取材自習作）
 // ─────────────────────────────────────────────────────────
 const LESSONS = {
   l1: {
@@ -341,6 +430,8 @@ const COMBOS = {
   'all_1_12': { label: '🌟🌟 綜合複習（第一課～第十二課）', keys: ['l1','l2','l3','l4','l5','l6','l7','l8','l9','l10','l11','l12'] },
 };
 
+const COMBO_MILESTONES = [3,5,8,12,20,30];
+
 function buildLessonSelect(){
   const sel = document.getElementById('lessonSelect');
   let html = '';
@@ -387,6 +478,36 @@ function buildOptions(round){
   return shuffle(opts);
 }
 
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.remove('show'), 1500);
+}
+
+// ─────────────────────────────────────────────────────────
+// 模式切換
+// ─────────────────────────────────────────────────────────
+function switchMode(mode){
+  ['snake','quiz','memory'].forEach(m=>{
+    const cap = m[0].toUpperCase() + m.slice(1);
+    document.getElementById('mode'+cap).classList.toggle('hidden', m!==mode);
+    document.querySelector(`.mode-tab[data-mode="${m}"]`).classList.toggle('active', m===mode);
+  });
+  if(mode !== 'snake'){ running = false; clearInterval(timer); }
+  if(mode !== 'quiz'){ quizRunning = false; }
+}
+
+document.getElementById('lessonSelect').addEventListener('change', ()=>{
+  loadBest(); loadQuizBest(); loadMemoryBest();
+});
+document.getElementById('memoryPairCount').addEventListener('change', loadMemoryBest);
+
 // ─────────────────────────────────────────────────────────
 // 貪食蛇遊戲引擎
 // ─────────────────────────────────────────────────────────
@@ -394,7 +515,17 @@ const COLS = 14, ROWS = 10, CELL = 56;
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 
-let snake, dir, nextDir, tiles, roundQueue, roundIdx, score, timer, running;
+let snake, dir, nextDir, tiles, roundQueue, roundIdx, score, timer, running, combo;
+
+function highScoreKey(){
+  return 'wordgame_best_' + document.getElementById('lessonSelect').value;
+}
+function loadBest(){
+  let best = 0;
+  try { best = parseInt(localStorage.getItem(highScoreKey())||'0') || 0; } catch(e){}
+  document.getElementById('bestVal').textContent = best;
+  return best;
+}
 
 function resetState(){
   snake = [{x:6,y:5},{x:5,y:5},{x:4,y:5}];
@@ -402,14 +533,17 @@ function resetState(){
   nextDir = {x:1,y:0};
   tiles = [];
   score = 0;
+  combo = 0;
   roundIdx = 0;
   roundQueue = shuffle(getActiveRounds());
   updateStats();
+  loadBest();
 }
 
 function updateStats(){
   document.getElementById('scoreVal').textContent = score;
   document.getElementById('roundVal').textContent = Math.min(roundIdx+1, roundQueue.length);
+  document.getElementById('comboVal').textContent = combo;
 }
 
 function currentRound(){
@@ -438,10 +572,6 @@ function spawnTiles(){
     escapeHtml(round.sentence).replace('【＿＿】', '<span class="blank">？</span>');
 }
 
-function escapeHtml(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
 function setDir(x,y){
   if(!running) return;
   if(dir.x === -x && dir.y === -y) return; // 不能直接反向撞自己
@@ -467,10 +597,21 @@ function tick(){
   if(hitIdx >= 0){
     const tile = tiles[hitIdx];
     if(tile.correct){
-      score += 10;
+      combo++;
+      const bonus = 10 + Math.min(combo-1, 6) * 3; // 連續答對分數越高
+      score += bonus;
       roundIdx++;
+      if(COMBO_MILESTONES.includes(combo)){
+        showToast(`🔥 連續答對 ${combo} 題！太厲害了！`);
+      }
+      if(roundQueue.length && roundIdx % roundQueue.length === 0){
+        roundQueue = shuffle(roundQueue);
+        showToast('🎉 這個範圍全部題目都出過一輪了！重新洗牌繼續挑戰～');
+      }
       spawnTiles();
     } else {
+      if(combo >= 3) showToast('💦 連續紀錄中斷了，再接再厲！');
+      combo = 0;
       score = Math.max(0, score - 5);
       tiles.splice(hitIdx,1);
       const pos = randomFreeCell();
@@ -490,11 +631,9 @@ function tick(){
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // grid dots
   ctx.fillStyle = 'rgba(255,255,255,0.04)';
   for(let x=0;x<COLS;x++) for(let y=0;y<ROWS;y++) ctx.fillRect(x*CELL+CELL/2-1, y*CELL+CELL/2-1, 2,2);
 
-  // tiles
   tiles.forEach(t=>{
     const px = t.x*CELL, py = t.y*CELL;
     ctx.fillStyle = '#fffef7';
@@ -511,7 +650,6 @@ function draw(){
     ctx.fillText(t.word, px+CELL/2, py+CELL/2+1);
   });
 
-  // snake
   snake.forEach((s,i)=>{
     const px = s.x*CELL, py = s.y*CELL;
     ctx.fillStyle = i===0 ? '#4DD9AC' : '#6BCB77';
@@ -540,7 +678,20 @@ function roundRect(x,y,w,h,r){
 function gameOver(){
   running = false;
   clearInterval(timer);
-  document.getElementById('finalScoreText').textContent = `最終分數：${score}（答對 ${roundIdx} 題）`;
+  let bestLine = '';
+  try {
+    const key = highScoreKey();
+    const best = parseInt(localStorage.getItem(key)||'0') || 0;
+    if(score > best){
+      localStorage.setItem(key, String(score));
+      bestLine = '🎉 打破紀錄！新的最高分！';
+      loadBest();
+    } else {
+      bestLine = `目前最高紀錄：${best} 分`;
+    }
+  } catch(e){}
+  document.getElementById('finalScoreText').innerHTML =
+    `最終分數：${score}（答對 ${roundIdx} 題）<br>${bestLine}`;
   document.getElementById('gameOverOverlay').classList.remove('hidden');
 }
 
@@ -550,7 +701,6 @@ function getSpeedMs(){
   return Math.round(v * 1000);
 }
 
-// 遊戲進行中調整秒數也能立刻套用，不用重新開始
 document.getElementById('speedSeconds').addEventListener('change', ()=>{
   if(running){
     clearInterval(timer);
@@ -568,6 +718,211 @@ function startGame(){
   clearInterval(timer);
   timer = setInterval(tick, getSpeedMs());
 }
+
+// ─────────────────────────────────────────────────────────
+// 選擇搶答模式（觸控友善）
+// ─────────────────────────────────────────────────────────
+let quizQueue, quizIdx, quizScore, quizCombo, quizRunning, quizCurrentRound, quizLocked;
+
+function quizHighKey(){
+  return 'wordgame_quizbest_' + document.getElementById('lessonSelect').value;
+}
+function loadQuizBest(){
+  let best = 0;
+  try { best = parseInt(localStorage.getItem(quizHighKey())||'0') || 0; } catch(e){}
+  document.getElementById('quizBestVal').textContent = best;
+  return best;
+}
+function updateQuizStats(){
+  document.getElementById('quizScoreVal').textContent = quizScore;
+  document.getElementById('quizComboVal').textContent = quizCombo;
+}
+
+function startQuiz(){
+  quizQueue = shuffle(getActiveRounds());
+  if(!quizQueue.length){ showToast('⚠️ 這個範圍還沒有題目'); return; }
+  quizIdx = 0; quizScore = 0; quizCombo = 0; quizRunning = true; quizLocked = false;
+  updateQuizStats();
+  loadQuizBest();
+  nextQuizQuestion();
+}
+
+function nextQuizQuestion(){
+  if(!quizRunning) return;
+  quizLocked = false;
+  quizCurrentRound = quizQueue[quizIdx % quizQueue.length];
+  const opts = buildOptions(quizCurrentRound);
+  document.getElementById('quizBanner').innerHTML =
+    escapeHtml(quizCurrentRound.sentence).replace('【＿＿】', '<span class="blank">？</span>');
+  const grid = document.getElementById('quizGrid');
+  grid.innerHTML = '';
+  opts.forEach(w=>{
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = w;
+    btn.onclick = ()=> pickQuiz(btn, w);
+    grid.appendChild(btn);
+  });
+}
+
+function pickQuiz(btn, word){
+  if(quizLocked || !quizRunning) return;
+  quizLocked = true;
+  const correct = word === quizCurrentRound.answer;
+  document.querySelectorAll('#quizGrid .quiz-option').forEach(b=>{
+    if(b.textContent === quizCurrentRound.answer) b.classList.add('correct');
+  });
+  if(correct){
+    quizCombo++;
+    const bonus = 10 + Math.min(quizCombo-1, 6) * 3;
+    quizScore += bonus;
+    if(COMBO_MILESTONES.includes(quizCombo)) showToast(`🔥 連續答對 ${quizCombo} 題！`);
+  } else {
+    btn.classList.add('wrong');
+    if(quizCombo >= 3) showToast('💦 連續紀錄中斷了，再接再厲！');
+    quizCombo = 0;
+    quizScore = Math.max(0, quizScore - 5);
+  }
+  quizIdx++;
+  if(quizQueue.length && quizIdx % quizQueue.length === 0){
+    quizQueue = shuffle(quizQueue);
+    showToast('🎉 這個範圍全部題目都出過一輪了！重新洗牌繼續挑戰～');
+  }
+  updateQuizStats();
+  setTimeout(nextQuizQuestion, 900);
+}
+
+function stopQuiz(){
+  if(!quizRunning) return;
+  quizRunning = false;
+  try {
+    const key = quizHighKey();
+    const best = parseInt(localStorage.getItem(key)||'0') || 0;
+    if(quizScore > best){
+      localStorage.setItem(key, String(quizScore));
+      showToast('🎉 打破選擇搶答最高紀錄！');
+      loadQuizBest();
+    }
+  } catch(e){}
+  document.getElementById('quizBanner').textContent = `本回合結束！分數：${quizScore}`;
+  document.getElementById('quizGrid').innerHTML = '';
+}
+
+// ─────────────────────────────────────────────────────────
+// 記憶配對模式（觸控友善）
+// ─────────────────────────────────────────────────────────
+let memoryCards, memoryFlipped, memoryMatchedCount, memoryTries, memoryBusy;
+
+function memoryHighKey(){
+  return 'wordgame_memorybest_' + document.getElementById('lessonSelect').value + '_' + document.getElementById('memoryPairCount').value;
+}
+function loadMemoryBest(){
+  let best = null;
+  try {
+    const v = localStorage.getItem(memoryHighKey());
+    best = v !== null ? parseInt(v) : null;
+  } catch(e){}
+  document.getElementById('memoryBestVal').textContent = (best===null || isNaN(best)) ? '—' : best;
+  return best;
+}
+
+function startMemory(){
+  const pairCount = parseInt(document.getElementById('memoryPairCount').value) || 6;
+  let rounds = shuffle(getActiveRounds());
+  if(!rounds.length){ showToast('⚠️ 這個範圍還沒有題目'); return; }
+  if(rounds.length < pairCount){
+    showToast(`⚠️ 這個範圍只有 ${rounds.length} 題，配對組數自動調整`);
+  }
+  rounds = rounds.slice(0, Math.min(pairCount, rounds.length));
+
+  let cards = [];
+  rounds.forEach((r,i)=>{
+    cards.push({ pairId:i, label:r.answer });
+    cards.push({ pairId:i, label:r.sentence.replace('【＿＿】','？') });
+  });
+  cards = shuffle(cards).map((c,idx)=>({ ...c, id:idx, flipped:false, matched:false }));
+
+  memoryCards = cards;
+  memoryFlipped = [];
+  memoryMatchedCount = 0;
+  memoryTries = 0;
+  memoryBusy = false;
+  document.getElementById('memoryWinBanner').classList.add('hidden');
+  document.getElementById('memoryTriesVal').textContent = '0';
+  loadMemoryBest();
+  renderMemory();
+}
+
+function renderMemory(){
+  const grid = document.getElementById('memoryGrid');
+  grid.innerHTML = '';
+  memoryCards.forEach(c=>{
+    const div = document.createElement('div');
+    let cls = 'memory-card';
+    let content = '🐾';
+    if(c.matched){ cls += ' matched'; content = c.label; }
+    else if(c.flipped){ cls += ' flipped'; content = c.label; }
+    div.className = cls;
+    div.textContent = content;
+    if(!c.matched) div.onclick = ()=> flipMemory(c.id);
+    grid.appendChild(div);
+  });
+}
+
+function flipMemory(id){
+  if(memoryBusy) return;
+  const card = memoryCards.find(c=>c.id===id);
+  if(!card || card.flipped || card.matched) return;
+  card.flipped = true;
+  memoryFlipped.push(card);
+  renderMemory();
+  if(memoryFlipped.length === 2){
+    memoryBusy = true;
+    memoryTries++;
+    document.getElementById('memoryTriesVal').textContent = memoryTries;
+    const [a,b] = memoryFlipped;
+    if(a.pairId === b.pairId){
+      a.matched = true; b.matched = true;
+      memoryMatchedCount++;
+      memoryFlipped = [];
+      memoryBusy = false;
+      renderMemory();
+      if(memoryMatchedCount === memoryCards.length/2){
+        finishMemory();
+      }
+    } else {
+      setTimeout(()=>{
+        a.flipped = false; b.flipped = false;
+        memoryFlipped = [];
+        memoryBusy = false;
+        renderMemory();
+      }, 900);
+    }
+  }
+}
+
+function finishMemory(){
+  let msg = `🎉 全部配對完成！總共翻了 ${memoryTries} 次！`;
+  try {
+    const key = memoryHighKey();
+    const bestRaw = localStorage.getItem(key);
+    const best = bestRaw !== null ? parseInt(bestRaw) : null;
+    if(best === null || memoryTries < best){
+      localStorage.setItem(key, String(memoryTries));
+      msg += ' 打破最少次數紀錄！🏆';
+      loadMemoryBest();
+    }
+  } catch(e){}
+  const banner = document.getElementById('memoryWinBanner');
+  banner.textContent = msg;
+  banner.classList.remove('hidden');
+  showToast('🎉 記憶配對完成！');
+}
+
+// ─────────────────────────────────────────────────────────
+// 初始化
+// ─────────────────────────────────────────────────────────
+loadBest(); loadQuizBest(); loadMemoryBest();
 </script>
 </body>
 </html>
