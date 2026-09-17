@@ -5764,7 +5764,11 @@ function renderWeeklyTodoList(){
   wrap.innerHTML = WEEKDAYS.map(day=>{
     const items = weeklyTodos[day]||[];
     const itemsHtml = items.map(it=>`
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-left:4px solid ${PRIORITY_COLORS[it.priority]||'#cbd5e1'};background:#f8fafc;border-radius:8px;margin-bottom:8px;">
+      <div class="weekly-todo-row" draggable="true" data-day="${day}" data-id="${it.id}"
+        ondragstart="onTodoDragStart(event)" ondragover="onTodoDragOver(event)"
+        ondrop="onTodoDrop(event)" ondragend="onTodoDragEnd(event)"
+        style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-left:4px solid ${PRIORITY_COLORS[it.priority]||'#cbd5e1'};background:#f8fafc;border-radius:8px;margin-bottom:8px;cursor:grab;">
+        <span style="flex-shrink:0;color:#cbd5e1;font-size:1.05rem;margin-top:3px;user-select:none;" title="按住拖曳排序">⠿</span>
         <input type="checkbox" ${it.done?'checked':''} onchange="toggleWeeklyTodo('${day}',${it.id})" style="margin-top:4px;width:18px;height:18px;flex-shrink:0;">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:700;font-size:.9rem;${it.done?'text-decoration:line-through;color:#94a3b8;':''}">${it.text}</div>
@@ -5785,6 +5789,37 @@ function renderWeeklyTodoList(){
       <button class="btn" style="background:#eff6ff;color:#3b82f6;font-size:.8rem;padding:6px 14px;margin-top:6px;" onclick="addWeeklyTodo('${day}')">＋ 新增待辦事項</button>
     </div>`;
   }).join('');
+}
+// ─── 拖曳排序 ───
+let dragTodo = null;
+function onTodoDragStart(e){
+  const row = e.currentTarget;
+  dragTodo = { day: row.dataset.day, id: parseInt(row.dataset.id,10) };
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', row.dataset.id); } catch(err){}
+  setTimeout(()=>{ row.style.opacity = '0.4'; }, 0);
+}
+function onTodoDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function onTodoDrop(e){
+  e.preventDefault();
+  const row = e.currentTarget;
+  const day = row.dataset.day;
+  const targetId = parseInt(row.dataset.id,10);
+  if(!dragTodo || dragTodo.day!==day || dragTodo.id===targetId) return;
+  const list = weeklyTodos[day]||[];
+  const fromIdx = list.findIndex(x=>x.id===dragTodo.id);
+  const toIdx = list.findIndex(x=>x.id===targetId);
+  if(fromIdx===-1||toIdx===-1) return;
+  const [moved] = list.splice(fromIdx,1);
+  list.splice(toIdx,0,moved);
+  save(); renderWeeklyTodoList();
+}
+function onTodoDragEnd(e){
+  e.currentTarget.style.opacity = '1';
+  dragTodo = null;
 }
 function addWeeklyTodo(day){
   const text = prompt(`${day}要新增什麼待辦事項？`);
