@@ -1160,6 +1160,7 @@ const RUNNER_CHAR_X = 110;
 const RUNNER_TILE_GAP = 260;
 const RUNNER_TILE_W = 96, RUNNER_TILE_H = 64;
 const RUNNER_SPEED = 0.16;          // px per ms
+const RUNNER_REVEAL_DELAY = 450;    // ms：跳過錯誤答案後，延遲多久才標紅提醒
 
 const runnerCanvas = document.getElementById('runnerBoard');
 const runnerCtx = runnerCanvas.getContext('2d');
@@ -1222,7 +1223,9 @@ function runnerSpawnRound(){
     word,
     correct: word === round.answer,
     resolved: false,
-    flash: 0, flashGood: true
+    revealColor: null,   // null=中性、'green'=正確、'red'=錯誤
+    revealPending: false,
+    revealTimer: 0
   }));
 }
 
@@ -1243,8 +1246,16 @@ function runnerResolveTile(tile){
   } else {
     success = !grounded; // 錯的答案要跳過去才算成功
   }
-  tile.flash = 1;
-  tile.flashGood = success;
+  // 顏色顯示規則：
+  // - 用跑的通過（沒跳）：不管對錯，立刻顯示顏色（對＝綠、錯＝紅）
+  // - 跳過正確答案（沒接到）：不特別標色，維持中性，避免「跳過去=有色」的錯覺
+  // - 跳過錯誤答案（成功躲開）：跳過當下先維持中性，之後才變紅色提醒這是錯的
+  if(grounded){
+    tile.revealColor = tile.correct ? 'green' : 'red';
+  } else if(!tile.correct){
+    tile.revealPending = true;
+    tile.revealTimer = 0;
+  }
   if(success){
     if(tile.correct){
       runnerCombo++;
@@ -1299,18 +1310,21 @@ function runnerDraw(){
   c.lineWidth = 3;
   c.beginPath(); c.moveTo(0, RUNNER_GROUND_Y+30); c.lineTo(W, RUNNER_GROUND_Y+30); c.stroke();
 
-  // 字詞方塊：還沒經過是中性色；一旦經過就依「這個字詞本身是不是正確答案」永久上色
-  // （綠色＝正確答案、紅色＝錯誤答案），跟玩家當下有沒有跳對無關，這樣顏色才不會混淆。
+  // 字詞方塊顏色規則：
+  // - 用跑的通過：立刻依「對不對」永久上色（綠＝對、紅＝錯）
+  // - 跳過正確答案（沒接到）：維持中性，不特別標色
+  // - 跳過錯誤答案（成功躲開）：跳過當下先中性，一小段時間後才變紅色提醒
   runnerTiles.forEach(t=>{
     const px = t.x - RUNNER_TILE_W/2, py = RUNNER_GROUND_Y - RUNNER_TILE_H + 30;
-    c.fillStyle = t.resolved ? (t.correct ? '#dcfce7' : '#fee2e2') : '#fffef7';
+    const isGreen = t.revealColor === 'green', isRed = t.revealColor === 'red';
+    c.fillStyle = isGreen ? '#dcfce7' : isRed ? '#fee2e2' : '#fffef7';
     roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
     c.fill();
-    c.strokeStyle = t.resolved ? (t.correct ? '#22c55e' : '#ef4444') : '#A855F7';
+    c.strokeStyle = isGreen ? '#22c55e' : isRed ? '#ef4444' : '#A855F7';
     c.lineWidth = 3;
     roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
     c.stroke();
-    c.fillStyle = t.resolved ? (t.correct ? '#16a34a' : '#dc2626') : '#1E2A4A';
+    c.fillStyle = isGreen ? '#16a34a' : isRed ? '#dc2626' : '#1E2A4A';
     c.font = t.word.length >= 3 ? 'bold 16px Nunito, sans-serif' : 'bold 20px Nunito, sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(t.word, t.x, py + RUNNER_TILE_H/2 + 1);
@@ -1349,6 +1363,13 @@ function runnerLoop(ts){
     t.x -= RUNNER_SPEED * dt;
     if(!t.resolved && t.x <= RUNNER_CHAR_X + RUNNER_TILE_W/2){
       runnerResolveTile(t);
+    }
+    if(t.revealPending){
+      t.revealTimer += dt;
+      if(t.revealTimer >= RUNNER_REVEAL_DELAY){
+        t.revealColor = 'red';
+        t.revealPending = false;
+      }
     }
   });
 
