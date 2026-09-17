@@ -6880,6 +6880,7 @@ const wheelSegments=[
   {label:'⭐ 加3顆星',      color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
   {label:'🌟 感謝有你，全班加一顆星', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
   {label:'🙏 找一位老師說一句感謝的話（非導師）', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
+  {label:'🎮 語詞遊戲挑戰', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類：90秒內拿到目標分數，額外得到星星
 ];
 let wheelAngle=0, spinning=false;
 function drawWheel(angle=0){
@@ -6999,6 +7000,14 @@ function spinWheel(){
         document.getElementById('wheelStudent').value = sid;
       }
     }
+    // 特殊獎勵：語詞遊戲挑戰 → 顯示前往挑戰的按鈕，90秒內拿到目標分數才會額外加星星
+    if(result.label.includes('語詞遊戲挑戰')){
+      const s=students.find(x=>x.id==sid);
+      if(s){
+        res.innerHTML = `🎉 恭喜！${result.label}<br>
+          <button class="btn btn-sun" style="margin-top:10px;" onclick="startGameChallenge('${s.id}')">🎮 前往挑戰（90秒內拿到 50 分）</button>`;
+      }
+    }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
 
@@ -7033,6 +7042,35 @@ function populateWheelSelect(){
   const sorted=[...students].sort((a,b)=>parseInt(a.seatNo||99)-parseInt(b.seatNo||99));
   sorted.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.seatNo ? s.seatNo+'號 ' : ''}${s.name}`; sel.appendChild(o); });
   drawWheel(wheelAngle);
+}
+
+// 轉盤抽到「語詞遊戲挑戰」時，開新分頁讓學生直接去玩，網址帶入學生 id 和名字，
+// 這樣語詞練習遊戲頁面才知道是誰在挑戰、挑戰成功要把星星記在誰身上。
+function startGameChallenge(sid){
+  const s = students.find(x=>x.id==sid);
+  if(!s) return;
+  const url = `wordgame.html?challenge=1&sid=${encodeURIComponent(s.id)}&name=${encodeURIComponent(s.name)}`;
+  window.open(url, '_blank');
+}
+
+// 監聽語詞遊戲挑戰成功後送回來的星星獎勵（獨立的資料路徑，用 push/remove，
+// 不會跟主要的 class306/students 整包覆寫互相衝突，就算老師這邊剛好也在存檔也不會被蓋掉）
+function setupPendingStarAwardsListener(){
+  if(!(useCloud && db)) return;
+  try {
+    db.ref('class306/pendingStarAwards').on('child_added', (snap)=>{
+      const award = snap.val();
+      if(!award){ snap.ref.remove().catch(()=>{}); return; }
+      const s = students.find(x=>x.id==award.studentId);
+      if(s){
+        grantStars(s, award.amount||0);
+        save(); renderStudents(); updateStats(); populateWheelSelect();
+        toast(`🎮 ${s.name} 完成了語詞遊戲挑戰，獲得 ${award.amount||0} 顆星！`);
+        confetti();
+      }
+      snap.ref.remove().catch(()=>{});
+    });
+  } catch(e){ console.warn('語詞遊戲星星獎勵監聽設定失敗', e); }
 }
 
 // ─── DART ───
@@ -7736,6 +7774,9 @@ async function initApp() {
     drawDart();
     renderMissions();
   } catch(e) { console.warn(e); }
+
+  // 開始監聽語詞遊戲挑戰送回來的星星獎勵（要放在 students 名單載入完成之後才設定）
+  try { setupPendingStarAwardsListener(); } catch(e) { console.warn(e); }
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';

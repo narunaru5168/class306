@@ -179,6 +179,15 @@
     max-width: 90vw; text-align:center;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .challenge-banner {
+    max-width: 900px; margin: 0 auto 16px; padding: 14px 20px; border-radius: 18px;
+    background: linear-gradient(135deg, #FFD93D, #FF9F5A); color: #1E2A4A;
+    font-family:'Baloo 2',cursive; font-weight:700; font-size:1rem; text-align:center;
+    box-shadow: var(--shadow); border: 3px solid #fff;
+  }
+  .challenge-banner.challenge-success { background: linear-gradient(135deg, #6BCB77, #22c55e); color:#fff; }
+  .challenge-banner.challenge-timeup { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color:#1E2A4A; }
 </style>
 </head>
 <body>
@@ -189,6 +198,8 @@
 </header>
 
 <div class="toast" id="toast"></div>
+
+<div class="challenge-banner hidden" id="challengeBanner"></div>
 
 <div class="wrap">
 
@@ -334,7 +345,24 @@
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script>
+// ─── FIREBASE（跟主網站共用同一個班級資料庫，只用來在「星星挑戰」成功時回傳星星獎勵）───
+try {
+  if (typeof firebase !== "undefined") {
+    firebase.initializeApp({
+      apiKey: "AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+      authDomain: "tpedusso-257723.firebaseapp.com",
+      databaseURL: "https://tpedusso-257723-default-rtdb.firebaseio.com",
+      projectId: "tpedusso-257723",
+      storageBucket: "tpedusso-257723.appspot.com",
+      messagingSenderId: "105193372361",
+      appId: "1:105193372361:web:5591b76255cb86cf566b18"
+    });
+  }
+} catch(e) { console.warn('Firebase 初始化失敗，星星挑戰的獎勵將無法送出', e); }
+
 // ─────────────────────────────────────────────────────────
 // 翰林三上國語 第一課～第十二課 練習題資料（取材自習作）
 // ─────────────────────────────────────────────────────────
@@ -719,6 +747,109 @@ function showToast(msg){
   t.classList.add('show');
   clearTimeout(t._timer);
   t._timer = setTimeout(()=> t.classList.remove('show'), 1500);
+}
+
+// ─────────────────────────────────────────────────────────
+// 幸運轉盤「星星挑戰」：從轉盤抽到語詞遊戲的學生，
+// 透過網址帶入 ?challenge=1&sid=...&name=...，
+// 90 秒內任選一種模式拿到目標分數，就能把星星獎勵送回主網頁。
+// ─────────────────────────────────────────────────────────
+const CHALLENGE_TARGET_SCORE = 50;   // 90 秒內要拿到的目標分數
+const CHALLENGE_TIME_LIMIT = 90;     // 秒
+const CHALLENGE_STAR_REWARD = 3;     // 達標可得的星星數
+let challengeMode = false, challengeStudentId = '', challengeStudentName = '';
+let challengeTimeLeft = 0, challengeCompleted = false;
+let challengeTimer = null, challengeProgressTimer = null;
+
+function getCurrentChallengeScore(){
+  const activeBtn = document.querySelector('.mode-tab.active');
+  const mode = activeBtn ? activeBtn.dataset.mode : '';
+  switch(mode){
+    case 'snake':  return typeof score === 'number' ? score : 0;
+    case 'quiz':   return typeof quizScore === 'number' ? quizScore : 0;
+    case 'runner': return typeof runnerScore === 'number' ? runnerScore : 0;
+    case 'memory': return (typeof memoryMatchedCount === 'number' ? memoryMatchedCount : 0) * 10;
+    default: return 0;
+  }
+}
+
+function updateChallengeBannerText(){
+  const el = document.getElementById('challengeBanner');
+  if(!el || challengeCompleted) return;
+  const cur = getCurrentChallengeScore();
+  el.innerHTML = `⏱️ <b>${escapeHtml(challengeStudentName)}</b> 的星星挑戰：任選一種模式，90 秒內拿到 <b>${CHALLENGE_TARGET_SCORE}</b> 分就能得到 <b>${CHALLENGE_STAR_REWARD}</b> 顆星！<br>目前分數：<b>${cur}</b> 分　剩餘時間：<b>${challengeTimeLeft}</b> 秒`;
+}
+
+function showChallengeBanner(){
+  const el = document.getElementById('challengeBanner');
+  if(!el) return;
+  el.classList.remove('hidden');
+  startChallengeTimers();
+}
+
+function startChallengeTimers(){
+  challengeTimeLeft = CHALLENGE_TIME_LIMIT;
+  challengeCompleted = false;
+  updateChallengeBannerText();
+  clearInterval(challengeTimer);
+  clearInterval(challengeProgressTimer);
+  challengeTimer = setInterval(()=>{
+    if(challengeCompleted){ clearInterval(challengeTimer); return; }
+    challengeTimeLeft--;
+    updateChallengeBannerText();
+    if(challengeTimeLeft <= 0){
+      clearInterval(challengeTimer);
+      clearInterval(challengeProgressTimer);
+      if(!challengeCompleted) challengeTimeUp();
+    }
+  }, 1000);
+  // 額外用較快的頻率檢查分數，這樣一達標就能馬上顯示成功，不用等到下一次整秒
+  challengeProgressTimer = setInterval(()=>{
+    if(challengeCompleted){ clearInterval(challengeProgressTimer); return; }
+    const cur = getCurrentChallengeScore();
+    if(cur >= CHALLENGE_TARGET_SCORE){
+      completeChallengeSuccess(cur);
+    } else {
+      updateChallengeBannerText();
+    }
+  }, 300);
+}
+
+function completeChallengeSuccess(finalScore){
+  if(challengeCompleted) return;
+  challengeCompleted = true;
+  clearInterval(challengeTimer);
+  clearInterval(challengeProgressTimer);
+  const el = document.getElementById('challengeBanner');
+  if(el){
+    el.classList.add('challenge-success');
+    el.innerHTML = `🎉 恭喜 <b>${escapeHtml(challengeStudentName)}</b> 挑戰成功！拿到 ${finalScore} 分，${CHALLENGE_STAR_REWARD} 顆星星已經送出，回到主頁面就會看到囉！`;
+  }
+  showToast('🎉 挑戰成功！星星已經送出～');
+  sendChallengeStarAward(finalScore);
+}
+
+function challengeTimeUp(){
+  if(challengeCompleted) return;
+  challengeCompleted = true;
+  const el = document.getElementById('challengeBanner');
+  if(el){
+    el.classList.add('challenge-timeup');
+    el.innerHTML = `⏰ 時間到！這次還沒拿到 ${CHALLENGE_TARGET_SCORE} 分，沒關係，請老師再讓你抽一次轉盤挑戰！`;
+  }
+}
+
+function sendChallengeStarAward(finalScore){
+  try {
+    if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return;
+    firebase.database().ref('class306/pendingStarAwards').push({
+      studentId: challengeStudentId,
+      studentName: challengeStudentName,
+      amount: CHALLENGE_STAR_REWARD,
+      reason: '語詞練習遊戲挑戰達標（' + finalScore + '分）',
+      timestamp: Date.now()
+    });
+  } catch(e) { console.warn('星星獎勵送出失敗，請提醒老師確認網路狀況', e); }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -1441,6 +1572,19 @@ document.addEventListener('keydown', e=>{
 // 初始化
 // ─────────────────────────────────────────────────────────
 loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
+
+// 檢查網址是否帶有幸運轉盤的「星星挑戰」參數（要放在所有遊戲狀態變數都宣告完之後才能執行）
+(function initChallengeFromUrl(){
+  try {
+    const params = new URLSearchParams(location.search);
+    if(params.get('challenge') === '1'){
+      challengeMode = true;
+      challengeStudentId = params.get('sid') || '';
+      challengeStudentName = params.get('name') || '這位小朋友';
+      showChallengeBanner();
+    }
+  } catch(e){}
+})();
 </script>
 </body>
 </html>
