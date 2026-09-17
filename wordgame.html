@@ -131,6 +131,20 @@
     .quiz-grid { grid-template-columns: 1fr; }
   }
 
+  canvas#runnerBoard {
+    background:#0f2027; background: linear-gradient(160deg,#7ec8e3,#bff0d6);
+    border-radius: 18px; box-shadow: var(--shadow); max-width:100%; height:auto;
+    touch-action: none; cursor:pointer;
+  }
+  .jump-btn {
+    display:block; width:100%; margin-top:14px; border:none; border-radius:20px;
+    background: linear-gradient(135deg, var(--coral), #FF8E53); color:#fff;
+    font-family:'Baloo 2',cursive; font-weight:800; font-size:1.4rem; padding:22px 10px;
+    cursor:pointer; box-shadow: 0 6px 18px rgba(255,107,107,.4); transition: transform .1s;
+    user-select:none; -webkit-user-select:none;
+  }
+  .jump-btn:active { transform: scale(.96); }
+
   .memory-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:12px; margin-top:10px; }
   .memory-card {
     aspect-ratio: 1/1; border-radius:14px; background: linear-gradient(135deg, var(--sky), var(--purple));
@@ -182,6 +196,7 @@
       <button class="btn mode-tab active" data-mode="snake" onclick="switchMode('snake')">🐍 貪食蛇</button>
       <button class="btn mode-tab" data-mode="quiz" onclick="switchMode('quiz')">🎯 選擇搶答（觸控友善）</button>
       <button class="btn mode-tab" data-mode="memory" onclick="switchMode('memory')">🃏 記憶配對（觸控友善）</button>
+      <button class="btn mode-tab" data-mode="runner" onclick="switchMode('runner')">🐸 跑酷過關（單鍵操作）</button>
     </div>
   </div>
 
@@ -264,6 +279,36 @@
     <div id="memoryWinBanner" class="hidden" style="text-align:center;margin-top:14px;font-family:'Baloo 2',cursive;font-size:1.25rem;color:var(--dark);"></div>
   </div>
 
+  <!-- ══════════════ 跑酷過關模式（單鍵操作）══════════════ -->
+  <div class="card mode-panel hidden" id="modeRunner">
+    <div class="lead">只有一個按鍵：看到「對的答案」不用按，直接跑過去就會接到；看到「錯的答案」要按「跳！」跳過去，才不會撞到。適合手速慢、或不擅長操控方向鍵的學生，也很適合白板點按。</div>
+    <div class="controls-row" style="margin-bottom:14px;">
+      <button class="btn btn-primary" onclick="startRunner()">▶️ 開始跑酷</button>
+      <button class="btn btn-flat" onclick="stopRunner()">🏁 結束本回合</button>
+      <span class="stat-pill">⭐ 分數：<span id="runnerScoreVal">0</span></span>
+      <span class="stat-pill">🔥 連續：<span id="runnerComboVal">0</span></span>
+      <span class="stat-pill">🏆 最高分：<span id="runnerBestVal">0</span></span>
+    </div>
+
+    <div class="question-banner" id="runnerBanner">選好課次後按「開始跑酷」🐸</div>
+
+    <div class="game-shell">
+      <canvas id="runnerBoard" width="784" height="280"></canvas>
+      <div class="overlay" id="runnerStartOverlay">
+        <h2>🐸 準備好了嗎？</h2>
+        <p>青蛙會自動往前跑。看到對的答案就讓牠跑過去，看到錯的答案要按「跳！」躲開！</p>
+        <button class="btn btn-success" onclick="startRunner()">▶️ 開始跑酷</button>
+      </div>
+    </div>
+
+    <button class="jump-btn" id="runnerJumpBtn">⬆️ 跳！</button>
+
+    <div class="legend">
+      <span><span class="swatch" style="background:#6BCB77;"></span>對的答案：不要按，跑過去</span>
+      <span><span class="swatch" style="background:#FF6B6B;"></span>錯的答案：按「跳！」躲開</span>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -286,6 +331,25 @@ const LESSONS = {
       { sentence:'這一題【＿＿】要怎麼算？', answer:'到底', options:['到底','到來'] },
       { sentence:'我【＿＿】不知道牠是什麼動物。', answer:'還是', options:['可是','還是'] },
       { sentence:'你【＿＿】不可能搬得動。', answer:'一定', options:['一定','決定'] },
+    
+      { sentence:'部首是『石』的字，可以組成語詞：忙【＿＿】', answer:'碌', options:['吞','永','彈','碌'] },
+      { sentence:'部首是『矢』的字，可以組成語詞：長【＿＿】', answer:'短', options:['永','悲','短','奔'] },
+      { sentence:'部首是『牛』的字，可以組成語詞：【＿＿】們', answer:'牠', options:['吞','牠','待','寸'] },
+      { sentence:'部首是『大』的字，可以組成語詞：【＿＿】逃', answer:'奔', options:['寸','吞','永','奔'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】垂不朽', answer:'永', options:['短','碌','奔','永'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】天憫人', answer:'悲', options:['待','寸','悲','牠'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】價而沽', answer:'待', options:['待','永','彈','吞'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】丸之地', answer:'彈', options:['吞','彈','待','寸'] },
+      { sentence:'成語填空：長話【＿＿】說', answer:'短', options:['彈','短','奔','碌'] },
+      { sentence:'成語填空：囫圇【＿＿】棗', answer:'吞', options:['吞','短','碌','牠'] },
+      { sentence:'成語填空：方【＿＿】已亂', answer:'寸', options:['牠','奔','悲','寸'] },
+      { sentence:'成語填空：三長兩【＿＿】', answer:'短', options:['永','牠','彈','短'] },
+      { sentence:'成語填空：一勞【＿＿】逸', answer:'永', options:['奔','永','悲','彈'] },
+      { sentence:'成語填空：坐以【＿＿】斃', answer:'待', options:['奔','吞','待','寸'] },
+      { sentence:'成語填空：迫不及【＿＿】', answer:'待', options:['牠','奔','吞','待'] },
+      { sentence:'成語填空：忍氣【＿＿】聲', answer:'吞', options:['吞','碌','悲','待'] },
+      { sentence:'成語填空：疲於【＿＿】命', answer:'奔', options:['悲','奔','永','牠'] },
+      { sentence:'成語填空：對牛【＿＿】琴', answer:'彈', options:['奔','永','彈','牠'] }
     ]
   },
   l2: {
@@ -296,6 +360,18 @@ const LESSONS = {
       { sentence:'老師把大家的美勞作品貼在牆上最【＿＿】的地方。', answer:'明顯', options:['明顯','明白'] },
       { sentence:'這個謎題的答案，【＿＿】和哥哥猜的一樣。', answer:'果然', options:['突然','果然'] },
       { sentence:'夏天天氣炎熱，【＿＿】都需要補充水分。', answer:'隨時', options:['隨便','隨時'] },
+    
+      { sentence:'部首是『一』的字，可以組成語詞：【＿＿】慢', answer:'且', options:['且','排','效','使'] },
+      { sentence:'部首是『人』的字，可以組成語詞：【＿＿】喚', answer:'使', options:['冰','使','而','條'] },
+      { sentence:'部首是『木』的字，可以組成語詞：【＿＿】件', answer:'條', options:['條','冰','而','序'] },
+      { sentence:'成語有一個字錯了，正確的字是：鬼【＿＿】神差', answer:'使', options:['冰','使','而','且'] },
+      { sentence:'成語有一個字錯了，正確的字是：東施【＿＿】顰', answer:'效', options:['效','條','使','原'] },
+      { sentence:'成語填空：【＿＿】封不動', answer:'原', options:['原','而','條','冰'] },
+      { sentence:'成語填空：輕【＿＿】易舉', answer:'而', options:['使','且','而','條'] },
+      { sentence:'成語填空：【＿＿】天雪地', answer:'冰', options:['排','使','冰','效'] },
+      { sentence:'成語填空：【＿＿】山倒海', answer:'排', options:['效','排','而','序'] },
+      { sentence:'成語填空：循【＿＿】漸進', answer:'序', options:['排','冰','序','且'] },
+      { sentence:'成語填空：得過【＿＿】過', answer:'且', options:['使','序','而','且'] }
     ]
   },
   l3: {
@@ -305,6 +381,16 @@ const LESSONS = {
       { sentence:'壯壯：我喜歡運動，【＿＿】要跑一跑才會開心。', answer:'總是' },
       { sentence:'小安：雖然我跑不快，但【＿＿】到操場練習。', answer:'常常' },
       { sentence:'美美：早上我會和同學打球，【＿＿】也會去跑步。', answer:'有時' },
+    
+      { sentence:'部首是『止』的字，可以組成語詞：從【＿＿】', answer:'此', options:['況','理','文','此'] },
+      { sentence:'部首是『木』的字，可以組成語詞：原【＿＿】', answer:'本', options:['況','本','業','此'] },
+      { sentence:'部首是『八』的字，可以組成語詞：工【＿＿】', answer:'具', options:['況','具','文','理'] },
+      { sentence:'成語填空：天涯海【＿＿】', answer:'角', options:['此','理','角','業'] },
+      { sentence:'成語填空：【＿＿】末倒置', answer:'本', options:['本','文','具','業'] },
+      { sentence:'成語填空：心安【＿＿】得', answer:'理', options:['文','此','具','理'] },
+      { sentence:'成語填空：安居樂【＿＿】', answer:'業', options:['角','況','文','業'] },
+      { sentence:'成語填空：每【＿＿】愈下', answer:'況', options:['理','業','角','況'] },
+      { sentence:'成語填空：【＿＿】質彬彬', answer:'文', options:['角','具','文','此'] }
     ]
   },
   l4: {
@@ -315,6 +401,15 @@ const LESSONS = {
       { sentence:'花圃裡的小豆苗「漸漸的」長大，意思最接近【＿＿】。', answer:'慢慢的', options:['長長的','快快的','慢慢的'] },
       { sentence:'哥哥「不停的」練習，意思最接近【＿＿】。', answer:'不斷的', options:['不斷的','不安的','不遠的'] },
       { sentence:'天空「突然」下起大雨，意思最接近【＿＿】。', answer:'忽然', options:['然後','忽然','雖然'] },
+    
+      { sentence:'部首是『冂』的字，可以組成語詞：【＿＿】險', answer:'冒', options:['解','揚','冒','騰'] },
+      { sentence:'部首是『馬』的字，可以組成語詞：奔【＿＿】', answer:'騰', options:['騰','堂','解','揚'] },
+      { sentence:'部首是『角』的字，可以組成語詞：【＿＿】決', answer:'解', options:['解','柴','揚','堂'] },
+      { sentence:'成語填空：打退【＿＿】鼓', answer:'堂', options:['止','柴','堂','騰'] },
+      { sentence:'成語填空：骨瘦如【＿＿】', answer:'柴', options:['柴','堂','揚','冒'] },
+      { sentence:'成語填空：【＿＿】眉吐氣', answer:'揚', options:['騰','解','揚','止'] },
+      { sentence:'成語填空：適可而【＿＿】', answer:'止', options:['堂','揚','解','止'] },
+      { sentence:'成語填空：一知半【＿＿】', answer:'解', options:['解','柴','止','騰'] }
     ]
   },
   l5: {
@@ -330,6 +425,17 @@ const LESSONS = {
       { sentence:'朗讀時，不只要讀得流暢自然，【＿＿】要配合音量的變化。', answer:'還' },
       { sentence:'這次朗讀比賽，【＿＿】我每天都認真練習，所以拿了第一名。', answer:'因為' },
       { sentence:'這次朗讀比賽，因為我每天都認真練習，【＿＿】拿了第一名。', answer:'所以' },
+    
+      { sentence:'部首是『甘』的字，可以組成語詞：【＿＿】蜜', answer:'甜', options:['爛','甜','遮','腐'] },
+      { sentence:'部首是『肉』的字，可以組成語詞：豆【＿＿】', answer:'腐', options:['腐','遮','結','夾'] },
+      { sentence:'部首是『大』的字，可以組成語詞：【＿＿】層', answer:'夾', options:['綿','甜','爛','夾'] },
+      { sentence:'部首是『糸』的字，可以組成語詞：【＿＿】延', answer:'綿', options:['景','爛','甜','綿'] },
+      { sentence:'部首是『日』的字，可以組成語詞：應【＿＿】', answer:'景', options:['景','結','腐','夾'] },
+      { sentence:'成語填空：【＿＿】言蜜語', answer:'甜', options:['甜','遮','膠','綿'] },
+      { sentence:'成語填空：海枯石【＿＿】', answer:'爛', options:['爛','遮','夾','結'] },
+      { sentence:'成語填空：張口【＿＿】舌', answer:'結', options:['結','夾','遮','甜'] },
+      { sentence:'成語填空：一手【＿＿】天', answer:'遮', options:['景','遮','爛','腐'] },
+      { sentence:'成語填空：如【＿＿】似漆', answer:'膠', options:['遮','甜','景','膠'] }
     ]
   },
   l6: {
@@ -342,6 +448,19 @@ const LESSONS = {
       { sentence:'只要你遇到不認識的生字語詞，【＿＿】可以請教它。', answer:'就' },
       { sentence:'它【＿＿】教你字詞怎麼念，還告訴你字詞的意思和用法。', answer:'不但' },
       { sentence:'它不但教你字詞怎麼念，【＿＿】告訴你字詞的意思和用法。', answer:'還' },
+    
+      { sentence:'部首是『黑』的字，可以組成語詞：【＿＿】水', answer:'墨', options:['機','墨','槽','斷'] },
+      { sentence:'部首是『艸』的字，可以組成語詞：燈【＿＿】', answer:'芯', options:['芯','部','槽','墨'] },
+      { sentence:'部首是『凵』的字，可以組成語詞：【＿＿】凸', answer:'凹', options:['機','斷','部','凹'] },
+      { sentence:'部首是『木』的字，可以組成語詞：水【＿＿】', answer:'槽', options:['斷','入','槽','凹'] },
+      { sentence:'部首是『口』的字，可以組成語詞：【＿＿】具', answer:'器', options:['斷','墨','器','芯'] },
+      { sentence:'部首是『斤』的字，可以組成語詞：折【＿＿】', answer:'斷', options:['芯','部','凹','斷'] },
+      { sentence:'成語填空：出神【＿＿】化', answer:'入', options:['器','另','入','部'] },
+      { sentence:'成語填空：大【＿＿】晚成', answer:'器', options:['入','器','芯','槽'] },
+      { sentence:'成語填空：【＿＿】眼相看', answer:'另', options:['另','機','器','部'] },
+      { sentence:'成語填空：【＿＿】守成規', answer:'墨', options:['部','另','器','墨'] },
+      { sentence:'成語填空：按【＿＿】就班', answer:'部', options:['部','斷','墨','入'] },
+      { sentence:'成語填空：隨【＿＿】應變', answer:'機', options:['芯','機','器','部'] }
     ]
   },
   l7: {
@@ -354,6 +473,22 @@ const LESSONS = {
       { sentence:'迎著鹹鹹的海風，【＿＿】美麗的落日。', answer:'欣賞' },
       { sentence:'我們在野外的【＿＿】上玩雪橇。', answer:'山坡' },
       { sentence:'我們在野外的山坡上玩【＿＿】。', answer:'雪橇' },
+    
+      { sentence:'部首是『門』的字，可以組成語詞：關【＿＿】', answer:'閉', options:['閉','野','瞞','深'] },
+      { sentence:'部首是『里』的字，可以組成語詞：【＿＿】心', answer:'野', options:['賞','鹹','乘','野'] },
+      { sentence:'部首是『鹵』的字，可以組成語詞：【＿＿】味', answer:'鹹', options:['閉','瞞','鹹','欣'] },
+      { sentence:'部首是『欠』的字，可以組成語詞：【＿＿】喜', answer:'欣', options:['欣','閉','乘','深'] },
+      { sentence:'部首是『貝』的字，可以組成語詞：獎【＿＿】', answer:'賞', options:['賞','野','閉','乘'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】歆向榮', answer:'欣', options:['賞','瞞','欣','深'] },
+      { sentence:'成語有一個字錯了，正確的字是：水【＿＿】火熱', answer:'深', options:['閉','野','深','欣'] },
+      { sentence:'成語填空：【＿＿】月羞花', answer:'閉', options:['賞','瞞','深','閉'] },
+      { sentence:'成語填空：【＿＿】上欺下', answer:'瞞', options:['瞞','乘','鹹','賞'] },
+      { sentence:'成語填空：【＿＿】人之危', answer:'乘', options:['深','賞','欣','乘'] },
+      { sentence:'成語填空：【＿＿】思熟慮', answer:'深', options:['鹹','欣','瞞','深'] },
+      { sentence:'成語填空：【＿＿】風破浪', answer:'乘', options:['乘','深','閉','鹹'] },
+      { sentence:'成語填空：【＿＿】心勃勃', answer:'野', options:['鹹','閉','瞞','野'] },
+      { sentence:'成語填空：發人【＿＿】省', answer:'深', options:['欣','乘','賞','深'] },
+      { sentence:'成語填空：【＿＿】心悅目', answer:'賞', options:['賞','閉','野','鹹'] }
     ]
   },
   l8: {
@@ -363,6 +498,25 @@ const LESSONS = {
       { sentence:'沒想到大家來玩，【＿＿】小螃蟹失去了乾淨的家園。', answer:'讓', options:['幫','讓'] },
       { sentence:'我感冒發燒了，【＿＿】是在週六，爸爸不用請假照顧我。', answer:'剛好', options:['剛好','正當'] },
       { sentence:'雖然天氣很冷，大批民眾仍湧到合歡山【＿＿】雪景。', answer:'欣賞', options:['觀察','欣賞'] },
+    
+      { sentence:'部首是『心』的字，可以組成語詞：【＿＿】氣', answer:'志', options:['應','淨','志','殼'] },
+      { sentence:'部首是『木』的字，可以組成語詞：酒【＿＿】', answer:'杯', options:['杯','淨','志','寄'] },
+      { sentence:'部首是『瓦』的字，可以組成語詞：花【＿＿】', answer:'瓶', options:['瓶','類','淨','杯'] },
+      { sentence:'部首是『心』的字，可以組成語詞：【＿＿】當', answer:'應', options:['殼','杯','應','瓶'] },
+      { sentence:'部首是『宀』的字，可以組成語詞：郵【＿＿】', answer:'寄', options:['殼','應','瓶','寄'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】水車薪', answer:'杯', options:['瓶','殼','杯','志'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】有盡有', answer:'應', options:['應','志','類','杯'] },
+      { sentence:'成語有一個字錯了，正確的字是：年少得【＿＿】', answer:'志', options:['杯','瓶','志','淨'] },
+      { sentence:'成語有一個字錯了，正確的字是：一乾二【＿＿】', answer:'淨', options:['寄','淨','杯','類'] },
+      { sentence:'成語填空：【＿＿】弓蛇影', answer:'杯', options:['殼','志','類','杯'] },
+      { sentence:'成語填空：畫虎【＿＿】犬', answer:'類', options:['志','淨','殼','類'] },
+      { sentence:'成語填空：窗明几【＿＿】', answer:'淨', options:['應','殼','寄','淨'] },
+      { sentence:'成語填空：【＿＿】人籬下', answer:'寄', options:['寄','瓶','類','淨'] },
+      { sentence:'成語填空：物以【＿＿】聚', answer:'類', options:['志','寄','類','瓶'] },
+      { sentence:'成語填空：守口如【＿＿】', answer:'瓶', options:['瓶','類','志','杯'] },
+      { sentence:'成語填空：金蟬脫【＿＿】', answer:'殼', options:['殼','瓶','志','淨'] },
+      { sentence:'成語填空：【＿＿】同道合', answer:'志', options:['杯','淨','應','志'] },
+      { sentence:'成語填空：【＿＿】盤狼藉', answer:'杯', options:['杯','淨','志','應'] }
     ]
   },
   l9: {
@@ -379,6 +533,26 @@ const LESSONS = {
       { sentence:'一聽到轟隆隆的雷聲，哥哥趕緊去收【＿＿】的衣服，以免被雨淋溼了。', answer:'一件件洗乾淨' },
       { sentence:'【＿＿】，下課了！我和綁著馬尾的小美，一起去操場散步。', answer:'當當當' },
       { sentence:'當當當，下課了！我和【＿＿】的小美，一起去操場散步。', answer:'綁著馬尾' },
+    
+      { sentence:'部首是『糸』的字，可以組成語詞：【＿＿】任', answer:'繼', options:['挑','隨','交','繼'] },
+      { sentence:'部首是『糸』的字，可以組成語詞：連【＿＿】', answer:'續', options:['繼','戰','岸','續'] },
+      { sentence:'部首是『水』的字，可以組成語詞：【＿＿】顯', answer:'淺', options:['鳳','續','淺','交'] },
+      { sentence:'部首是『亠』的字，可以組成語詞：【＿＿】代', answer:'交', options:['導','續','交','戰'] },
+      { sentence:'部首是『寸』的字，可以組成語詞：指【＿＿】', answer:'導', options:['隨','導','挑','戰'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】筆從戎', answer:'投', options:['續','鳳','挑','投'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】燈夜戰', answer:'挑', options:['鳳','續','挑','繼'] },
+      { sentence:'成語有一個字錯了，正確的字是：忘年之【＿＿】', answer:'交', options:['續','岸','戰','交'] },
+      { sentence:'成語有一個字錯了，正確的字是：龍困【＿＿】灘', answer:'淺', options:['岸','鳳','繼','淺'] },
+      { sentence:'成語填空：【＿＿】撥離間', answer:'挑', options:['交','投','挑','隨'] },
+      { sentence:'成語填空：如影【＿＿】形', answer:'隨', options:['隨','繼','交','戰'] },
+      { sentence:'成語填空：背水一【＿＿】', answer:'戰', options:['投','繼','導','戰'] },
+      { sentence:'成語填空：攀龍附【＿＿】', answer:'鳳', options:['戰','續','鳳','挑'] },
+      { sentence:'成語填空：目光短【＿＿】', answer:'淺', options:['投','戰','繼','淺'] },
+      { sentence:'成語填空：【＿＿】頭接耳', answer:'交', options:['繼','交','淺','挑'] },
+      { sentence:'成語填空：【＿＿】其所好', answer:'投', options:['投','鳳','岸','挑'] },
+      { sentence:'成語填空：【＿＿】往開來', answer:'繼', options:['岸','續','繼','戰'] },
+      { sentence:'成語填空：隔【＿＿】觀火', answer:'岸', options:['鳳','戰','岸','淺'] },
+      { sentence:'成語填空：夜以【＿＿】日', answer:'繼', options:['隨','續','繼','戰'] }
     ]
   },
   l10: {
@@ -389,6 +563,18 @@ const LESSONS = {
       { sentence:'在除夕前大掃除，是我們長久以來的【＿＿】。', answer:'習俗' },
       { sentence:'我非常【＿＿】這枝筆，因為這是奶奶送我的禮物。', answer:'珍惜' },
       { sentence:'直到晚上，歡樂的生日宴會才【＿＿】。', answer:'結束' },
+    
+      { sentence:'部首是『女』的字，可以組成語詞：【＿＿】姻', answer:'婚', options:['互','福','婚','精'] },
+      { sentence:'部首是『音』的字，可以組成語詞：影【＿＿】', answer:'響', options:['連','福','敬','響'] },
+      { sentence:'部首是『酉』的字，可以組成語詞：喜【＿＿】', answer:'酒', options:['連','酒','藏','精'] },
+      { sentence:'部首是『米』的字，可以組成語詞：【＿＿】神', answer:'精', options:['酒','敬','響','精'] },
+      { sentence:'部首是『二』的字，可以組成語詞：【＿＿】相', answer:'互', options:['互','婚','精','連'] },
+      { sentence:'成語填空：相【＿＿】如賓', answer:'敬', options:['敬','酒','精','婚'] },
+      { sentence:'成語填空：不同凡【＿＿】', answer:'響', options:['酒','響','敬','藏'] },
+      { sentence:'成語填空：有【＿＿】同享', answer:'福', options:['互','福','藏','酒'] },
+      { sentence:'成語填空：價值【＿＿】城', answer:'連', options:['互','響','福','連'] },
+      { sentence:'成語填空：江【＿＿】才盡', answer:'郎', options:['精','酒','郎','婚'] },
+      { sentence:'成語填空：笑裡【＿＿】刀', answer:'藏', options:['連','精','藏','福'] }
     ]
   },
   l11: {
@@ -405,6 +591,18 @@ const LESSONS = {
       { sentence:'一家人團圓、平安健康，是最大的【＿＿】。', answer:'幸福' },
       { sentence:'跨年時，大家會一起【＿＿】：十、九、八……。', answer:'倒數' },
       { sentence:'除夕夜，大家熬夜不睡覺，這個習俗叫做【＿＿】。', answer:'守歲' },
+    
+      { sentence:'部首是『干』的字，可以組成語詞：【＿＿】虧', answer:'幸', options:['幸','陣','店','息'] },
+      { sentence:'部首是『阜』的字，可以組成語詞：【＿＿】營', answer:'陣', options:['陣','店','煙','查'] },
+      { sentence:'部首是『心』的字，可以組成語詞：氣【＿＿】', answer:'息', options:['煙','幸','店','息'] },
+      { sentence:'部首是『木』的字，可以組成語詞：【＿＿】詢', answer:'查', options:['查','煙','陣','除'] },
+      { sentence:'部首是『广』的字，可以組成語詞：商【＿＿】', answer:'店', options:['修','零','查','店'] },
+      { sentence:'成語有一個字錯了，正確的字是：【＿＿】熄相關', answer:'息', options:['修','零','息','查'] },
+      { sentence:'成語填空：斬草【＿＿】根', answer:'除', options:['修','陣','除','查'] },
+      { sentence:'成語填空：不【＿＿】邊幅', answer:'修', options:['零','除','修','陣'] },
+      { sentence:'成語填空：烏【＿＿】瘴氣', answer:'煙', options:['零','煙','幸','除'] },
+      { sentence:'成語填空：【＿＿】災樂禍', answer:'幸', options:['除','修','零','幸'] },
+      { sentence:'成語填空：七【＿＿】八落', answer:'零', options:['陣','除','零','息'] }
     ]
   },
   l12: {
@@ -420,6 +618,16 @@ const LESSONS = {
       { sentence:'天氣忽然從晴天【＿＿】成下雨天。', answer:'轉變' },
       { sentence:'感冒很容易【＿＿】給其他人，要記得戴口罩。', answer:'傳染' },
       { sentence:'蓋房子常用紅色的【＿＿】堆疊起來。', answer:'磚牆' },
+    
+      { sentence:'部首是『見』的字，可以組成語詞：【＿＿】線', answer:'視', options:['錢','視','鏡','團'] },
+      { sentence:'部首是『又』的字，可以組成語詞：【＿＿】父', answer:'叔', options:['團','叔','樓','錢'] },
+      { sentence:'部首是『黑』的字，可以組成語詞：【＿＿】契', answer:'默', options:['默','樓','團','錢'] },
+      { sentence:'部首是『金』的字，可以組成語詞：金【＿＿】', answer:'錢', options:['叔','錢','團','視'] },
+      { sentence:'成語填空：一【＿＿】和氣', answer:'團', options:['樓','團','叔','視'] },
+      { sentence:'成語填空：人去【＿＿】空', answer:'樓', options:['視','樓','叔','鏡'] },
+      { sentence:'成語填空：一【＿＿】同仁', answer:'視', options:['錢','視','樓','默'] },
+      { sentence:'成語填空：破【＿＿】重圓', answer:'鏡', options:['視','樓','叔','鏡'] },
+      { sentence:'成語填空：潛移【＿＿】化', answer:'默', options:['鏡','默','團','樓'] }
     ]
   },
 };
@@ -494,17 +702,18 @@ function showToast(msg){
 // 模式切換
 // ─────────────────────────────────────────────────────────
 function switchMode(mode){
-  ['snake','quiz','memory'].forEach(m=>{
+  ['snake','quiz','memory','runner'].forEach(m=>{
     const cap = m[0].toUpperCase() + m.slice(1);
     document.getElementById('mode'+cap).classList.toggle('hidden', m!==mode);
     document.querySelector(`.mode-tab[data-mode="${m}"]`).classList.toggle('active', m===mode);
   });
   if(mode !== 'snake'){ running = false; clearInterval(timer); }
   if(mode !== 'quiz'){ quizRunning = false; }
+  if(mode !== 'runner'){ stopRunnerLoop(); }
 }
 
 document.getElementById('lessonSelect').addEventListener('change', ()=>{
-  loadBest(); loadQuizBest(); loadMemoryBest();
+  loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
 });
 document.getElementById('memoryPairCount').addEventListener('change', loadMemoryBest);
 
@@ -920,9 +1129,242 @@ function finishMemory(){
 }
 
 // ─────────────────────────────────────────────────────────
+// 跑酷過關模式（單鍵操作：只有「跳」）
+// ─────────────────────────────────────────────────────────
+const RUNNER_GRAVITY = 0.0022;      // px per ms^2 (applied as velocity change)
+const RUNNER_JUMP_V = -0.62;        // px per ms, initial upward velocity
+const RUNNER_CHAR_X = 110;
+const RUNNER_TILE_GAP = 260;
+const RUNNER_TILE_W = 96, RUNNER_TILE_H = 64;
+const RUNNER_SPEED = 0.16;          // px per ms
+
+const runnerCanvas = document.getElementById('runnerBoard');
+const runnerCtx = runnerCanvas.getContext('2d');
+const RUNNER_GROUND_Y = runnerCanvas.height - 46;
+
+let runnerRounds, runnerRoundIdx, runnerTiles, runnerScore, runnerCombo, runnerRunning;
+let runnerChar, runnerRAF, runnerLastTs;
+
+function runnerHighKey(){
+  return 'wordgame_runnerbest_' + document.getElementById('lessonSelect').value;
+}
+function loadRunnerBest(){
+  let best = 0;
+  try { best = parseInt(localStorage.getItem(runnerHighKey())||'0') || 0; } catch(e){}
+  document.getElementById('runnerBestVal').textContent = best;
+  return best;
+}
+function updateRunnerStats(){
+  document.getElementById('runnerScoreVal').textContent = runnerScore;
+  document.getElementById('runnerComboVal').textContent = runnerCombo;
+}
+
+function stopRunnerLoop(){
+  runnerRunning = false;
+  if(runnerRAF) cancelAnimationFrame(runnerRAF);
+  runnerRAF = null;
+}
+
+function saveRunnerBestIfNeeded(){
+  try {
+    const key = runnerHighKey();
+    const best = parseInt(localStorage.getItem(key)||'0') || 0;
+    if(runnerScore > best){
+      localStorage.setItem(key, String(runnerScore));
+      loadRunnerBest();
+      return true;
+    }
+  } catch(e){}
+  return false;
+}
+
+function stopRunner(){
+  if(!runnerRunning && runnerScore === undefined) return;
+  const wasRunning = runnerRunning;
+  stopRunnerLoop();
+  if(wasRunning){
+    const brokeRecord = saveRunnerBestIfNeeded();
+    showToast(brokeRecord ? `🏁 結束！分數 ${runnerScore}，打破紀錄！🏆` : `🏁 結束！本次分數 ${runnerScore}`);
+    document.getElementById('runnerStartOverlay').classList.remove('hidden');
+  }
+}
+
+function runnerSpawnRound(){
+  const round = runnerRounds[runnerRoundIdx % runnerRounds.length];
+  const opts = buildOptions(round);
+  document.getElementById('runnerBanner').innerHTML =
+    escapeHtml(round.sentence).replace('【＿＿】', '<span class="blank">？</span>');
+  runnerTiles = opts.map((word, i)=>({
+    x: runnerCanvas.width + 80 + i * RUNNER_TILE_GAP,
+    word,
+    correct: word === round.answer,
+    resolved: false,
+    flash: 0, flashGood: true
+  }));
+}
+
+function jumpRunner(){
+  if(!runnerRunning) return;
+  if(!runnerChar.jumping){
+    runnerChar.vy = RUNNER_JUMP_V;
+    runnerChar.jumping = true;
+  }
+}
+
+function runnerResolveTile(tile){
+  tile.resolved = true;
+  const grounded = !runnerChar.jumping;
+  let success;
+  if(tile.correct){
+    success = grounded; // 對的答案要用跑的接住
+  } else {
+    success = !grounded; // 錯的答案要跳過去才算成功
+  }
+  tile.flash = 1;
+  tile.flashGood = success;
+  if(success){
+    if(tile.correct){
+      runnerCombo++;
+      const bonus = 10 + Math.min(runnerCombo-1, 6) * 3;
+      runnerScore += bonus;
+      if(COMBO_MILESTONES.includes(runnerCombo)){
+        showToast(`🔥 連續答對 ${runnerCombo} 題！太厲害了！`);
+      }
+    }
+    // 成功跳過錯的答案：不加分也不扣分，維持節奏
+  } else {
+    if(runnerCombo >= 3) showToast('💦 連續紀錄中斷了，再接再厲！');
+    runnerCombo = 0;
+    runnerScore = Math.max(0, runnerScore - 5);
+  }
+  updateRunnerStats();
+}
+
+function runnerAllResolved(){
+  return runnerTiles.every(t=>t.resolved);
+}
+
+function runnerAdvanceRound(){
+  runnerRoundIdx++;
+  if(runnerRounds.length && runnerRoundIdx % runnerRounds.length === 0){
+    runnerRounds = shuffle(runnerRounds);
+    showToast('🎉 這個範圍全部題目都出過一輪了！重新洗牌繼續挑戰～');
+  }
+  runnerSpawnRound();
+}
+
+function runnerDrawChar(x, y){
+  const squash = runnerChar.jumping ? 1 : (Math.sin(Date.now()/90) * 0.04 + 1);
+  runnerCtx.save();
+  runnerCtx.translate(x, y);
+  runnerCtx.scale(1, squash);
+  runnerCtx.font = '46px serif';
+  runnerCtx.textAlign = 'center';
+  runnerCtx.textBaseline = 'alphabetic';
+  runnerCtx.fillText('🐸', 0, 0);
+  runnerCtx.restore();
+}
+
+function runnerDraw(){
+  const c = runnerCtx, W = runnerCanvas.width, H = runnerCanvas.height;
+  c.clearRect(0,0,W,H);
+
+  // 地面
+  c.fillStyle = 'rgba(255,255,255,.35)';
+  c.fillRect(0, RUNNER_GROUND_Y+30, W, H-(RUNNER_GROUND_Y+30));
+  c.strokeStyle = 'rgba(30,42,74,.25)';
+  c.lineWidth = 3;
+  c.beginPath(); c.moveTo(0, RUNNER_GROUND_Y+30); c.lineTo(W, RUNNER_GROUND_Y+30); c.stroke();
+
+  // 字詞方塊
+  runnerTiles.forEach(t=>{
+    const px = t.x - RUNNER_TILE_W/2, py = RUNNER_GROUND_Y - RUNNER_TILE_H + 30;
+    c.fillStyle = t.flash > 0 ? (t.flashGood ? '#dcfce7' : '#fee2e2') : '#fffef7';
+    roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
+    c.fill();
+    c.strokeStyle = t.flash > 0 ? (t.flashGood ? '#22c55e' : '#ef4444') : '#A855F7';
+    c.lineWidth = 3;
+    roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
+    c.stroke();
+    c.fillStyle = '#1E2A4A';
+    c.font = t.word.length >= 3 ? 'bold 16px Nunito, sans-serif' : 'bold 20px Nunito, sans-serif';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(t.word, t.x, py + RUNNER_TILE_H/2 + 1);
+    if(t.flash > 0) t.flash = Math.max(0, t.flash - 0.03);
+  });
+
+  runnerDrawChar(RUNNER_CHAR_X, runnerChar.y);
+}
+
+function roundRectRunner(x,y,w,h,r){
+  runnerCtx.beginPath();
+  runnerCtx.moveTo(x+r,y);
+  runnerCtx.arcTo(x+w,y,x+w,y+h,r);
+  runnerCtx.arcTo(x+w,y+h,x,y+h,r);
+  runnerCtx.arcTo(x,y+h,x,y,r);
+  runnerCtx.arcTo(x,y,x+w,y,r);
+  runnerCtx.closePath();
+}
+
+function runnerLoop(ts){
+  if(!runnerRunning) return;
+  if(!runnerLastTs) runnerLastTs = ts;
+  const dt = Math.min(ts - runnerLastTs, 48);
+  runnerLastTs = ts;
+
+  // 角色物理
+  runnerChar.vy += RUNNER_GRAVITY * dt;
+  runnerChar.y += runnerChar.vy * dt;
+  if(runnerChar.y >= RUNNER_GROUND_Y){
+    runnerChar.y = RUNNER_GROUND_Y;
+    runnerChar.vy = 0;
+    runnerChar.jumping = false;
+  }
+
+  // 方塊移動與碰撞判定
+  runnerTiles.forEach(t=>{
+    t.x -= RUNNER_SPEED * dt;
+    if(!t.resolved && t.x <= RUNNER_CHAR_X + RUNNER_TILE_W/2){
+      runnerResolveTile(t);
+    }
+  });
+
+  if(runnerAllResolved() && runnerTiles.every(t=>t.x < RUNNER_CHAR_X - 40)){
+    runnerAdvanceRound();
+  }
+
+  runnerDraw();
+  runnerRAF = requestAnimationFrame(runnerLoop);
+}
+
+function startRunner(){
+  document.getElementById('runnerStartOverlay').classList.add('hidden');
+  runnerRounds = shuffle(getActiveRounds());
+  if(!runnerRounds.length){ showToast('⚠️ 這個範圍還沒有題目'); document.getElementById('runnerStartOverlay').classList.remove('hidden'); return; }
+  runnerRoundIdx = 0;
+  runnerScore = 0;
+  runnerCombo = 0;
+  runnerChar = { y: RUNNER_GROUND_Y, vy: 0, jumping: false };
+  runnerLastTs = null;
+  updateRunnerStats();
+  loadRunnerBest();
+  runnerSpawnRound();
+  runnerRunning = true;
+  if(runnerRAF) cancelAnimationFrame(runnerRAF);
+  runnerRAF = requestAnimationFrame(runnerLoop);
+}
+
+runnerCanvas.addEventListener('pointerdown', jumpRunner);
+document.getElementById('runnerJumpBtn').addEventListener('pointerdown', (e)=>{ e.preventDefault(); jumpRunner(); });
+document.addEventListener('keydown', e=>{
+  if(document.getElementById('modeRunner').classList.contains('hidden')) return;
+  if(e.key === ' ' || e.key === 'ArrowUp'){ e.preventDefault(); jumpRunner(); }
+});
+
+// ─────────────────────────────────────────────────────────
 // 初始化
 // ─────────────────────────────────────────────────────────
-loadBest(); loadQuizBest(); loadMemoryBest();
+loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
 </script>
 </body>
 </html>

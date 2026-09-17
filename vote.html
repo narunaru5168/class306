@@ -264,6 +264,10 @@
         <span class="status-pill num" id="voterProgress">0 / 0 人已投票</span>
       </div>
       <div id="voterGateNote" style="font-size:.78rem;color:#94a3b8;margin-top:8px;"></div>
+      <div id="voterChoiceInfo" class="hidden" style="margin-top:10px;padding:10px 14px;background:#fef9c3;border-radius:12px;font-size:.85rem;font-weight:700;color:#78350f;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="voterChoiceText"></span>
+        <button class="btn btn-danger btn-sm" id="revokeVoteBtn" type="button">🗑️ 撤銷這一票</button>
+      </div>
     </div>
 
     <div class="card" id="hiddenTallyCard" hidden>
@@ -416,7 +420,7 @@
       showLive: document.getElementById("showLiveCheck").checked,
       revealed: false,
       startedAt: Date.now(),
-      votedBy: [],
+      voterChoices: {},
       options: options.map(function(o, i){
         return { id: "o" + i + "_" + Date.now(), label: o.label, link: o.link, disabled: !!o.disabled, votes: 0 };
       })
@@ -536,18 +540,40 @@
     if (writeLock) return;
     var voterKey = voterSelect.value;
     if (!voterKey) { toastMsg("⚠️ 請先選自己的名字，再投票"); return; }
-    var votedBy = activeBox.votedBy || [];
-    if (votedBy.indexOf(voterKey) !== -1) { toastMsg("你已經投過票囉！"); renderVoterGate(); return; }
-    writeLock = true;
     var opt = activeBox.options.filter(function(o){ return o.id === id; })[0];
-    if (!opt || opt.disabled) { writeLock = false; return; }
+    if (!opt || opt.disabled) return;
+    var voterChoices = activeBox.voterChoices || (activeBox.voterChoices = {});
+    var prevId = voterChoices[voterKey];
+    if (prevId === id) { toastMsg("你已經投給這個選項囉！"); return; }
+    writeLock = true;
+    if (prevId) {
+      var prevOpt = activeBox.options.filter(function(o){ return o.id === prevId; })[0];
+      if (prevOpt) prevOpt.votes = Math.max(0, (prevOpt.votes || 0) - 1);
+    }
     opt.votes = (opt.votes || 0) + 1;
-    activeBox.votedBy = votedBy.concat([voterKey]);
+    voterChoices[voterKey] = id;
     starBurst(evt);
     voterSelect.value = "";
     saveBox(activeBox).then(function(){ writeLock = false; });
     renderActive();
   }
+
+  function revokeVote(){
+    if (writeLock) return;
+    var voterKey = voterSelect.value;
+    if (!voterKey) return;
+    var voterChoices = activeBox.voterChoices || {};
+    var prevId = voterChoices[voterKey];
+    if (!prevId) return;
+    writeLock = true;
+    var prevOpt = activeBox.options.filter(function(o){ return o.id === prevId; })[0];
+    if (prevOpt) prevOpt.votes = Math.max(0, (prevOpt.votes || 0) - 1);
+    delete voterChoices[voterKey];
+    toastMsg("🗑️ 已撤銷你的投票，可以重新選擇");
+    saveBox(activeBox).then(function(){ writeLock = false; });
+    renderActive();
+  }
+  document.getElementById("revokeVoteBtn").addEventListener("click", revokeVote);
 
   // ───────────────────── VOTER GATE (一人一票) ─────────────────────
   var voterGateCard = document.getElementById("voterGateCard");
@@ -578,26 +604,40 @@
 
   function renderVoterGate(){
     if (!activeBox || !voterSelect) return;
-    var voted = activeBox.votedBy || [];
-    voterProgress.textContent = voted.length + " / " + roster.length + " 人已投票";
-    var remaining = roster.filter(function(s){ return voted.indexOf(studentKey(s)) === -1; });
+    var voterChoices = activeBox.voterChoices || {};
+    var votedCount = Object.keys(voterChoices).length;
+    voterProgress.textContent = votedCount + " / " + roster.length + " 人已投票";
     var currentVal = voterSelect.value;
-    remaining = remaining.slice().sort(function(a,b){ return (parseInt(a.seatNo)||99) - (parseInt(b.seatNo)||99); });
+    var sorted = roster.slice().sort(function(a,b){ return (parseInt(a.seatNo)||99) - (parseInt(b.seatNo)||99); });
     voterSelect.innerHTML = '<option value="">— 請選擇你的名字 —</option>' +
-      remaining.map(function(s){
+      sorted.map(function(s){
         var k = studentKey(s);
-        return '<option value="' + escapeHtml(k) + '">' + escapeHtml((s.seatNo ? s.seatNo + "號 " : "") + s.name) + '</option>';
+        var hasVoted = Object.prototype.hasOwnProperty.call(voterChoices, k);
+        return '<option value="' + escapeHtml(k) + '">' + escapeHtml((s.seatNo ? s.seatNo + "號 " : "") + s.name) + (hasVoted ? " ✅" : "") + '</option>';
       }).join("");
-    if (remaining.some(function(s){ return studentKey(s) === currentVal; })) voterSelect.value = currentVal;
+    if (sorted.some(function(s){ return studentKey(s) === currentVal; })) voterSelect.value = currentVal;
 
-    if (roster.length && remaining.length === 0) {
-      voterGateNote.textContent = "🎉 全班都投票完了！";
-      voterSelect.disabled = true;
+    if (roster.length && votedCount >= roster.length) {
+      voterGateNote.textContent = "🎉 全班都投票完了！投錯的話還是可以選自己的名字重新投票或撤銷。";
     } else {
-      voterGateNote.textContent = roster.length ? "" : "⚠️ 找不到班級名冊，暫時無法核對身份";
-      voterSelect.disabled = false;
+      voterGateNote.textContent = roster.length ? "投錯人了嗎？再選一次自己的名字，就可以更換或撤銷這一票。" : "⚠️ 找不到班級名冊，暫時無法核對身份";
     }
+    voterSelect.disabled = false;
+    renderVoterChoiceInfo();
   }
+
+  function renderVoterChoiceInfo(){
+    var box = document.getElementById("voterChoiceInfo");
+    var text = document.getElementById("voterChoiceText");
+    if (!activeBox || !voterSelect.value) { box.classList.add("hidden"); return; }
+    var voterChoices = activeBox.voterChoices || {};
+    var prevId = voterChoices[voterSelect.value];
+    if (!prevId) { box.classList.add("hidden"); return; }
+    var prevOpt = activeBox.options.filter(function(o){ return o.id === prevId; })[0];
+    text.textContent = "你目前投給：「" + (prevOpt ? prevOpt.label : "（已刪除的選項）") + "」。投錯人可以直接點別的選項更換，或按這裡撤銷：";
+    box.classList.remove("hidden");
+  }
+  voterSelect.addEventListener("change", renderVoterChoiceInfo);
 
   function starBurst(evt){
     var host = document.getElementById("starburst");
