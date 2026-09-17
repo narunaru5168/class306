@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗳️ 投票箱｜成長獵人訓練所</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #5BB8F5; --sun: #FFD93D; --grass: #6BCB77; --coral: #FF6B6B;
+    --purple: #A855F7; --mint: #4DD9AC; --peach: #FFB347; --cloud: #F0F9FF;
+    --dark: #1E2A4A; --card-bg: #FFFEF7;
+    --shadow: 0 8px 32px rgba(30,42,74,0.13); --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(160deg, #e0f2fe 0%, #fef9c3 50%, #dcfce7 100%);
+    min-height: 100vh;
+    color: var(--dark);
+  }
+  h1,h2,h3,.baloo { font-family: 'Baloo 2', cursive; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .topbar {
+    background: linear-gradient(90deg, #5BB8F5, #A855F7);
+    padding: 10px 28px; min-height: 64px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(91,184,245,0.4); position: sticky; top: 0; z-index: 100;
+  }
+  .topbar .logo {
+    font-family: 'Baloo 2', cursive; font-size: 1.4rem; font-weight: 800; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .topbar a.home-link {
+    background: rgba(255,255,255,.22); border: none; border-radius: 50px; color: #fff;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .88rem;
+    padding: 8px 18px; text-decoration: none; white-space: nowrap;
+    transition: background .2s, transform .15s;
+  }
+  .topbar a.home-link:hover { background: rgba(255,255,255,.35); transform: translateY(-1px); }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 20px 70px; }
+
+  .card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 22px 24px; margin-bottom: 20px;
+  }
+  .section-title {
+    font-family: 'Baloo 2', cursive; font-size: 1.4rem; font-weight: 800; color: var(--dark);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .lead { color:#5a6680; font-size:.92rem; margin-bottom:18px; }
+
+  .btn {
+    border: none; border-radius: 50px; font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    display: inline-flex; align-items: center; gap: 6px; font-size:.92rem; padding:10px 22px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity:.55; cursor:default; transform:none; box-shadow:none; }
+  .btn-primary { background: linear-gradient(135deg, var(--sky), var(--purple)); color: #fff; }
+  .btn-success { background: linear-gradient(135deg, var(--grass), var(--mint)); color: #fff; }
+  .btn-danger  { background: linear-gradient(135deg, var(--coral), #FF8E53); color: #fff; }
+  .btn-sun     { background: linear-gradient(135deg, var(--sun), var(--peach)); color: var(--dark); }
+  .btn-ghost   { background: #eef2ff; color: #4338ca; }
+  .btn-sm      { padding: 7px 14px; font-size: .8rem; }
+
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+  label { font-weight: 700; font-size: .85rem; color: #5a6680; }
+  input[type=text], input[type=url] {
+    border: 2px solid #e2e8f0; border-radius: 12px; padding: 10px 14px;
+    font-family: 'Nunito', sans-serif; font-size: .93rem; background: #fff; outline: none;
+    transition: border-color .2s; width:100%;
+  }
+  input:focus { border-color: var(--sky); }
+  .check-row { display:flex; align-items:center; gap:8px; font-weight:700; font-size:.88rem; color:#5a6680; margin-bottom:16px; }
+  .check-row input { width:18px; height:18px; accent-color: var(--purple); }
+
+  .opt-row {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 10px;
+    background: #f8fafc; border-radius: 14px; padding: 10px 12px;
+  }
+  .opt-num {
+    flex-shrink:0; width:30px; height:30px; border-radius:50%;
+    background: linear-gradient(135deg, var(--sky), var(--purple)); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.85rem;
+  }
+  .opt-fields { flex:1; display:flex; gap:8px; flex-wrap:wrap; min-width:0; }
+  .opt-fields input { min-width:120px; }
+  .opt-del {
+    flex-shrink:0; width:30px; height:30px; border-radius:50%; border:none;
+    background:#fee2e2; color:#dc2626; font-weight:800; cursor:pointer; font-size:.9rem;
+  }
+  .opt-del:hover { background:#fecaca; }
+  .add-opt-row { display:flex; gap:10px; flex-wrap:wrap; margin: 14px 0 20px; }
+
+  .history-item {
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding: 10px 4px; border-bottom: 1px dashed #e2e8f0; font-size: .85rem;
+  }
+  .history-item:last-child { border-bottom:none; }
+  .history-item .t { font-weight:700; color:var(--dark); }
+  .history-item .d { color:#94a3b8; font-size:.76rem; }
+  .history-item .w { color:#059669; font-weight:800; }
+  .history-empty { color:#94a3b8; font-size:.85rem; padding:6px 4px; }
+
+  /* active voting */
+  .status-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    background: linear-gradient(135deg, var(--grass), var(--mint)); color:#fff;
+    font-weight:800; font-size:.78rem; padding:5px 14px; border-radius:999px;
+  }
+  .active-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+  .active-title { font-family:'Baloo 2',cursive; font-size:1.5rem; font-weight:800; text-wrap:balance; }
+  .tally-summary { display:flex; gap:14px; align-items:center; margin: 10px 0 18px; flex-wrap:wrap; }
+  .tally-summary .n { font-size:1.6rem; font-weight:900; color: var(--purple); }
+  .tally-summary .l { font-size:.75rem; color:#94a3b8; font-weight:700; }
+
+  .opt-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(230px,1fr)); gap:14px; }
+  .vote-card {
+    background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow);
+    padding: 16px 16px 14px; display:flex; flex-direction:column; gap:10px; position:relative;
+    border-top: 5px solid var(--sky);
+  }
+  .vote-card.leader { border-top-color: var(--sun); box-shadow: 0 0 0 3px #fff3c4, var(--shadow); }
+  .vote-card.missing { opacity:.6; border-top-style:dashed; border-top-color:#cbd5e1; }
+  .missing-badge {
+    display:inline-block; font-size:.72rem; font-weight:800; color:#64748b;
+    background:#eef2f7; border-radius:999px; padding:3px 10px; width:fit-content;
+  }
+  .missing-note { color:#94a3b8; font-style:italic; font-size:.82rem; }
+  .vote-card .vname { font-weight:800; font-size:1.05rem; text-wrap:balance; }
+  .vote-card .vname .medal { margin-left:4px; }
+  .bar-track { height:8px; border-radius:5px; background:#eef2f7; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:5px; background: linear-gradient(90deg, var(--sky), var(--purple)); transition: width .4s ease; }
+  .vote-card .vcount { font-weight:800; color:var(--purple); font-size:.95rem; }
+  .vote-card .vbtns { display:flex; gap:8px; margin-top:auto; }
+  .reveal-locked { text-align:center; padding: 30px 10px; color:#5a6680; }
+  .reveal-locked .big { font-size:2.2rem; margin-bottom:8px; }
+
+  /* modal */
+  .overlay {
+    position: fixed; inset:0; background: rgba(20,30,50,.66); display:flex;
+    align-items:center; justify-content:center; padding:20px; z-index:200;
+  }
+  .overlay[hidden] { display:none; }
+  .modal-box {
+    background:#fff; border-radius:20px; max-width:620px; width:100%; max-height:90vh;
+    overflow-y:auto; padding:20px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.4); position:relative;
+  }
+  .modal-close {
+    position:absolute; top:12px; right:12px; width:32px; height:32px; border-radius:50%;
+    border:none; background:#f1f5f9; font-size:1rem; cursor:pointer;
+  }
+  .frame-wrap { position:relative; width:100%; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden; margin:14px 0; }
+  .frame-wrap iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  .starburst {
+    position:fixed; inset:0; z-index:300; display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+  }
+  .starburst .msg {
+    font-family:'Baloo 2',cursive; font-weight:800; font-size:1.6rem; color:var(--dark);
+    background:#fff; border-radius:20px; padding:18px 34px; box-shadow: var(--shadow);
+    display:flex; align-items:center; gap:10px;
+    animation: pop .6s cubic-bezier(.2,1.5,.4,1) forwards;
+  }
+  @keyframes pop {
+    0%{ transform:scale(.4); opacity:0; } 60%{ transform:scale(1.08); opacity:1; } 100%{ transform:scale(1); opacity:1; }
+  }
+  .starburst .star { position:absolute; font-size:1.6rem; animation: fly 1s ease-out forwards; }
+  @keyframes fly {
+    0%{ transform:translate(0,0) scale(.6) rotate(0deg); opacity:1; }
+    100%{ transform:var(--fly-to) scale(1.2) rotate(180deg); opacity:0; }
+  }
+
+  .toast {
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
+    background: var(--dark); color:#fff; padding:11px 22px; border-radius:999px;
+    font-weight:700; font-size:.85rem; box-shadow: var(--shadow); z-index:400;
+    opacity:0; transition: opacity .25s;
+  }
+  .toast.show { opacity:1; }
+
+  [hidden]{ display:none !important; }
+
+  @media (max-width:480px){
+    .wrap{ padding:20px 14px 60px; }
+    .topbar{ padding:10px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">🗳️ 投票箱</div>
+  <a class="home-link" href="index.html">⬅ 回冒險基地</a>
+</header>
+
+<div class="wrap">
+
+  <!-- ───────── SETUP SCREEN ───────── -->
+  <section id="screenSetup">
+    <div class="card">
+      <div class="section-title">🗳️ 建立新的投票</div>
+      <div class="lead">輸入投票標題和選項，開始一輪班上的投票表決。可以是影片票選、表決班規，或選幹部——想投什麼都可以。</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>投票標題</label>
+          <input type="text" id="voteTitle" placeholder="例如：自主學習成果票選、選風紀股長…">
+        </div>
+      </div>
+
+      <label class="check-row">
+        <input type="checkbox" id="showLiveCheck" checked>
+        投票期間就即時公開票數（取消勾選＝先秘密投票，老師按「公布結果」才會顯示）
+      </label>
+
+      <label style="font-weight:700;font-size:.85rem;color:#5a6680;display:block;margin-bottom:8px;">投票選項</label>
+      <div id="optList"></div>
+
+      <div class="add-opt-row">
+        <button class="btn btn-ghost btn-sm" type="button" id="addOptBtn">➕ 新增選項</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="importRosterBtn">📥 從全班名冊帶入</button>
+      </div>
+
+      <button class="btn btn-primary" id="startVoteBtn" style="width:100%;justify-content:center;padding:14px;font-size:1.02rem;">🚀 開始投票</button>
+      <div id="setupNote" style="font-size:.76rem;color:#94a3b8;text-align:center;margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">📜 歷史投票紀錄</div>
+      <div id="historyList"><div class="history-empty">目前還沒有投票紀錄</div></div>
+    </div>
+  </section>
+
+  <!-- ───────── ACTIVE VOTING SCREEN ───────── -->
+  <section id="screenActive" hidden>
+    <div class="card">
+      <div class="active-head">
+        <div>
+          <span class="status-pill">🟢 投票進行中</span>
+          <div class="active-title" id="activeTitle"></div>
+        </div>
+        <button class="btn btn-danger btn-sm" id="endVoteBtn">🏁 結束本輪投票</button>
+      </div>
+      <div class="tally-summary">
+        <div><div class="n num" id="totalVotesCount">0</div><div class="l">已投票數</div></div>
+        <div><div class="n num" id="totalOptCount">0</div><div class="l">投票選項</div></div>
+      </div>
+      <button class="btn btn-sun btn-sm" id="revealBtn" hidden>🔓 公布目前票數</button>
+    </div>
+
+    <div class="card" id="hiddenTallyCard" hidden>
+      <div class="reveal-locked">
+        <div class="big">🤫</div>
+        目前票數是秘密投票中，老師按「公布目前票數」後大家才看得到
+      </div>
+    </div>
+
+    <div class="opt-grid" id="optGrid"></div>
+  </section>
+
+</div>
+
+<div class="overlay" id="previewOverlay" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="previewClose">✕</button>
+    <h3 class="baloo" id="previewTitle" style="padding-right:30px;"></h3>
+    <div class="frame-wrap" id="previewFrameWrap">
+      <iframe id="previewFrame" src="" allow="autoplay" allowfullscreen loading="lazy"></iframe>
+    </div>
+  </div>
+</div>
+
+<div class="starburst" id="starburst" hidden></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ─── FIREBASE（跟主網站共用同一個班級資料庫）───
+  let db = null, useCloud = false;
+  try {
+    if (typeof firebase !== "undefined") {
+      firebase.initializeApp({
+        apiKey: "AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+        authDomain: "tpedusso-257723.firebaseapp.com",
+        databaseURL: "https://tpedusso-257723-default-rtdb.firebaseio.com",
+        projectId: "tpedusso-257723",
+        storageBucket: "tpedusso-257723.appspot.com",
+        messagingSenderId: "105193372361",
+        appId: "1:105193372361:web:5591b76255cb86cf566b18"
+      });
+      db = firebase.database();
+      useCloud = true;
+    }
+  } catch(e) { console.warn("Firebase 初始化失敗，改用本地儲存", e); }
+
+  var LS_BOX = "cls_voteBox";
+  var LS_HISTORY = "cls_voteHistory";
+
+  var activeBox = null;     // {title, showLive, revealed, options:[{id,label,link,votes}], startedAt}
+  var history = [];
+  var optRowSeq = 0;
+  var writeLock = false;
+  var boxRef = useCloud ? db.ref("class306/voteBox") : null;
+  var historyRef = useCloud ? db.ref("class306/voteHistory") : null;
+
+  function toastMsg(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ───────────────────── SETUP SCREEN ─────────────────────
+  var optList = document.getElementById("optList");
+
+  function addOptRow(label, link, disabled){
+    optRowSeq++;
+    var row = document.createElement("div");
+    row.className = "opt-row";
+    row.dataset.rowId = optRowSeq;
+    row.innerHTML =
+      '<div class="opt-num">' + optList.children.length + 1 + '</div>' +
+      '<div class="opt-fields">' +
+        '<input type="text" class="optLabel" placeholder="選項名稱（例如：01號 黃浩宇）" value="' + (label ? escapeHtml(label) : "") + '">' +
+        '<input type="url" class="optLink" placeholder="連結（選填，例如影片或簡報連結）" value="' + (link ? escapeHtml(link) : "") + '">' +
+        '<label style="display:flex;align-items:center;gap:5px;font-size:.76rem;font-weight:700;color:#94a3b8;white-space:nowrap;">' +
+          '<input type="checkbox" class="optDisabled" style="width:15px;height:15px;accent-color:#dc2626;"' + (disabled ? ' checked' : '') + '> 尚未繳交／不開放投票' +
+        '</label>' +
+      '</div>' +
+      '<button type="button" class="opt-del">✕</button>';
+    row.querySelector(".opt-del").addEventListener("click", function(){
+      row.remove();
+      renumberOptRows();
+    });
+    optList.appendChild(row);
+  }
+
+  function renumberOptRows(){
+    Array.prototype.forEach.call(optList.querySelectorAll(".opt-row"), function(row, i){
+      row.querySelector(".opt-num").textContent = i + 1;
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  document.getElementById("addOptBtn").addEventListener("click", function(){ addOptRow("", ""); });
+
+  document.getElementById("importRosterBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    var done = function(list){
+      btn.disabled = false;
+      if (!list || !list.length) { toastMsg("⚠️ 找不到班上的名冊資料"); return; }
+      list.slice().sort(function(a,b){ return (parseInt(a.seatNo)||99) - (parseInt(b.seatNo)||99); })
+        .forEach(function(s){
+          addOptRow((s.seatNo ? s.seatNo + "號 " : "") + s.name, "");
+        });
+      toastMsg("✅ 已帶入 " + list.length + " 位同學");
+    };
+    if (useCloud && db) {
+      db.ref("class306/students").get().then(function(snap){
+        done(snap && snap.exists && snap.exists() ? snap.val() : null);
+      }).catch(function(){
+        try { done(JSON.parse(localStorage.getItem("cls_students") || "[]")); }
+        catch(e){ done(null); }
+      });
+    } else {
+      try { done(JSON.parse(localStorage.getItem("cls_students") || "[]")); }
+      catch(e){ done(null); }
+    }
+  });
+
+  document.getElementById("startVoteBtn").addEventListener("click", function(){
+    var title = document.getElementById("voteTitle").value.trim();
+    var rows = Array.prototype.slice.call(optList.querySelectorAll(".opt-row"));
+    var options = rows.map(function(row){
+      return {
+        label: row.querySelector(".optLabel").value.trim(),
+        link: row.querySelector(".optLink").value.trim(),
+        disabled: row.querySelector(".optDisabled").checked
+      };
+    }).filter(function(o){ return o.label; });
+
+    var note = document.getElementById("setupNote");
+    var votableCount = options.filter(function(o){ return !o.disabled; }).length;
+    if (!title) { note.textContent = "⚠️ 請先輸入投票標題"; return; }
+    if (votableCount < 2) { note.textContent = "⚠️ 至少需要 2 個「可投票」的選項才能開始投票"; return; }
+    note.textContent = "";
+
+    var box = {
+      title: title,
+      showLive: document.getElementById("showLiveCheck").checked,
+      revealed: false,
+      startedAt: Date.now(),
+      options: options.map(function(o, i){
+        return { id: "o" + i + "_" + Date.now(), label: o.label, link: o.link, disabled: !!o.disabled, votes: 0 };
+      })
+    };
+    saveBox(box);
+  });
+
+  // ───────────────────── ACTIVE SCREEN ─────────────────────
+  var screenSetup = document.getElementById("screenSetup");
+  var screenActive = document.getElementById("screenActive");
+  var optGrid = document.getElementById("optGrid");
+  var hiddenTallyCard = document.getElementById("hiddenTallyCard");
+  var revealBtn = document.getElementById("revealBtn");
+
+  function showScreen(){
+    if (activeBox && activeBox.options && activeBox.options.length) {
+      screenSetup.hidden = true;
+      screenActive.hidden = false;
+      renderActive();
+    } else {
+      screenActive.hidden = true;
+      screenSetup.hidden = false;
+    }
+  }
+
+  function renderActive(){
+    document.getElementById("activeTitle").textContent = activeBox.title;
+    var votable = activeBox.options.filter(function(o){ return !o.disabled; });
+    var total = votable.reduce(function(s,o){ return s + (o.votes||0); }, 0);
+    document.getElementById("totalVotesCount").textContent = total;
+    document.getElementById("totalOptCount").textContent = votable.length + " / " + activeBox.options.length;
+
+    var canSeeResults = activeBox.showLive || activeBox.revealed;
+    revealBtn.hidden = activeBox.showLive || activeBox.revealed;
+    hiddenTallyCard.hidden = canSeeResults;
+    optGrid.hidden = !canSeeResults;
+
+    if (!canSeeResults) return;
+
+    var maxV = Math.max.apply(null, votable.map(function(o){ return o.votes||0; }).concat([0]));
+    var medals = ["🥇","🥈","🥉"];
+    var sorted = votable.slice().sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+
+    optGrid.innerHTML = activeBox.options.map(function(o){
+      if (o.disabled) {
+        return (
+          '<div class="vote-card missing">' +
+            '<div class="vname">' + escapeHtml(o.label) + '</div>' +
+            '<div class="missing-badge">😴 尚未繳交</div>' +
+            '<div class="missing-note">不開放投票</div>' +
+          '</div>'
+        );
+      }
+      var v = o.votes || 0;
+      var pct = maxV > 0 ? Math.round((v/maxV)*100) : 0;
+      var rank = sorted.indexOf(o);
+      var medal = (rank < 3 && v > 0) ? medals[rank] : "";
+      var isLeader = maxV > 0 && v === maxV;
+      var embed = toEmbedUrl(o.link);
+      return (
+        '<div class="vote-card' + (isLeader?' leader':'') + '" data-id="' + o.id + '">' +
+          '<div class="vname">' + escapeHtml(o.label) + (medal ? '<span class="medal">'+medal+'</span>' : '') + '</div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="vcount num">' + v + ' 票</div>' +
+          '<div class="vbtns">' +
+            (o.link ? '<button class="btn btn-ghost btn-sm view-btn" type="button">' + (embed ? '▶️ 看內容' : '🔗 開啟連結') + '</button>' : '') +
+            '<button class="btn btn-success btn-sm vote-btn" type="button" style="flex:1;justify-content:center;">⭐ 投這一票</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+
+    Array.prototype.forEach.call(optGrid.querySelectorAll(".vote-card"), function(card){
+      var id = card.dataset.id;
+      if (!id) return;
+      var opt = activeBox.options.filter(function(o){ return o.id === id; })[0];
+      var voteBtn = card.querySelector(".vote-btn");
+      var viewBtn = card.querySelector(".view-btn");
+      if (voteBtn) voteBtn.addEventListener("click", function(e){ castVote(id, e); });
+      if (viewBtn) viewBtn.addEventListener("click", function(){ openPreview(opt); });
+    });
+  }
+
+  function toEmbedUrl(link){
+    if (!link) return null;
+    var m = link.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || link.match(/[?&]id=([\w-]+)/);
+    if (m) return "https://drive.google.com/file/d/" + m[1] + "/preview";
+    return null;
+  }
+
+  var previewOverlay = document.getElementById("previewOverlay");
+  var previewFrame = document.getElementById("previewFrame");
+  function openPreview(opt){
+    var embed = toEmbedUrl(opt.link);
+    if (!embed) { window.open(opt.link, "_blank", "noopener"); return; }
+    document.getElementById("previewTitle").textContent = opt.label;
+    previewFrame.src = embed;
+    previewOverlay.hidden = false;
+  }
+  document.getElementById("previewClose").addEventListener("click", function(){
+    previewOverlay.hidden = true;
+    previewFrame.src = "";
+  });
+  previewOverlay.addEventListener("click", function(e){
+    if (e.target === previewOverlay) { previewOverlay.hidden = true; previewFrame.src = ""; }
+  });
+
+  function castVote(id, evt){
+    if (writeLock) return;
+    writeLock = true;
+    var opt = activeBox.options.filter(function(o){ return o.id === id; })[0];
+    if (!opt || opt.disabled) { writeLock = false; return; }
+    opt.votes = (opt.votes || 0) + 1;
+    starBurst(evt);
+    saveBox(activeBox).then(function(){ writeLock = false; });
+    renderActive();
+  }
+
+  function starBurst(evt){
+    var host = document.getElementById("starburst");
+    host.hidden = false;
+    host.innerHTML = '<div class="msg">⭐ 你投票了！</div>';
+    var stars = ["⭐","✨","🌟"];
+    for (var i=0;i<8;i++){
+      var s = document.createElement("div");
+      s.className = "star";
+      s.textContent = stars[i % stars.length];
+      var angle = (Math.PI * 2 * i) / 8;
+      var dist = 90 + Math.random()*40;
+      s.style.setProperty("--fly-to", "translate(" + Math.cos(angle)*dist + "px," + Math.sin(angle)*dist + "px)");
+      host.appendChild(s);
+    }
+    setTimeout(function(){ host.hidden = true; }, 750);
+  }
+
+  revealBtn.addEventListener("click", function(){
+    activeBox.revealed = true;
+    saveBox(activeBox);
+  });
+
+  document.getElementById("endVoteBtn").addEventListener("click", function(){
+    if (!confirm('確定要結束「' + activeBox.title + '」這輪投票嗎？結果會存進歷史紀錄。')) return;
+    var sorted = activeBox.options.filter(function(o){ return !o.disabled; }).sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+    var top = sorted[0];
+    var entry = {
+      title: activeBox.title,
+      endedAt: Date.now(),
+      topLabel: top ? top.label : "",
+      topVotes: top ? (top.votes||0) : 0,
+      results: sorted.map(function(o){ return { label:o.label, votes:o.votes||0 }; })
+    };
+    history = [entry].concat(history).slice(0, 30);
+    saveHistory(history);
+    activeBox = null;
+    saveBox(null);
+    document.getElementById("voteTitle").value = "";
+    optList.innerHTML = "";
+    showScreen();
+    renderHistory();
+  });
+
+  function renderHistory(){
+    var el = document.getElementById("historyList");
+    if (!history.length) { el.innerHTML = '<div class="history-empty">目前還沒有投票紀錄</div>'; return; }
+    el.innerHTML = history.map(function(h){
+      var d = new Date(h.endedAt);
+      var ds = d.getMonth()+1 + "/" + d.getDate() + " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+      return (
+        '<div class="history-item">' +
+          '<div><div class="t">' + escapeHtml(h.title) + '</div><div class="d">' + ds + '</div></div>' +
+          '<div class="w">🏆 ' + escapeHtml(h.topLabel||"—") + ' · ' + (h.topVotes||0) + '票</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  // ───────────────────── PERSISTENCE ─────────────────────
+  function saveBox(box){
+    activeBox = box;
+    if (useCloud && boxRef) {
+      return boxRef.set(box).catch(function(e){
+        console.warn("雲端儲存失敗，改用本地", e);
+        localStorage.setItem(LS_BOX, JSON.stringify(box));
+      });
+    }
+    localStorage.setItem(LS_BOX, JSON.stringify(box));
+    return Promise.resolve();
+  }
+  function saveHistory(list){
+    if (useCloud && historyRef) {
+      historyRef.set(list).catch(function(e){
+        console.warn("雲端儲存失敗，改用本地", e);
+        localStorage.setItem(LS_HISTORY, JSON.stringify(list));
+      });
+    } else {
+      localStorage.setItem(LS_HISTORY, JSON.stringify(list));
+    }
+  }
+
+  function init(){
+    if (useCloud && boxRef) {
+      boxRef.on("value", function(snap){
+        activeBox = (snap && snap.exists && snap.exists()) ? snap.val() : null;
+        showScreen();
+      }, function(){
+        try { activeBox = JSON.parse(localStorage.getItem(LS_BOX) || "null"); } catch(e){ activeBox = null; }
+        showScreen();
+      });
+      historyRef.on("value", function(snap){
+        history = (snap && snap.exists && snap.exists()) ? snap.val() : [];
+        if (!Array.isArray(history)) history = Object.keys(history||{}).map(function(k){ return history[k]; });
+        renderHistory();
+      }, function(){
+        try { history = JSON.parse(localStorage.getItem(LS_HISTORY) || "[]"); } catch(e){ history = []; }
+        renderHistory();
+      });
+    } else {
+      try { activeBox = JSON.parse(localStorage.getItem(LS_BOX) || "null"); } catch(e){ activeBox = null; }
+      try { history = JSON.parse(localStorage.getItem(LS_HISTORY) || "[]"); } catch(e){ history = []; }
+      showScreen();
+      renderHistory();
+    }
+    addOptRow("", "");
+    addOptRow("", "");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
