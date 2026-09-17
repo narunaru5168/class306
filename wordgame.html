@@ -145,6 +145,16 @@
   }
   .jump-btn:active { transform: scale(.96); }
 
+  .char-picker { display:flex; gap:8px; flex-wrap:wrap; }
+  .char-opt {
+    width:50px; height:50px; border-radius:14px; border:3px solid #e2e8f0; background:#fff;
+    font-size:1.5rem; cursor:pointer; transition: transform .12s, border-color .15s, background .15s;
+    display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .char-opt:hover { transform: translateY(-2px); }
+  .char-opt:active { transform: scale(.94); }
+  .char-opt.active { border-color: var(--purple); background: #f3e8ff; transform: scale(1.08); box-shadow: 0 4px 12px rgba(168,85,247,.3); }
+
   .memory-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:12px; margin-top:10px; }
   .memory-card {
     aspect-ratio: 1/1; border-radius:14px; background: linear-gradient(135deg, var(--sky), var(--purple));
@@ -282,6 +292,19 @@
   <!-- ══════════════ 跑酷過關模式（單鍵操作）══════════════ -->
   <div class="card mode-panel hidden" id="modeRunner">
     <div class="lead">只有一個按鍵：看到「對的答案」不用按，直接跑過去就會接到；看到「錯的答案」要按「跳！」跳過去，才不會撞到。適合手速慢、或不擅長操控方向鍵的學生，也很適合白板點按。</div>
+
+    <div class="controls-row" style="margin-bottom:10px;">
+      <span style="font-weight:800;font-size:.85rem;color:var(--dark);">🎭 選角色：</span>
+      <div class="char-picker" id="charPicker">
+        <button class="char-opt active" data-char="🐸" data-name="小青蛙" type="button" title="小青蛙">🐸</button>
+        <button class="char-opt" data-char="🦘" data-name="小袋鼠" type="button" title="小袋鼠">🦘</button>
+        <button class="char-opt" data-char="🧟" data-name="小殭屍" type="button" title="小殭屍">🧟</button>
+        <button class="char-opt" data-char="🦖" data-name="小恐龍" type="button" title="小恐龍">🦖</button>
+        <button class="char-opt" data-char="🐰" data-name="小兔子" type="button" title="小兔子">🐰</button>
+        <button class="char-opt" data-char="🏹" data-name="小獵人" type="button" title="小獵人">🏹</button>
+      </div>
+    </div>
+
     <div class="controls-row" style="margin-bottom:14px;">
       <button class="btn btn-primary" onclick="startRunner()">▶️ 開始跑酷</button>
       <button class="btn btn-flat" onclick="stopRunner()">🏁 結束本回合</button>
@@ -1132,7 +1155,7 @@ function finishMemory(){
 // 跑酷過關模式（單鍵操作：只有「跳」）
 // ─────────────────────────────────────────────────────────
 const RUNNER_GRAVITY = 0.0022;      // px per ms^2 (applied as velocity change)
-const RUNNER_JUMP_V = -0.62;        // px per ms, initial upward velocity
+const RUNNER_JUMP_V = -0.85;        // px per ms, initial upward velocity
 const RUNNER_CHAR_X = 110;
 const RUNNER_TILE_GAP = 260;
 const RUNNER_TILE_W = 96, RUNNER_TILE_H = 64;
@@ -1261,7 +1284,7 @@ function runnerDrawChar(x, y){
   runnerCtx.font = '46px serif';
   runnerCtx.textAlign = 'center';
   runnerCtx.textBaseline = 'alphabetic';
-  runnerCtx.fillText('🐸', 0, 0);
+  runnerCtx.fillText(runnerCharacterEmoji, 0, 0);
   runnerCtx.restore();
 }
 
@@ -1353,6 +1376,38 @@ function startRunner(){
   if(runnerRAF) cancelAnimationFrame(runnerRAF);
   runnerRAF = requestAnimationFrame(runnerLoop);
 }
+
+// 角色選擇
+let runnerCharacterEmoji = '🐸', runnerCharacterName = '小青蛙';
+function updateRunnerStartOverlayText(){
+  const h2 = document.querySelector('#runnerStartOverlay h2');
+  const p = document.querySelector('#runnerStartOverlay p');
+  if(h2) h2.textContent = `${runnerCharacterEmoji} 準備好了嗎？`;
+  if(p) p.textContent = `${runnerCharacterName}會自動往前跑。看到對的答案就讓牠跑過去，看到錯的答案要按「跳！」躲開！`;
+  const hint = document.getElementById('runnerBanner');
+  if(hint && !runnerRunning) hint.textContent = `選好課次後按「開始跑酷」${runnerCharacterEmoji}`;
+}
+function setRunnerCharacter(btn){
+  document.querySelectorAll('.char-opt').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  runnerCharacterEmoji = btn.dataset.char;
+  runnerCharacterName = btn.dataset.name;
+  try { localStorage.setItem('wordgame_runnerChar', runnerCharacterEmoji); } catch(e){}
+  updateRunnerStartOverlayText();
+}
+document.querySelectorAll('.char-opt').forEach(btn=>{
+  btn.addEventListener('click', ()=> setRunnerCharacter(btn));
+});
+(function loadRunnerCharacter(){
+  try {
+    const saved = localStorage.getItem('wordgame_runnerChar');
+    if(saved){
+      const opt = document.querySelector(`.char-opt[data-char="${saved}"]`);
+      if(opt){ setRunnerCharacter(opt); return; }
+    }
+  } catch(e){}
+  updateRunnerStartOverlayText();
+})();
 
 runnerCanvas.addEventListener('pointerdown', jumpRunner);
 document.getElementById('runnerJumpBtn').addEventListener('pointerdown', (e)=>{ e.preventDefault(); jumpRunner(); });
