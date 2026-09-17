@@ -133,11 +133,12 @@
     <div class="lead">內容取自翰林三上國語第一課到第六課的習作練習題，蛇吃到正確答案就會變長加分，吃錯會扣分變短，適合上課時投影出來讓學生輪流上台操作。</div>
     <div class="controls-row">
       <select id="lessonSelect"></select>
-      <select id="speedSelect">
-        <option value="260">🐢 慢速</option>
-        <option value="180" selected>🚶 中速</option>
-        <option value="120">⚡ 快速</option>
-      </select>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;">
+        ⏱️ 每格秒數
+        <input type="number" id="speedSeconds" min="0.2" max="5" step="0.1" value="1.5"
+          style="width:70px;border:2px solid #e2e8f0;border-radius:12px;padding:8px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.95rem;">
+        秒
+      </label>
       <button class="btn btn-primary" onclick="startGame()">▶️ 開始遊戲</button>
       <span class="stat-pill">⭐ 分數：<span id="scoreVal">0</span></span>
       <span class="stat-pill">📝 第 <span id="roundVal">0</span> 題</span>
@@ -457,6 +458,20 @@ function gameOver(){
   document.getElementById('gameOverOverlay').classList.remove('hidden');
 }
 
+function getSpeedMs(){
+  const secs = parseFloat(document.getElementById('speedSeconds').value);
+  const v = (isNaN(secs) || secs <= 0) ? 1.5 : secs;
+  return Math.round(v * 1000);
+}
+
+// 遊戲進行中調整秒數也能立刻套用，不用重新開始
+document.getElementById('speedSeconds').addEventListener('change', ()=>{
+  if(running){
+    clearInterval(timer);
+    timer = setInterval(tick, getSpeedMs());
+  }
+});
+
 function startGame(){
   document.getElementById('startOverlay').classList.add('hidden');
   document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -465,8 +480,7 @@ function startGame(){
   draw();
   running = true;
   clearInterval(timer);
-  const speed = parseInt(document.getElementById('speedSelect').value) || 180;
-  timer = setInterval(tick, speed);
+  timer = setInterval(tick, getSpeedMs());
 }
 </script>
 </body>
