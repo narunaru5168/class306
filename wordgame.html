@@ -1280,7 +1280,7 @@ function runnerDrawChar(x, y){
   const squash = runnerChar.jumping ? 1 : (Math.sin(Date.now()/90) * 0.04 + 1);
   runnerCtx.save();
   runnerCtx.translate(x, y);
-  runnerCtx.scale(1, squash);
+  runnerCtx.scale(-1, squash);
   runnerCtx.font = '46px serif';
   runnerCtx.textAlign = 'center';
   runnerCtx.textBaseline = 'alphabetic';
@@ -1299,21 +1299,20 @@ function runnerDraw(){
   c.lineWidth = 3;
   c.beginPath(); c.moveTo(0, RUNNER_GROUND_Y+30); c.lineTo(W, RUNNER_GROUND_Y+30); c.stroke();
 
-  // 字詞方塊
+  // 字詞方塊：還沒判定是中性色，判定後永遠保持該顏色（答對綠色／答錯紅色），不會退回中性色
   runnerTiles.forEach(t=>{
     const px = t.x - RUNNER_TILE_W/2, py = RUNNER_GROUND_Y - RUNNER_TILE_H + 30;
-    c.fillStyle = t.flash > 0 ? (t.flashGood ? '#dcfce7' : '#fee2e2') : '#fffef7';
+    c.fillStyle = t.resolved ? (t.flashGood ? '#dcfce7' : '#fee2e2') : '#fffef7';
     roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
     c.fill();
-    c.strokeStyle = t.flash > 0 ? (t.flashGood ? '#22c55e' : '#ef4444') : '#A855F7';
+    c.strokeStyle = t.resolved ? (t.flashGood ? '#22c55e' : '#ef4444') : '#A855F7';
     c.lineWidth = 3;
     roundRectRunner(px, py, RUNNER_TILE_W, RUNNER_TILE_H, 14);
     c.stroke();
-    c.fillStyle = '#1E2A4A';
+    c.fillStyle = t.resolved ? (t.flashGood ? '#16a34a' : '#dc2626') : '#1E2A4A';
     c.font = t.word.length >= 3 ? 'bold 16px Nunito, sans-serif' : 'bold 20px Nunito, sans-serif';
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(t.word, t.x, py + RUNNER_TILE_H/2 + 1);
-    if(t.flash > 0) t.flash = Math.max(0, t.flash - 0.03);
   });
 
   runnerDrawChar(RUNNER_CHAR_X, runnerChar.y);
