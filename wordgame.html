@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 語詞貪食蛇｜成長獵人訓練所</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #5BB8F5; --sun: #FFD93D; --grass: #6BCB77; --coral: #FF6B6B;
+    --purple: #A855F7; --mint: #4DD9AC; --peach: #FFB347; --cloud: #F0F9FF;
+    --dark: #1E2A4A; --card-bg: #FFFEF7;
+    --shadow: 0 8px 32px rgba(30,42,74,0.13); --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(160deg, #e0f2fe 0%, #fef9c3 50%, #dcfce7 100%);
+    min-height: 100vh;
+    color: var(--dark);
+  }
+  h1,h2,h3,.baloo { font-family: 'Baloo 2', cursive; }
+
+  .topbar {
+    background: linear-gradient(90deg, #5BB8F5, #A855F7);
+    padding: 10px 28px; min-height: 64px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(91,184,245,0.4); position: sticky; top: 0; z-index: 100;
+  }
+  .topbar .logo {
+    font-family: 'Baloo 2', cursive; font-size: 1.4rem; font-weight: 800; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .topbar a.home-link {
+    background: rgba(255,255,255,.22); border: none; border-radius: 50px; color: #fff;
+    font-family: 'Nunito', sans-serif; font-weight: 700; font-size: .88rem;
+    padding: 8px 18px; text-decoration: none; white-space: nowrap;
+    transition: background .2s, transform .15s;
+  }
+  .topbar a.home-link:hover { background: rgba(255,255,255,.35); transform: translateY(-1px); }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 22px 16px 60px; }
+
+  .card {
+    background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px 22px; margin-bottom: 18px;
+  }
+  .section-title {
+    font-family: 'Baloo 2', cursive; font-size: 1.3rem; font-weight: 800; color: var(--dark);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .lead { color:#5a6680; font-size:.88rem; margin-bottom:10px; line-height:1.6; }
+
+  .btn {
+    border: none; border-radius: 50px; font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    display: inline-flex; align-items: center; gap: 6px; font-size:.92rem; padding:10px 22px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+  .btn-primary { background: linear-gradient(135deg, var(--sky), var(--purple)); color: #fff; }
+  .btn-success { background: linear-gradient(135deg, var(--grass), var(--mint)); color: #fff; }
+  .btn-flat { background:#eef2f7; color:var(--dark); }
+
+  select {
+    font-family:'Nunito',sans-serif; font-size:.95rem; font-weight:700; color:var(--dark);
+    border:2px solid #e2e8f0; border-radius:12px; padding:10px 14px; background:#fff; outline:none;
+  }
+
+  .controls-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+
+  .stat-pill {
+    background:#eef2f7; border-radius:999px; padding:6px 16px; font-weight:800; font-size:.9rem;
+    display:flex; align-items:center; gap:6px;
+  }
+
+  .question-banner {
+    background: linear-gradient(135deg, #fff7e0, #fff);
+    border: 2px dashed var(--sun); border-radius: 16px; padding: 14px 18px;
+    font-family:'Baloo 2',cursive; font-size: 1.15rem; font-weight: 700; color: var(--dark);
+    text-align: center; margin-bottom: 14px; line-height: 1.7; min-height: 3.2em;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .question-banner .blank {
+    display:inline-block; min-width: 2.4em; border-bottom: 3px solid var(--coral);
+    color: var(--coral); padding: 0 4px;
+  }
+
+  .game-shell { position: relative; display:flex; justify-content:center; }
+  canvas#board {
+    background:#0f2027; background: linear-gradient(160deg,#12303f,#0c1e29);
+    border-radius: 18px; box-shadow: var(--shadow); max-width:100%; height:auto;
+    touch-action: none;
+  }
+  .overlay {
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; background:rgba(15,32,39,.86); border-radius:18px; color:#fff; text-align:center; padding:20px;
+  }
+  .overlay h2 { font-size:1.6rem; }
+  .overlay p { font-size:1rem; opacity:.9; }
+  .hidden { display:none !important; }
+
+  .dpad { display:grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3,56px); gap:6px; justify-content:center; margin-top:14px; }
+  .dpad button {
+    border:none; border-radius:14px; background:#fff; box-shadow: 0 4px 10px rgba(0,0,0,.12);
+    font-size:1.4rem; cursor:pointer; color:var(--dark);
+  }
+  .dpad button:active { transform: scale(.92); }
+  .dpad .up { grid-column:2; grid-row:1; }
+  .dpad .left { grid-column:1; grid-row:2; }
+  .dpad .down { grid-column:2; grid-row:2; }
+  .dpad .right { grid-column:3; grid-row:2; }
+
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:.82rem; color:#5a6680; margin-top:10px; justify-content:center; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .swatch { width:14px; height:14px; border-radius:4px; display:inline-block; }
+
+  @media (max-width: 700px) {
+    .question-banner { font-size: .95rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">🐍 語詞貪食蛇</div>
+  <a class="home-link" href="index.html">⬅ 回冒險基地</a>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="section-title">📖 選擇練習範圍</div>
+    <div class="lead">內容取自翰林三上國語第一課到第六課的習作練習題，蛇吃到正確答案就會變長加分，吃錯會扣分變短，適合上課時投影出來讓學生輪流上台操作。</div>
+    <div class="controls-row">
+      <select id="lessonSelect"></select>
+      <select id="speedSelect">
+        <option value="260">🐢 慢速</option>
+        <option value="180" selected>🚶 中速</option>
+        <option value="120">⚡ 快速</option>
+      </select>
+      <button class="btn btn-primary" onclick="startGame()">▶️ 開始遊戲</button>
+      <span class="stat-pill">⭐ 分數：<span id="scoreVal">0</span></span>
+      <span class="stat-pill">📝 第 <span id="roundVal">0</span> 題</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="question-banner" id="questionBanner">選好課次後按「開始遊戲」，題目會出現在這裡 👀</div>
+
+    <div class="game-shell">
+      <canvas id="board" width="784" height="560"></canvas>
+      <div class="overlay" id="startOverlay">
+        <h2>🐍 準備好了嗎？</h2>
+        <p>用方向鍵（或下面的按鈕）控制蛇，吃到正確答案的字詞方塊！</p>
+        <button class="btn btn-success" onclick="startGame()">▶️ 開始遊戲</button>
+      </div>
+      <div class="overlay hidden" id="gameOverOverlay">
+        <h2>🏁 遊戲結束！</h2>
+        <p id="finalScoreText">最終分數：0</p>
+        <button class="btn btn-success" onclick="startGame()">🔁 再玩一次</button>
+      </div>
+    </div>
+
+    <div class="dpad">
+      <button class="up" onclick="setDir(0,-1)">⬆️</button>
+      <button class="left" onclick="setDir(-1,0)">⬅️</button>
+      <button class="down" onclick="setDir(0,1)">⬇️</button>
+      <button class="right" onclick="setDir(1,0)">➡️</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="swatch" style="background:#6BCB77;"></span>蛇（答對變長）</span>
+      <span><span class="swatch" style="background:#fff;border:2px solid #A855F7;"></span>字詞方塊（吃到才知道對不對）</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+// 翰林三上國語 第一課～第六課 練習題資料（取材自習作）
+// ─────────────────────────────────────────────────────────
+const LESSONS = {
+  l1: {
+    title: '第一課・時間是什麼',
+    bank: ['縮短','快','白天','伸長','快樂','黑夜','慢','悲傷','到底','到來','可是','還是','一定','決定'],
+    rounds: [
+      { sentence:'弟弟本來游得很【＿＿】，努力練習後，速度就變快了。', answer:'慢' },
+      { sentence:'弟弟本來游得很慢，努力練習後，速度就變【＿＿】了。', answer:'快' },
+      { sentence:'小猴子【＿＿】手臂，想縮短手和香蕉的距離。', answer:'伸長' },
+      { sentence:'小猴子伸長手臂，想【＿＿】手和香蕉的距離。', answer:'縮短' },
+      { sentence:'照亮【＿＿】的太陽，黑夜時躲到哪裡去了呢？', answer:'白天' },
+      { sentence:'照亮白天的太陽，【＿＿】時躲到哪裡去了呢？', answer:'黑夜' },
+      { sentence:'【＿＿】的時候，想一想快樂的事，心情就會變好。', answer:'悲傷' },
+      { sentence:'悲傷的時候，想一想【＿＿】的事，心情就會變好。', answer:'快樂' },
+      { sentence:'這一題【＿＿】要怎麼算？', answer:'到底', options:['到底','到來'] },
+      { sentence:'我【＿＿】不知道牠是什麼動物。', answer:'還是', options:['可是','還是'] },
+      { sentence:'你【＿＿】不可能搬得動。', answer:'一定', options:['一定','決定'] },
+    ]
+  },
+  l2: {
+    title: '第二課・妙用便利貼',
+    bank: ['準時','準備','明顯','明白','突然','果然','隨便','隨時'],
+    rounds: [
+      { sentence:'他今天提早十分鐘出門，終於【＿＿】到校了。', answer:'準時', options:['準時','準備'] },
+      { sentence:'老師把大家的美勞作品貼在牆上最【＿＿】的地方。', answer:'明顯', options:['明顯','明白'] },
+      { sentence:'這個謎題的答案，【＿＿】和哥哥猜的一樣。', answer:'果然', options:['突然','果然'] },
+      { sentence:'夏天天氣炎熱，【＿＿】都需要補充水分。', answer:'隨時', options:['隨便','隨時'] },
+    ]
+  },
+  l3: {
+    title: '第三課・提早五分鐘',
+    bank: ['常常','總是','有時','從不'],
+    rounds: [
+      { sentence:'壯壯：我喜歡運動，【＿＿】要跑一跑才會開心。', answer:'總是' },
+      { sentence:'小安：雖然我跑不快，但【＿＿】到操場練習。', answer:'常常' },
+      { sentence:'美美：早上我會和同學打球，【＿＿】也會去跑步。', answer:'有時' },
+    ]
+  },
+  l4: {
+    title: '第四課・水滾了',
+    bank: ['經常','非常','總是','長長的','快快的','慢慢的','不斷的','不安的','不遠的','然後','忽然','雖然'],
+    rounds: [
+      { sentence:'妹妹「十分」著急，意思最接近【＿＿】。', answer:'非常', options:['經常','非常','總是'] },
+      { sentence:'花圃裡的小豆苗「漸漸的」長大，意思最接近【＿＿】。', answer:'慢慢的', options:['長長的','快快的','慢慢的'] },
+      { sentence:'哥哥「不停的」練習，意思最接近【＿＿】。', answer:'不斷的', options:['不斷的','不安的','不遠的'] },
+      { sentence:'天空「突然」下起大雨，意思最接近【＿＿】。', answer:'忽然', options:['然後','忽然','雖然'] },
+    ]
+  },
+  l5: {
+    title: '第五課・為梨花撐傘',
+    bank: ['撐','淋','貼','遮','綁','望','站','所以','不只','因為','還'],
+    rounds: [
+      { sentence:'志工們用膠帶【＿＿】好攤位地圖和宣傳海報。', answer:'貼' },
+      { sentence:'志工們用繩子【＿＿】緊彩帶和吊牌。', answer:'綁' },
+      { sentence:'志工們在遊客休息區【＿＿】起遮陽傘。', answer:'撐' },
+      { sentence:'遊客們【＿＿】在園遊會入口。', answer:'站' },
+      { sentence:'遊客們【＿＿】著布置好的攤位，等待活動開始。', answer:'望' },
+      { sentence:'朗讀時，【＿＿】要讀得流暢自然，還要配合音量的變化。', answer:'不只' },
+      { sentence:'朗讀時，不只要讀得流暢自然，【＿＿】要配合音量的變化。', answer:'還' },
+      { sentence:'這次朗讀比賽，【＿＿】我每天都認真練習，所以拿了第一名。', answer:'因為' },
+      { sentence:'這次朗讀比賽，因為我每天都認真練習，【＿＿】拿了第一名。', answer:'所以' },
+    ]
+  },
+  l6: {
+    title: '第六課・小鉛筆大學問',
+    bank: ['只要','就','雖然','但是','不但','還'],
+    rounds: [
+      { sentence:'字典【＿＿】不會說話，但是有很豐富的學問。', answer:'雖然' },
+      { sentence:'字典雖然不會說話，【＿＿】有很豐富的學問。', answer:'但是' },
+      { sentence:'【＿＿】你遇到不認識的生字語詞，就可以請教它。', answer:'只要' },
+      { sentence:'只要你遇到不認識的生字語詞，【＿＿】可以請教它。', answer:'就' },
+      { sentence:'它【＿＿】教你字詞怎麼念，還告訴你字詞的意思和用法。', answer:'不但' },
+      { sentence:'它不但教你字詞怎麼念，【＿＿】告訴你字詞的意思和用法。', answer:'還' },
+    ]
+  },
+};
+
+function buildLessonSelect(){
+  const sel = document.getElementById('lessonSelect');
+  let html = '';
+  Object.keys(LESSONS).forEach(k=>{
+    html += `<option value="${k}">${LESSONS[k].title}</option>`;
+  });
+  html += `<option value="all">🌟 綜合複習（第一課～第六課）</option>`;
+  sel.innerHTML = html;
+}
+buildLessonSelect();
+
+function getActiveRounds(){
+  const key = document.getElementById('lessonSelect').value;
+  if(key === 'all'){
+    let all = [];
+    Object.keys(LESSONS).forEach(k=>{
+      LESSONS[k].rounds.forEach(r=> all.push({...r, _bank: LESSONS[k].bank}));
+    });
+    return all;
+  }
+  const lesson = LESSONS[key];
+  return lesson.rounds.map(r=>({...r, _bank: lesson.bank}));
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildOptions(round){
+  const bank = round._bank || [];
+  let opts = round.options ? round.options.slice() : [round.answer];
+  const pool = bank.filter(w=> !opts.includes(w));
+  while(opts.length < 4 && pool.length){
+    const idx = Math.floor(Math.random()*pool.length);
+    opts.push(pool.splice(idx,1)[0]);
+  }
+  return shuffle(opts);
+}
+
+// ─────────────────────────────────────────────────────────
+// 貪食蛇遊戲引擎
+// ─────────────────────────────────────────────────────────
+const COLS = 14, ROWS = 10, CELL = 56;
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+let snake, dir, nextDir, tiles, roundQueue, roundIdx, score, timer, running;
+
+function resetState(){
+  snake = [{x:6,y:5},{x:5,y:5},{x:4,y:5}];
+  dir = {x:1,y:0};
+  nextDir = {x:1,y:0};
+  score = 0;
+  roundIdx = 0;
+  roundQueue = shuffle(getActiveRounds());
+  updateStats();
+}
+
+function updateStats(){
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('roundVal').textContent = Math.min(roundIdx+1, roundQueue.length);
+}
+
+function currentRound(){
+  return roundQueue[roundIdx % roundQueue.length];
+}
+
+function cellFree(x,y){
+  return !snake.some(s=>s.x===x&&s.y===y) && !tiles.some(t=>t.x===x&&t.y===y);
+}
+
+function randomFreeCell(){
+  let x,y,tries=0;
+  do { x = Math.floor(Math.random()*COLS); y = Math.floor(Math.random()*ROWS); tries++; }
+  while(!cellFree(x,y) && tries < 200);
+  return {x,y};
+}
+
+function spawnTiles(){
+  const round = currentRound();
+  const opts = buildOptions(round);
+  tiles = opts.map(word=>{
+    const pos = randomFreeCell();
+    return { x: pos.x, y: pos.y, word, correct: word === round.answer };
+  });
+  document.getElementById('questionBanner').innerHTML =
+    escapeHtml(round.sentence).replace('【＿＿】', '<span class="blank">？</span>');
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setDir(x,y){
+  if(!running) return;
+  if(dir.x === -x && dir.y === -y) return; // 不能直接反向撞自己
+  nextDir = {x,y};
+}
+document.addEventListener('keydown', e=>{
+  const map = { ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0],
+                w:[0,-1], s:[0,1], a:[-1,0], d:[1,0] };
+  if(map[e.key]){ e.preventDefault(); setDir(map[e.key][0], map[e.key][1]); }
+});
+
+function tick(){
+  dir = nextDir;
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  if(head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || snake.some(s=>s.x===head.x&&s.y===head.y)){
+    return gameOver();
+  }
+
+  snake.unshift(head);
+
+  const hitIdx = tiles.findIndex(t=>t.x===head.x && t.y===head.y);
+  if(hitIdx >= 0){
+    const tile = tiles[hitIdx];
+    if(tile.correct){
+      score += 10;
+      roundIdx++;
+      spawnTiles();
+    } else {
+      score = Math.max(0, score - 5);
+      if(snake.length > 3) snake.pop();
+      tiles.splice(hitIdx,1);
+      const round = currentRound();
+      const pos = randomFreeCell();
+      tiles.push({ x: pos.x, y: pos.y, word: tile.word, correct: false });
+      snake.pop();
+    }
+    updateStats();
+  } else {
+    snake.pop();
+  }
+
+  draw();
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // grid dots
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  for(let x=0;x<COLS;x++) for(let y=0;y<ROWS;y++) ctx.fillRect(x*CELL+CELL/2-1, y*CELL+CELL/2-1, 2,2);
+
+  // tiles
+  tiles.forEach(t=>{
+    const px = t.x*CELL, py = t.y*CELL;
+    ctx.fillStyle = '#fffef7';
+    roundRect(px+4, py+4, CELL-8, CELL-8, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#A855F7';
+    ctx.lineWidth = 2.5;
+    roundRect(px+4, py+4, CELL-8, CELL-8, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#1E2A4A';
+    ctx.font = t.word.length >= 3 ? 'bold 15px Nunito, sans-serif' : 'bold 18px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t.word, px+CELL/2, py+CELL/2+1);
+  });
+
+  // snake
+  snake.forEach((s,i)=>{
+    const px = s.x*CELL, py = s.y*CELL;
+    ctx.fillStyle = i===0 ? '#4DD9AC' : '#6BCB77';
+    roundRect(px+3, py+3, CELL-6, CELL-6, 10);
+    ctx.fill();
+  });
+  if(snake[0]){
+    ctx.fillStyle = '#1E2A4A';
+    const hx = snake[0].x*CELL + CELL/2, hy = snake[0].y*CELL + CELL/2;
+    const ex = dir.x*8, ey = dir.y*8;
+    ctx.beginPath(); ctx.arc(hx+ex-6, hy+ey-4, 3, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx+ex+6, hy+ey-4, 3, 0, 7); ctx.fill();
+  }
+}
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function gameOver(){
+  running = false;
+  clearInterval(timer);
+  document.getElementById('finalScoreText').textContent = `最終分數：${score}（答對 ${roundIdx} 題）`;
+  document.getElementById('gameOverOverlay').classList.remove('hidden');
+}
+
+function startGame(){
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('gameOverOverlay').classList.add('hidden');
+  resetState();
+  spawnTiles();
+  draw();
+  running = true;
+  clearInterval(timer);
+  const speed = parseInt(document.getElementById('speedSelect').value) || 180;
+  timer = setInterval(tick, speed);
+}
+</script>
+</body>
+</html>
