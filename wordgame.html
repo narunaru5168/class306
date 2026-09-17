@@ -130,7 +130,7 @@
 
   <div class="card">
     <div class="section-title">📖 選擇練習範圍</div>
-    <div class="lead">內容取自翰林三上國語第一課到第六課的習作練習題，蛇吃到正確答案就會變長加分，吃錯會扣分變短，適合上課時投影出來讓學生輪流上台操作。</div>
+    <div class="lead">內容取自翰林三上國語第一課到第十二課的習作練習題，蛇吃到正確答案就會變長加分，吃錯會扣分變短，適合上課時投影出來讓學生輪流上台操作。</div>
     <div class="controls-row">
       <select id="lessonSelect"></select>
       <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;">
@@ -255,6 +255,90 @@ const LESSONS = {
       { sentence:'它不但教你字詞怎麼念，【＿＿】告訴你字詞的意思和用法。', answer:'還' },
     ]
   },
+  l7: {
+    title: '第七課・風的味道',
+    bank: ['搭乘','航行','蔚藍','鹹鹹','欣賞','山坡','雪橇'],
+    rounds: [
+      { sentence:'我們將【＿＿】郵輪，航行在蔚藍的大海上。', answer:'搭乘' },
+      { sentence:'我們搭乘郵輪，【＿＿】在蔚藍的大海上。', answer:'航行' },
+      { sentence:'迎著【＿＿】的海風，欣賞美麗的落日。', answer:'鹹鹹' },
+      { sentence:'迎著鹹鹹的海風，【＿＿】美麗的落日。', answer:'欣賞' },
+      { sentence:'我們在野外的【＿＿】上玩雪橇。', answer:'山坡' },
+      { sentence:'我們在野外的山坡上玩【＿＿】。', answer:'雪橇' },
+    ]
+  },
+  l8: {
+    title: '第八課・寄居蟹找新家',
+    bank: ['讓','幫','剛好','正當','欣賞','觀察'],
+    rounds: [
+      { sentence:'沒想到大家來玩，【＿＿】小螃蟹失去了乾淨的家園。', answer:'讓', options:['幫','讓'] },
+      { sentence:'我感冒發燒了，【＿＿】是在週六，爸爸不用請假照顧我。', answer:'剛好', options:['剛好','正當'] },
+      { sentence:'雖然天氣很冷，大批民眾仍湧到合歡山【＿＿】雪景。', answer:'欣賞', options:['觀察','欣賞'] },
+    ]
+  },
+  l9: {
+    title: '第九課・阿塱壹古道',
+    bank: ['重要','要是','事件','條件','原野','原本','材料','料理','當當當','轟隆隆','砰砰砰','吱吱喳喳','隨風搖動','一件件洗乾淨','窗外咖啡色','綁著馬尾'],
+    rounds: [
+      { sentence:'專心是學習【＿＿】的條件。', answer:'重要', options:['重要','要是'] },
+      { sentence:'專心是學習重要的【＿＿】。', answer:'條件', options:['事件','條件'] },
+      { sentence:'海水是製鹽【＿＿】的材料。', answer:'原本', options:['原野','原本'] },
+      { sentence:'海水是製鹽原本的【＿＿】。', answer:'材料', options:['材料','料理'] },
+      { sentence:'【＿＿】的小麻雀們，吱吱喳喳的叫著，好像在找我出去玩。', answer:'窗外咖啡色' },
+      { sentence:'窗外咖啡色的小麻雀們，【＿＿】的叫著，好像在找我出去玩。', answer:'吱吱喳喳' },
+      { sentence:'一聽到【＿＿】的雷聲，哥哥趕緊去收衣服，以免一件件洗乾淨的衣服被雨淋溼了。', answer:'轟隆隆' },
+      { sentence:'一聽到轟隆隆的雷聲，哥哥趕緊去收【＿＿】的衣服，以免被雨淋溼了。', answer:'一件件洗乾淨' },
+      { sentence:'【＿＿】，下課了！我和綁著馬尾的小美，一起去操場散步。', answer:'當當當' },
+      { sentence:'當當當，下課了！我和【＿＿】的小美，一起去操場散步。', answer:'綁著馬尾' },
+    ]
+  },
+  l10: {
+    title: '第十課・秋千上的婚禮',
+    bank: ['一一','習俗','珍惜','結束'],
+    rounds: [
+      { sentence:'我們先在校門口排好隊，再【＿＿】上車。', answer:'一一' },
+      { sentence:'在除夕前大掃除，是我們長久以來的【＿＿】。', answer:'習俗' },
+      { sentence:'我非常【＿＿】這枝筆，因為這是奶奶送我的禮物。', answer:'珍惜' },
+      { sentence:'直到晚上，歡樂的生日宴會才【＿＿】。', answer:'結束' },
+    ]
+  },
+  l11: {
+    title: '第十一課・一路平安',
+    bank: ['煙火','鞭炮','除夕','嬸嬸','貼春聯','休息','工廠','幸福','倒數','守歲'],
+    rounds: [
+      { sentence:'過年時晚上天空中五顏六色、發出巨大聲響的東西叫做【＿＿】。', answer:'煙火' },
+      { sentence:'小朋友過年最喜歡放的、劈哩啪啦作響的長串東西是【＿＿】。', answer:'鞭炮' },
+      { sentence:'農曆一年的最後一天，也就是過年前一天，叫做【＿＿】。', answer:'除夕' },
+      { sentence:'爸爸的妹妹或弟弟的太太，我們稱呼她為【＿＿】。', answer:'嬸嬸' },
+      { sentence:'過年前，家家戶戶會在門上【＿＿】，希望帶來好運。', answer:'貼春聯' },
+      { sentence:'工廠放假，工人們終於可以【＿＿】了。', answer:'休息' },
+      { sentence:'生產東西、有很多機器在運作的地方叫做【＿＿】。', answer:'工廠' },
+      { sentence:'一家人團圓、平安健康，是最大的【＿＿】。', answer:'幸福' },
+      { sentence:'跨年時，大家會一起【＿＿】：十、九、八……。', answer:'倒數' },
+      { sentence:'除夕夜，大家熬夜不睡覺，這個習俗叫做【＿＿】。', answer:'守歲' },
+    ]
+  },
+  l12: {
+    title: '第十二課・不一樣的團圓',
+    bank: ['沉重','輕便','吵鬧','平靜','黑暗','明亮','師傅','博物館','薄弱','轉變','傳染','磚牆'],
+    rounds: [
+      { sentence:'我肩上的背包雖然【＿＿】，心情卻是無比輕鬆。', answer:'沉重', options:['輕便','沉重'] },
+      { sentence:'大隊接力賽的名次就要公布，在【＿＿】的人群中，我靜靜看著臺上。', answer:'吵鬧', options:['吵鬧','平靜'] },
+      { sentence:'信號燈在【＿＿】的隧道發出耀眼的光芒。', answer:'黑暗', options:['明亮','黑暗'] },
+      { sentence:'拿刀切菜、負責煮飯的人，我們稱他為【＿＿】。', answer:'師傅' },
+      { sentence:'展示恐龍化石和古文物的地方叫做【＿＿】。', answer:'博物館' },
+      { sentence:'他生病沒有休息，身體變得很【＿＿】。', answer:'薄弱' },
+      { sentence:'天氣忽然從晴天【＿＿】成下雨天。', answer:'轉變' },
+      { sentence:'感冒很容易【＿＿】給其他人，要記得戴口罩。', answer:'傳染' },
+      { sentence:'蓋房子常用紅色的【＿＿】堆疊起來。', answer:'磚牆' },
+    ]
+  },
+};
+
+const COMBOS = {
+  'all_1_6': { label: '🌟 綜合複習（第一課～第六課）', keys: ['l1','l2','l3','l4','l5','l6'] },
+  'all_7_12': { label: '🌟 綜合複習（第七課～第十二課）', keys: ['l7','l8','l9','l10','l11','l12'] },
+  'all_1_12': { label: '🌟🌟 綜合複習（第一課～第十二課）', keys: ['l1','l2','l3','l4','l5','l6','l7','l8','l9','l10','l11','l12'] },
 };
 
 function buildLessonSelect(){
@@ -263,16 +347,18 @@ function buildLessonSelect(){
   Object.keys(LESSONS).forEach(k=>{
     html += `<option value="${k}">${LESSONS[k].title}</option>`;
   });
-  html += `<option value="all">🌟 綜合複習（第一課～第六課）</option>`;
+  Object.keys(COMBOS).forEach(k=>{
+    html += `<option value="${k}">${COMBOS[k].label}</option>`;
+  });
   sel.innerHTML = html;
 }
 buildLessonSelect();
 
 function getActiveRounds(){
   const key = document.getElementById('lessonSelect').value;
-  if(key === 'all'){
+  if(COMBOS[key]){
     let all = [];
-    Object.keys(LESSONS).forEach(k=>{
+    COMBOS[key].keys.forEach(k=>{
       LESSONS[k].rounds.forEach(r=> all.push({...r, _bank: LESSONS[k].bank}));
     });
     return all;
