@@ -1291,6 +1291,8 @@
       <div class="drive-btn-row">
         <button class="btn btn-drive-import" onclick="syncGradeSheet('306國語')">🔄 同步國語</button>
         <button class="btn btn-drive-import" onclick="syncGradeSheet('306數學')">🔄 同步數學</button>
+        <button class="btn btn-drive-import" onclick="syncGradeSheet('306社會')">🔄 同步社會</button>
+        <button class="btn btn-drive-import" onclick="syncGradeSheet('306有品閱讀')">🔄 同步有品閱讀</button>
         <button class="btn btn-drive-export" onclick="exportCSV()">📥 匯出 CSV</button>
       </div>
     </div>
@@ -1299,7 +1301,7 @@
       <button class="btn btn-success btn-sm" onclick="saveAppsUrl()">💾 儲存</button>
     </div>
     <div style="font-size:.8rem;color:#4a7c4e;line-height:1.7;">
-      📌 Apps Script 網址只需設定一次，之後點「同步國語」或「同步數學」即可從 Google Sheets 抓取最新資料。<br>
+      📌 Apps Script 網址只需設定一次，之後點「同步國語」「同步數學」「同步社會」「同步有品閱讀」即可從 Google Sheets 抓取最新資料。<br>
       ✏️ 在下方表格直接點格子也可以編輯，<strong>會自動同步回 Google Sheets</strong>。雙擊欄位標題可以改名。
     </div>
     <div id="lastSyncTime" style="margin-top:8px;font-size:.78rem;color:#94a3b8;font-weight:700;">🕐 尚未成功同步過</div>
@@ -1310,6 +1312,8 @@
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
     <button class="grade-tab active" id="tab-國語" onclick="switchGradeTab('306國語',this)">📖 國語</button>
     <button class="grade-tab" id="tab-數學" onclick="switchGradeTab('306數學',this)">🔢 數學</button>
+    <button class="grade-tab" id="tab-社會" onclick="switchGradeTab('306社會',this)">🏛️ 社會</button>
+    <button class="grade-tab" id="tab-有品閱讀" onclick="switchGradeTab('306有品閱讀',this)">📗 有品閱讀</button>
   </div>
 
   <!-- 橫式成績表格 -->
