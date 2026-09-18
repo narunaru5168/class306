@@ -204,6 +204,14 @@
 <div class="wrap">
 
   <div class="card">
+    <div class="section-title">🧑 你是誰？</div>
+    <div class="lead">選了自己的名字，最高紀錄就會保留在雲端，不管換哪一台電腦或平板都看得到；不選也可以玩，只是紀錄只會留在這台裝置上。</div>
+    <div class="controls-row">
+      <select id="playerSelect" onchange="onPlayerSelectChange()"><option value="">-- 不選也可以玩 --</option></select>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="section-title">📖 選擇練習範圍</div>
     <div class="lead">內容取自翰林三上國語第一課到第十二課的習作練習題，可以切換下面三種遊戲模式輪流玩，比較不會玩膩。</div>
     <div class="controls-row">
@@ -362,6 +370,91 @@ try {
     });
   }
 } catch(e) { console.warn('Firebase 初始化失敗，星星挑戰的獎勵將無法送出', e); }
+
+// ─────────────────────────────────────────────────────────
+// 玩家身分選擇 + 最高紀錄雲端同步
+// 選了自己是誰之後，各模式的最高紀錄除了存在本機 localStorage，
+// 也會同步一份到 Firebase（跟其他學生資料共用同一個班級資料庫），
+// 這樣換裝置、換瀏覽器也能延續同一份紀錄。沒有選人的話行為跟以前完全一樣（只存本機）。
+// ─────────────────────────────────────────────────────────
+let gamePlayerId = '';
+let gamePlayerName = '';
+try {
+  gamePlayerId = localStorage.getItem('wordgame_playerId') || '';
+  gamePlayerName = localStorage.getItem('wordgame_playerName') || '';
+} catch(e){}
+
+function hasGamePlayer(){ return !!gamePlayerId; }
+function firebaseReady(){
+  try { return typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0; } catch(e){ return false; }
+}
+
+function populatePlayerSelect(){
+  const sel = document.getElementById('playerSelect');
+  if(!sel || !firebaseReady()) return;
+  firebase.database().ref('class306/students').get().then(snap=>{
+    const raw = snap.exists() ? snap.val() : [];
+    const arr = Array.isArray(raw) ? raw : Object.values(raw||{});
+    const sorted = arr.filter(Boolean).sort((a,b)=> parseInt(a.seatNo||99) - parseInt(b.seatNo||99));
+    sel.innerHTML = '<option value="">-- 不選也可以玩 --</option>';
+    sorted.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = `${s.seatNo ? s.seatNo+'號 ' : ''}${s.name}`;
+      if(String(s.id) === String(gamePlayerId)) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }).catch(()=>{});
+}
+
+function onPlayerSelectChange(){
+  const sel = document.getElementById('playerSelect');
+  const opt = sel.options[sel.selectedIndex];
+  gamePlayerId = sel.value;
+  gamePlayerName = gamePlayerId ? opt.textContent.replace(/^\d+號\s*/,'') : '';
+  try {
+    localStorage.setItem('wordgame_playerId', gamePlayerId);
+    localStorage.setItem('wordgame_playerName', gamePlayerName);
+  } catch(e){}
+  showToast(gamePlayerId ? `👋 嗨，${gamePlayerName}！你的最高紀錄會自動保留囉` : '目前是匿名模式，紀錄只留在這台裝置');
+  loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
+}
+
+function gameScorePath(mode, key){
+  return `class306/gameScores/${gamePlayerId}/${mode}/${key}`;
+}
+
+function pushBestToCloud(mode, key, value){
+  if(!hasGamePlayer() || !firebaseReady()) return;
+  try { firebase.database().ref(gameScorePath(mode, key)).set(value).catch(()=>{}); } catch(e){}
+}
+
+// 讀取雲端紀錄，跟本機比較取「較好」的一邊，同步顯示畫面並補寫回較舊的那一邊。
+// direction: 'higher' 表示分數越高越好（貪食蛇/選擇搶答/跑酷），'lower' 表示數值越低越好（記憶配對的翻牌次數）。
+function reconcileAndDisplayBest(mode, key, elId, direction, localVal, localStorageKey){
+  if(!hasGamePlayer() || !firebaseReady()) return;
+  firebase.database().ref(gameScorePath(mode, key)).get().then(snap=>{
+    const remote = (snap.exists() && typeof snap.val()==='number') ? snap.val() : null;
+    if(remote === null){
+      const hasLocalRecord = direction==='lower' ? (localVal !== null && localVal !== undefined && !isNaN(localVal)) : (localVal > 0);
+      if(hasLocalRecord) pushBestToCloud(mode, key, localVal);
+      return;
+    }
+    const remoteBetter = direction==='higher'
+      ? remote > localVal
+      : (localVal === null || localVal === undefined || isNaN(localVal) || remote < localVal);
+    if(remoteBetter){
+      try { localStorage.setItem(localStorageKey, String(remote)); } catch(e){}
+      const el = document.getElementById(elId);
+      if(el) el.textContent = remote;
+    } else if(
+      (direction==='higher' && localVal > remote) ||
+      (direction==='lower' && localVal !== null && localVal !== undefined && !isNaN(localVal) && localVal < remote)
+    ){
+      pushBestToCloud(mode, key, localVal); // 本機比雲端新（例如剛好在雲端連線不穩時創了新紀錄），補寫回雲端
+    }
+  }).catch(()=>{});
+}
 
 // ─────────────────────────────────────────────────────────
 // 翰林三上國語 第一課～第十二課 練習題資料（取材自習作）
@@ -887,6 +980,7 @@ function loadBest(){
   let best = 0;
   try { best = parseInt(localStorage.getItem(highScoreKey())||'0') || 0; } catch(e){}
   document.getElementById('bestVal').textContent = best;
+  reconcileAndDisplayBest('snake', highScoreKey(), 'bestVal', 'higher', best, highScoreKey());
   return best;
 }
 
@@ -1047,6 +1141,7 @@ function gameOver(){
     const best = parseInt(localStorage.getItem(key)||'0') || 0;
     if(score > best){
       localStorage.setItem(key, String(score));
+      pushBestToCloud('snake', key, score);
       bestLine = '🎉 打破紀錄！新的最高分！';
       loadBest();
     } else {
@@ -1094,6 +1189,7 @@ function loadQuizBest(){
   let best = 0;
   try { best = parseInt(localStorage.getItem(quizHighKey())||'0') || 0; } catch(e){}
   document.getElementById('quizBestVal').textContent = best;
+  reconcileAndDisplayBest('quiz', quizHighKey(), 'quizBestVal', 'higher', best, quizHighKey());
   return best;
 }
 function updateQuizStats(){
@@ -1163,6 +1259,7 @@ function stopQuiz(){
     const best = parseInt(localStorage.getItem(key)||'0') || 0;
     if(quizScore > best){
       localStorage.setItem(key, String(quizScore));
+      pushBestToCloud('quiz', key, quizScore);
       showToast('🎉 打破選擇搶答最高紀錄！');
       loadQuizBest();
     }
@@ -1186,6 +1283,7 @@ function loadMemoryBest(){
     best = v !== null ? parseInt(v) : null;
   } catch(e){}
   document.getElementById('memoryBestVal').textContent = (best===null || isNaN(best)) ? '—' : best;
+  reconcileAndDisplayBest('memory', memoryHighKey(), 'memoryBestVal', 'lower', best, memoryHighKey());
   return best;
 }
 
@@ -1272,6 +1370,7 @@ function finishMemory(){
     const best = bestRaw !== null ? parseInt(bestRaw) : null;
     if(best === null || memoryTries < best){
       localStorage.setItem(key, String(memoryTries));
+      pushBestToCloud('memory', key, memoryTries);
       msg += ' 打破最少次數紀錄！🏆';
       loadMemoryBest();
     }
@@ -1307,6 +1406,7 @@ function loadRunnerBest(){
   let best = 0;
   try { best = parseInt(localStorage.getItem(runnerHighKey())||'0') || 0; } catch(e){}
   document.getElementById('runnerBestVal').textContent = best;
+  reconcileAndDisplayBest('runner', runnerHighKey(), 'runnerBestVal', 'higher', best, runnerHighKey());
   return best;
 }
 function updateRunnerStats(){
@@ -1326,6 +1426,7 @@ function saveRunnerBestIfNeeded(){
     const best = parseInt(localStorage.getItem(key)||'0') || 0;
     if(runnerScore > best){
       localStorage.setItem(key, String(runnerScore));
+      pushBestToCloud('runner', key, runnerScore);
       loadRunnerBest();
       return true;
     }
@@ -1571,6 +1672,7 @@ document.addEventListener('keydown', e=>{
 // ─────────────────────────────────────────────────────────
 // 初始化
 // ─────────────────────────────────────────────────────────
+populatePlayerSelect();
 loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
 
 // 檢查網址是否帶有幸運轉盤的「星星挑戰」參數（要放在所有遊戲狀態變數都宣告完之後才能執行）
@@ -1582,6 +1684,18 @@ loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
       challengeStudentId = params.get('sid') || '';
       challengeStudentName = params.get('name') || '這位小朋友';
       showChallengeBanner();
+      // 從轉盤過來的挑戰，順便把玩家身分設成這位學生，這樣挑戰時拿到的分數也會計入他自己的最高紀錄
+      if(challengeStudentId){
+        gamePlayerId = challengeStudentId;
+        gamePlayerName = challengeStudentName;
+        try {
+          localStorage.setItem('wordgame_playerId', gamePlayerId);
+          localStorage.setItem('wordgame_playerName', gamePlayerName);
+        } catch(e){}
+        // 身分是剛剛才設定的，重新跑一次載入/同步，讓四種模式的最高紀錄都用上這位學生的雲端資料
+        populatePlayerSelect();
+        loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
+      }
     }
   } catch(e){}
 })();

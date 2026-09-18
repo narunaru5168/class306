@@ -1457,6 +1457,10 @@
          alt="" aria-hidden="true">
   </div>
   <div id="leaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;"></div>
+
+  <div class="section-title" style="margin-top:24px;">🎮 語詞遊戲高手榜</div>
+  <div class="lead">學生在語詞練習遊戲頁面選了自己的名字之後，紀錄就會同步到這裡（貪食蛇／選擇搶答／跑酷比最高分，記憶配對比最少翻牌次數）。</div>
+  <div id="gameLeaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;margin-top:10px;"></div>
 </div>
 
 <!-- ─────────────── CORRECTION TRACKER ─────────────── -->
@@ -4345,7 +4349,7 @@ function showPage(name) {
   document.querySelectorAll('.topbar .nav-row button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   event && event.target.classList.add('active');
-  if(name==='rank') renderLeaderboard();
+  if(name==='rank') { renderLeaderboard(); renderGameLeaderboard(); }
   if(name==='grades') populateGradeSelect();
   if(name==='reward') { populateWheelSelect(); populateDartSelect(); }
   if(name==='home') { updateStats(); renderRecognitionFeed(); }
@@ -6863,6 +6867,45 @@ function renderLeaderboard(){
     lb.appendChild(div);
   });
   if(!sorted.length) lb.innerHTML='<div style="text-align:center;padding:40px;color:#94a3b8;font-weight:700;">還沒有學生喔！</div>';
+}
+
+// 語詞練習遊戲的最高紀錄榜：學生在遊戲頁面選了自己的名字之後，
+// 貪食蛇／選擇搶答／跑酷（都是分數越高越好，可以直接比）取三者中最高的分數，
+// 記憶配對（翻牌次數越少越好）另外獨立顯示最少次數，不跟分數混在一起比較。
+function renderGameLeaderboard(){
+  const container = document.getElementById('gameLeaderboard');
+  if(!container) return;
+  if(!(useCloud && db)){
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">雲端連線未啟用，暫時看不到遊戲紀錄</div>';
+    return;
+  }
+  db.ref('class306/gameScores').get().then(snap=>{
+    const data = snap.exists() ? (snap.val()||{}) : {};
+    const rows = students.map(s=>{
+      const rec = data[s.id] || {};
+      let bestAction = 0;
+      ['snake','quiz','runner'].forEach(mode=>{
+        Object.values(rec[mode]||{}).forEach(v=>{ if(typeof v === 'number' && v > bestAction) bestAction = v; });
+      });
+      let bestMemory = null;
+      Object.values(rec.memory||{}).forEach(v=>{ if(typeof v === 'number' && (bestMemory===null || v < bestMemory)) bestMemory = v; });
+      return { s, bestAction, bestMemory };
+    }).filter(r => r.bestAction > 0 || r.bestMemory !== null)
+      .sort((a,b)=> b.bestAction - a.bestAction);
+    container.innerHTML = '';
+    rows.forEach((r,i)=>{
+      const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const rankIcon=i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+      const memPart = r.bestMemory!==null ? `　🃏最少${r.bestMemory}次` : '';
+      const div=document.createElement('div');
+      div.className='lb-row';
+      div.innerHTML=`<div class="lb-rank ${rankClass}">${rankIcon}</div><div style="font-size:1rem;flex-shrink:0;">${r.s.avatar||'🙂'}</div><div class="lb-name">${r.s.name}</div><div class="lb-stars"><span class="s">🎮</span>${r.bestAction}${memPart}</div>`;
+      container.appendChild(div);
+    });
+    if(!rows.length) container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">還沒有人玩過語詞練習遊戲喔！</div>';
+  }).catch(()=>{
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">讀取失敗，稍後再試</div>';
+  });
 }
 
 // ─── WHEEL ───
