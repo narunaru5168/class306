@@ -1249,6 +1249,7 @@
       <div style="font-weight:800;font-size:.9rem;color:#0369a1;">已選 <span id="batchCount">0</span> 位學生</div>
       <button class="btn btn-primary" style="padding:6px 14px;font-size:.82rem;" onclick="openBatchStarModal('add')">＋ 批次加星星</button>
       <button class="btn btn-danger" style="padding:6px 14px;font-size:.82rem;" onclick="openBatchStarModal('sub')">－ 批次扣星星</button>
+      <button class="btn" style="background:#e0e7ff;color:#3730a3;padding:6px 14px;font-size:.82rem;" onclick="openBatchStarModal('add','安靜午休')">😴 安靜午休加星</button>
       <button class="btn" style="background:#fef3c7;color:#92400e;padding:6px 14px;font-size:.82rem;" onclick="batchGrantSpinChance()">🎟️ 批次補發抽選機會</button>
       <button class="btn" style="background:#fff;color:#555;padding:6px 14px;font-size:.82rem;" onclick="batchSelectAll()">全選</button>
       <button class="btn" style="background:#fff;color:#555;padding:6px 14px;font-size:.82rem;" onclick="toggleBatchMode()">取消</button>
@@ -4228,6 +4229,19 @@ async function loadData() {
   mutualAidGroups = maVal !== null ? maVal : JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
   classOfficers = coVal !== null ? coVal : JSON.parse(localStorage.getItem('cls_classOfficers')||'{}');
   officerPositions = opVal !== null ? opVal : JSON.parse(localStorage.getItem('cls_officerPositions')||'[]');
+
+  // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
+  // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
+  // 這裡強制補回缺少的子欄位，避免抽籤筒、座位表等功能因此壞掉。
+  if(!drawState || typeof drawState !== 'object') drawState = {};
+  if(!Array.isArray(drawState.drawnIds)) drawState.drawnIds = [];
+  if(typeof drawState.excludeMode !== 'boolean') drawState.excludeMode = true;
+
+  if(!seatingChart || typeof seatingChart !== 'object') seatingChart = {};
+  if(!Array.isArray(seatingChart.colSizes) || seatingChart.colSizes.length===0) seatingChart.colSizes = [5,4,5,4,4,4];
+  if(!seatingChart.seats || typeof seatingChart.seats !== 'object' || Array.isArray(seatingChart.seats)) seatingChart.seats = {};
+
+  if(!classOfficers || typeof classOfficers !== 'object') classOfficers = {};
 }
 
 
@@ -4479,14 +4493,14 @@ function renderBatchSeatGrid(){
       background:${sel?'var(--sky)':'#fff'};color:${sel?'#fff':'#555'};">${s.seatNo||'?'}</button>`;
   }).join('');
 }
-function openBatchStarModal(type){
+function openBatchStarModal(type, presetReason){
   if(batchSelected.size===0){ toast('⚠️ 請先勾選至少一位學生！'); return; }
   batchStarType = type;
   const names = students.filter(s=>batchSelected.has(s.id)).map(s=>s.name).join('、');
   document.getElementById('batchStarNames').textContent = `${names}（共 ${batchSelected.size} 位）`;
   document.getElementById('batchStarTitle').textContent = type==='add' ? '⭐ 批次給予星星' : '－ 批次扣除星星';
   document.getElementById('batchStarAmt').value = 1;
-  document.getElementById('batchStarReason').value = '';
+  document.getElementById('batchStarReason').value = presetReason || '';
   document.getElementById('batchStarReason').placeholder = type==='add' ? '例：整理教室、幫忙同學…' : '例：上課吵鬧、忘記帶作業…';
   const btn = document.getElementById('batchStarConfirmBtn');
   btn.className = type==='add' ? 'btn btn-success' : 'btn btn-danger';
@@ -7683,6 +7697,16 @@ async function initApp() {
     students = [];
     grades = [];
   }
+
+  // 保險：不管走哪條載入路徑，確保這幾個巢狀欄位的子欄位一定存在
+  // （雲端資料庫不會保留空陣列/空物件，缺欄位會讓抽籤筒、座位表等功能壞掉）
+  if(!drawState || typeof drawState !== 'object') drawState = {};
+  if(!Array.isArray(drawState.drawnIds)) drawState.drawnIds = [];
+  if(typeof drawState.excludeMode !== 'boolean') drawState.excludeMode = true;
+  if(!seatingChart || typeof seatingChart !== 'object') seatingChart = {};
+  if(!Array.isArray(seatingChart.colSizes) || seatingChart.colSizes.length===0) seatingChart.colSizes = [5,4,5,4,4,4];
+  if(!seatingChart.seats || typeof seatingChart.seats !== 'object' || Array.isArray(seatingChart.seats)) seatingChart.seats = {};
+  if(!classOfficers || typeof classOfficers !== 'object') classOfficers = {};
 
   // 修復舊資料座號
   try {
