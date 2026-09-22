@@ -188,6 +188,21 @@
   }
   .challenge-banner.challenge-success { background: linear-gradient(135deg, #6BCB77, #22c55e); color:#fff; }
   .challenge-banner.challenge-timeup { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color:#1E2A4A; }
+
+  .challenge-lock-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(30, 42, 74, .88);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .challenge-lock-overlay.hidden { display: none; }
+  .challenge-lock-card {
+    max-width: 420px; width: 100%; background: #fff; border-radius: 24px; padding: 32px 24px;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.3); font-family:'Baloo 2',cursive;
+  }
+  .challenge-lock-card .emoji { font-size: 3rem; margin-bottom: 10px; }
+  .challenge-lock-card h2 { margin: 0 0 12px; font-size: 1.3rem; color:#1E2A4A; }
+  .challenge-lock-card p { margin: 0 0 20px; color:#555; font-weight:700; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -200,6 +215,15 @@
 <div class="toast" id="toast"></div>
 
 <div class="challenge-banner hidden" id="challengeBanner"></div>
+
+<div class="challenge-lock-overlay hidden" id="challengeLockOverlay">
+  <div class="challenge-lock-card">
+    <div class="emoji">⏰</div>
+    <h2>時間到！</h2>
+    <p id="challengeLockMsg">這次的挑戰時間結束囉，請把裝置交給老師或下一位同學～</p>
+    <button class="btn btn-primary" onclick="challengeLockContinue()">🔄 好，換下一位</button>
+  </div>
+</div>
 
 <div class="wrap">
 
@@ -850,8 +874,8 @@ function showToast(msg){
 const CHALLENGE_TARGET_SCORE = 50;   // 90 秒內要拿到的目標分數
 const CHALLENGE_TIME_LIMIT = 90;     // 秒
 const CHALLENGE_STAR_REWARD = 3;     // 達標可得的星星數
-let challengeMode = false, challengeStudentId = '', challengeStudentName = '';
-let challengeTimeLeft = 0, challengeCompleted = false;
+let challengeMode = false, challengeStudentId = '', challengeStudentName = '', challengePendingCid = '';
+let challengeTimeLeft = 0, challengeCompleted = false, challengeLocked = false;
 let challengeTimer = null, challengeProgressTimer = null;
 
 function getCurrentChallengeScore(){
@@ -920,6 +944,7 @@ function completeChallengeSuccess(finalScore){
   }
   showToast('🎉 挑戰成功！星星已經送出～');
   sendChallengeStarAward(finalScore);
+  clearPendingChallenge();
 }
 
 function challengeTimeUp(){
@@ -930,6 +955,40 @@ function challengeTimeUp(){
     el.classList.add('challenge-timeup');
     el.innerHTML = `⏰ 時間到！這次還沒拿到 ${CHALLENGE_TARGET_SCORE} 分，沒關係，請老師再讓你抽一次轉盤挑戰！`;
   }
+  challengeLockAllGames();
+  const msgEl = document.getElementById('challengeLockMsg');
+  if(msgEl) msgEl.textContent = `${CHALLENGE_TARGET_SCORE} 分還沒拿到，沒關係！下次可以再抽轉盤挑戰一次～請把裝置交給老師或下一位同學。`;
+  const overlay = document.getElementById('challengeLockOverlay');
+  if(overlay) overlay.classList.remove('hidden');
+  // 這次挑戰機會（不管成功或時間到）已經用掉了，把伙伴名冊上對應的「待完成挑戰」紀錄清掉
+  clearPendingChallenge();
+}
+
+// 把這次挑戰對應的「待完成挑戰」紀錄從雲端刪掉（成功或時間到都算用掉了這次機會）。
+// 沒有 cid 代表是舊網址或直接開這個頁面玩，沒有對應紀錄可清，安全略過即可。
+function clearPendingChallenge(){
+  if(!challengePendingCid) return;
+  try {
+    if (typeof firebase === 'undefined' || !firebase.apps || !firebase.apps.length) return;
+    firebase.database().ref('class306/pendingChallenges/' + challengePendingCid).remove().catch(()=>{});
+  } catch(e) { console.warn('清除待完成挑戰紀錄失敗', e); }
+  challengePendingCid = ''; // 避免重複呼叫（例如成功後緊接著又觸發時間到）又試著清一次
+}
+
+// 挑戰時間到了以後，把 4 種模式目前正在跑的遊戲通通停下來，
+// 避免畫面被鎖住了、底下的遊戲卻還能繼續按/繼續動，一個人霸占裝置。
+function challengeLockAllGames(){
+  challengeLocked = true;
+  try { running = false; clearInterval(timer); } catch(e){}
+  try { quizRunning = false; } catch(e){}
+  try {
+    runnerRunning = false;
+    if(typeof runnerRAF !== 'undefined' && runnerRAF) cancelAnimationFrame(runnerRAF);
+  } catch(e){}
+}
+function challengeLockContinue(){
+  // 離開挑戰網址參數，回到一般模式，避免下一位同學打開同一台裝置時還殘留挑戰狀態
+  location.href = location.pathname;
 }
 
 function sendChallengeStarAward(finalScore){
@@ -1331,7 +1390,7 @@ function renderMemory(){
 }
 
 function flipMemory(id){
-  if(memoryBusy) return;
+  if(memoryBusy || challengeLocked) return;
   const card = memoryCards.find(c=>c.id===id);
   if(!card || card.flipped || card.matched) return;
   card.flipped = true;
@@ -1683,6 +1742,7 @@ loadBest(); loadQuizBest(); loadMemoryBest(); loadRunnerBest();
       challengeMode = true;
       challengeStudentId = params.get('sid') || '';
       challengeStudentName = params.get('name') || '這位小朋友';
+      challengePendingCid = params.get('cid') || '';
       showChallengeBanner();
       // 從轉盤過來的挑戰，順便把玩家身分設成這位學生，這樣挑戰時拿到的分數也會計入他自己的最高紀錄
       if(challengeStudentId){

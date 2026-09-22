@@ -4076,6 +4076,7 @@ let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助�
 let mutualAidAssignTarget = null; // 目前正在加人到哪個互助小組
 let classOfficers = {}; // { positionId: [studentId, ...] } 班級幹部指派名單
 let officerAssignTarget = null; // 目前正在指派哪個幹部職位
+let pendingChallenges = {}; // { pushId: {studentId, studentName, createdAt} } 轉盤抽到「語詞遊戲挑戰」但還沒去玩的待完成紀錄，存在獨立路徑（跟 pendingStarAwards 一樣用 push/remove），伙伴名冊卡片上會顯示按鈕，隨時可以點開繼續玩
 const OFFICER_POSITIONS_DEFAULT = [
   { id:'banzhang', title:'班長',
     duties:['協助老師、代表班級處理各項事務','轉達班級老師各項重要訊息','班級重大事件通報'],
@@ -4554,6 +4555,7 @@ function renderStudents(){
   sorted.forEach(s=>{
     const lv=levelInfo(s.stars);
     const pct=Math.min(lv.pct,100).toFixed(0);
+    const pendingList=pendingChallengesFor(s.id);
     const div=document.createElement('div');
     div.className='student-card'+(batchMode&&batchSelected.has(s.id)?' batch-selected':'');
     div.style.borderTopColor=lv.color;
@@ -4575,6 +4577,7 @@ function renderStudents(){
       <div class="trait-badge-row">${(s.traitBadges||[]).slice(-5).map(b=>`<span title="${b.label}">${b.emoji}</span>`).join('')}</div>
       <div class="badge-row">${(s.badges||[]).slice(-3).map(b=>`<span class="badge">${b}</span>`).join('')}</div>
       ${(s.repairTasks||[]).filter(t=>!t.done).length>0?`<div class="repair-indicator" onclick="openRepairTasksModal(${s.id})" style="cursor:pointer;" title="點擊查看並標記完成">🔧 有修復任務待完成</div>`:''}
+      ${pendingList.length>0 ? `<div style="margin:2px 0 4px;"><button class="btn" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:5px 10px;font-size:.7rem;font-weight:800;width:100%;" onclick="startGameChallenge(${s.id},'${pendingList[0][0]}')" title="轉盤抽到但還沒去玩的語詞遊戲挑戰，點一下就開始">🎮 待完成挑戰${pendingList.length>1?` ×${pendingList.length}`:''}（點我開始）</button></div>` : ''}
       <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
       <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
@@ -7062,12 +7065,17 @@ function spinWheel(){
         document.getElementById('wheelStudent').value = sid;
       }
     }
-    // 特殊獎勵：語詞遊戲挑戰 → 顯示前往挑戰的按鈕，90秒內拿到目標分數才會額外加星星
+    // 特殊獎勵：語詞遊戲挑戰 → 先把這次的「待完成挑戰」記錄到雲端（獨立路徑，不受整包存檔影響），
+    // 就算現在排隊的人很多、或剛好要上課了沒辦法立刻玩，也不會漏掉這次機會——
+    // 之後可以在伙伴名冊的學生卡片上找到「🎮 待完成挑戰」按鈕，隨時點開繼續玩。
     if(result.label.includes('語詞遊戲挑戰')){
       const s=students.find(x=>x.id==sid);
       if(s){
+        const cid = addPendingChallenge(s.id, s.name);
+        const studentsLabel = (navLabels && navLabels.students) || '夥伴名冊';
         res.innerHTML = `🎉 恭喜！${result.label}<br>
-          <button class="btn btn-sun" style="margin-top:10px;" onclick="startGameChallenge('${s.id}')">🎮 前往挑戰（90秒內拿到 50 分）</button>`;
+          <button class="btn btn-sun" style="margin-top:10px;" onclick="startGameChallenge('${s.id}','${cid||''}')">🎮 立刻開始挑戰（90秒內拿到 50 分）</button>
+          <div style="margin-top:8px;font-size:.8rem;color:#666;font-weight:700;">🕒 現在不方便也沒關係，已經記錄在「${studentsLabel}」${s.name}的卡片上，之後隨時可以去完成挑戰</div>`;
       }
     }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
@@ -7106,13 +7114,33 @@ function populateWheelSelect(){
   drawWheel(wheelAngle);
 }
 
-// 轉盤抽到「語詞遊戲挑戰」時，開新分頁讓學生直接去玩，網址帶入學生 id 和名字，
-// 這樣語詞練習遊戲頁面才知道是誰在挑戰、挑戰成功要把星星記在誰身上。
-function startGameChallenge(sid){
+// 轉盤抽到「語詞遊戲挑戰」時，開新分頁讓學生直接去玩，網址帶入學生 id、名字、
+// 還有這筆「待完成挑戰」的紀錄 id（cid）——這樣不管是剛抽完馬上玩、還是之後從伙伴名冊點開來玩，
+// 遊戲頁面結束時都知道要把雲端上的哪一筆待完成紀錄清掉。
+function startGameChallenge(sid, cid){
   const s = students.find(x=>x.id==sid);
   if(!s) return;
-  const url = `wordgame.html?challenge=1&sid=${encodeURIComponent(s.id)}&name=${encodeURIComponent(s.name)}`;
+  let url = `wordgame.html?challenge=1&sid=${encodeURIComponent(s.id)}&name=${encodeURIComponent(s.name)}`;
+  if(cid) url += `&cid=${encodeURIComponent(cid)}`;
   window.open(url, '_blank');
+}
+
+// 新增一筆「待完成的語詞遊戲挑戰」（獨立資料路徑，用 push，可以同一位同學累積好幾筆，
+// 之後在伙伴名冊逐一點開玩、玩完再各自刪掉自己那一筆）。回傳這筆紀錄的 id（cid）。
+function addPendingChallenge(sid, name){
+  if(!(useCloud && db)) return null;
+  try {
+    const ref = db.ref('class306/pendingChallenges').push({ studentId: sid, studentName: name, createdAt: Date.now() });
+    return ref.key;
+  } catch(e){ console.warn('新增待完成挑戰失敗', e); return null; }
+}
+
+// 取出某位同學目前所有「待完成挑戰」，依建立時間排序（先抽到的排前面），
+// 回傳 [ [cid, {studentId, studentName, createdAt}], ... ]
+function pendingChallengesFor(sid){
+  return Object.entries(pendingChallenges||{})
+    .filter(([,v])=>v && v.studentId==sid)
+    .sort((a,b)=>(a[1].createdAt||0)-(b[1].createdAt||0));
 }
 
 // 監聽語詞遊戲挑戰成功後送回來的星星獎勵（獨立的資料路徑，用 push/remove，
@@ -7133,6 +7161,18 @@ function setupPendingStarAwardsListener(){
       snap.ref.remove().catch(()=>{});
     });
   } catch(e){ console.warn('語詞遊戲星星獎勵監聽設定失敗', e); }
+}
+
+// 監聽「待完成的語詞遊戲挑戰」清單（伙伴名冊卡片上的 🎮 按鈕要即時反映：
+// 不管是剛抽到新增一筆、還是在別的分頁把挑戰玩完被移除，這裡都要立刻重畫卡片）
+function setupPendingChallengesListener(){
+  if(!(useCloud && db)) return;
+  try {
+    db.ref('class306/pendingChallenges').on('value', (snap)=>{
+      pendingChallenges = snap.val() || {};
+      renderStudents();
+    });
+  } catch(e){ console.warn('待完成挑戰監聽設定失敗', e); }
 }
 
 // ─── DART ───
@@ -7849,6 +7889,8 @@ async function initApp() {
 
   // 開始監聽語詞遊戲挑戰送回來的星星獎勵（要放在 students 名單載入完成之後才設定）
   try { setupPendingStarAwardsListener(); } catch(e) { console.warn(e); }
+  // 開始監聽「待完成的語詞遊戲挑戰」清單，讓伙伴名冊卡片上的按鈕即時更新
+  try { setupPendingChallengesListener(); } catch(e) { console.warn(e); }
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';
