@@ -7504,7 +7504,9 @@ function renderGradeSheet(){
       th.title='雙擊可改名';
       th.ondblclick=()=>editHeader(th,ci,h);
       const uc=unitColorFor(h);
-      if(uc){ th.style.background=uc.bg; th.style.borderBottom='3px solid '+uc.bd; }
+      // 這幾欄的底色是很淺的粉彩色，原本文字沿用預設的白色字，
+      // 白字疊在淺色底上幾乎看不清楚，這裡改成深色字才看得到。
+      if(uc){ th.style.background=uc.bg; th.style.borderBottom='3px solid '+uc.bd; th.style.color='var(--dark)'; }
     }
     htr.appendChild(th);
   });
