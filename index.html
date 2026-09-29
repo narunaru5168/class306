@@ -7394,7 +7394,22 @@ function showSyncStatus(msg, isErr=false){
   if(!isErr) setTimeout(()=>{ el.style.display='none'; }, 3000);
 }
 
-// JSONP fetch（第一優先）
+// 直接 fetch（第一優先——實測這個 Apps Script 網址其實有正常回應 CORS，
+// 直接 fetch 最快、最穩，不用依賴 JSONP 或第三方代理伺服器）
+async function directFetch(params){
+  const qs = new URLSearchParams(params).toString();
+  const url = appsScriptUrl + '?' + qs;
+  const res = await Promise.race([
+    fetch(url, {mode:'cors'}),
+    new Promise((_,r)=>setTimeout(()=>r(null),8000))
+  ]);
+  if(!res) throw new Error('timeout');
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  return JSON.parse(text);
+}
+
+// JSONP fetch（備用一：直接 fetch 失敗時才用，例如瀏覽器政策擋掉跨網域請求）
 function jsonpFetch(params){
   return new Promise((resolve, reject)=>{
     const cbName = 'gs_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
@@ -7415,7 +7430,7 @@ function jsonpFetch(params){
   });
 }
 
-// CORS proxy fetch（備用）
+// CORS proxy fetch（備用二：最後手段，透過第三方代理伺服器轉發）
 async function proxyFetch(params){
   const qs = new URLSearchParams(params).toString();
   const url = appsScriptUrl + '?' + qs;
@@ -7440,12 +7455,16 @@ async function proxyFetch(params){
   throw new Error('所有方法均失敗');
 }
 
-// 自動嘗試 JSONP → proxy 備用
+// 自動嘗試 直接fetch → JSONP → proxy 備用
 async function callApi(params){
-  try{ return await jsonpFetch(params); }
+  try{ return await directFetch(params); }
   catch(e){
-    console.warn('JSONP 失敗，改用 proxy：', e.message);
-    return await proxyFetch(params);
+    console.warn('直接 fetch 失敗，改用 JSONP：', e.message);
+    try{ return await jsonpFetch(params); }
+    catch(e2){
+      console.warn('JSONP 失敗，改用 proxy：', e2.message);
+      return await proxyFetch(params);
+    }
   }
 }
 
