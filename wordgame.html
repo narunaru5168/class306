@@ -185,9 +185,19 @@
     background: linear-gradient(135deg, #FFD93D, #FF9F5A); color: #1E2A4A;
     font-family:'Baloo 2',cursive; font-weight:700; font-size:1rem; text-align:center;
     box-shadow: var(--shadow); border: 3px solid #fff;
+    /* 玩遊戲時常常會捲動頁面，這裡固定在畫面最上方，
+       這樣不管在玩哪一種模式，剩餘時間都能一直看得到，不會捲走。 */
+    position: sticky; top: 6px; z-index: 40;
   }
   .challenge-banner.challenge-success { background: linear-gradient(135deg, #6BCB77, #22c55e); color:#fff; }
   .challenge-banner.challenge-timeup { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color:#1E2A4A; }
+
+  /* 四種模式各自控制列上的倒數計時小標籤（跟原本的「⭐ 分數」小標籤並排），
+     沒有在挑戰模式時預設隱藏，避免一般模式下顯示一個用不到的倒數。 */
+  .challenge-time-pill { background:#fff7ed; border:2px solid #FF9F5A; color:#9a3412; font-weight:800; }
+  .challenge-time-pill.hidden { display:none; }
+  .challenge-time-pill.time-low { background:#fef2f2; border-color:#dc2626; color:#b91c1c; animation: timePulse 1s infinite; }
+  @keyframes timePulse { 0%,100% { opacity:1; } 50% { opacity:.55; } }
 
   .challenge-lock-overlay {
     position: fixed; inset: 0; z-index: 9999;
@@ -267,6 +277,7 @@
       <span class="stat-pill">📝 第 <span id="roundVal">0</span> 題</span>
       <span class="stat-pill">🔥 連續：<span id="comboVal">0</span></span>
       <span class="stat-pill">🏆 最高分：<span id="bestVal">0</span></span>
+      <span class="stat-pill challenge-time-pill hidden" id="snakeTimePill">⏰ 剩餘：<span id="snakeTimeVal">90</span> 秒</span>
     </div>
 
     <div class="question-banner" id="questionBanner">選好課次後按「開始遊戲」，題目會出現在這裡 👀</div>
@@ -307,6 +318,7 @@
       <span class="stat-pill">⭐ 分數：<span id="quizScoreVal">0</span></span>
       <span class="stat-pill">🔥 連續：<span id="quizComboVal">0</span></span>
       <span class="stat-pill">🏆 最高分：<span id="quizBestVal">0</span></span>
+      <span class="stat-pill challenge-time-pill hidden" id="quizTimePill">⏰ 剩餘：<span id="quizTimeVal">90</span> 秒</span>
     </div>
     <div class="question-banner" id="quizBanner">選好課次後按「開始搶答」🎯</div>
     <div class="quiz-grid" id="quizGrid"></div>
@@ -327,6 +339,7 @@
       <button class="btn btn-primary" onclick="startMemory()">▶️ 開始配對</button>
       <span class="stat-pill">👣 翻牌次數：<span id="memoryTriesVal">0</span></span>
       <span class="stat-pill">🏆 最少次數紀錄：<span id="memoryBestVal">—</span></span>
+      <span class="stat-pill challenge-time-pill hidden" id="memoryTimePill">⏰ 剩餘：<span id="memoryTimeVal">90</span> 秒</span>
     </div>
     <div class="memory-grid" id="memoryGrid"></div>
     <div id="memoryWinBanner" class="hidden" style="text-align:center;margin-top:14px;font-family:'Baloo 2',cursive;font-size:1.25rem;color:var(--dark);"></div>
@@ -354,6 +367,7 @@
       <span class="stat-pill">⭐ 分數：<span id="runnerScoreVal">0</span></span>
       <span class="stat-pill">🔥 連續：<span id="runnerComboVal">0</span></span>
       <span class="stat-pill">🏆 最高分：<span id="runnerBestVal">0</span></span>
+      <span class="stat-pill challenge-time-pill hidden" id="runnerTimePill">⏰ 剩餘：<span id="runnerTimeVal">90</span> 秒</span>
     </div>
 
     <div class="question-banner" id="runnerBanner">選好課次後按「開始跑酷」🐸</div>
@@ -895,12 +909,26 @@ function updateChallengeBannerText(){
   if(!el || challengeCompleted) return;
   const cur = getCurrentChallengeScore();
   el.innerHTML = `⏱️ <b>${escapeHtml(challengeStudentName)}</b> 的星星挑戰：任選一種模式，90 秒內拿到 <b>${CHALLENGE_TARGET_SCORE}</b> 分就能得到 <b>${CHALLENGE_STAR_REWARD}</b> 顆星！<br>目前分數：<b>${cur}</b> 分　剩餘時間：<b>${challengeTimeLeft}</b> 秒`;
+  updateAllModeTimePills();
+}
+
+// 四種模式（貪食蛇／選擇搶答／記憶配對／跑酷）各自控制列上都補一個「⏰ 剩餘：X 秒」的小標籤，
+// 不用特別捲到最上面看橫幅才知道時間，正在玩哪個模式就能直接看到倒數，
+// 剩 10 秒以內會變紅色閃爍提醒。
+function updateAllModeTimePills(){
+  ['snake','quiz','memory','runner'].forEach(mode=>{
+    const val = document.getElementById(mode+'TimeVal');
+    const pill = document.getElementById(mode+'TimePill');
+    if(val) val.textContent = challengeTimeLeft;
+    if(pill) pill.classList.toggle('time-low', challengeTimeLeft <= 10);
+  });
 }
 
 function showChallengeBanner(){
   const el = document.getElementById('challengeBanner');
   if(!el) return;
   el.classList.remove('hidden');
+  document.querySelectorAll('.challenge-time-pill').forEach(p=>p.classList.remove('hidden'));
   startChallengeTimers();
 }
 
