@@ -1011,9 +1011,13 @@
       <label>金額</label>
       <input type="number" id="fundAddAmount" min="0" step="1" placeholder="例如：1300">
     </div>
-    <div class="form-group" style="margin-bottom:0;">
+    <div class="form-group" style="margin-bottom:12px;">
       <label>備註（選填）</label>
       <input type="text" id="fundAddNote" placeholder="例如：50元/本，26人，共1300元">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>收據連結（選填）</label>
+      <input type="text" id="fundAddReceiptLink" placeholder="貼 Google Drive 分享連結，會自動顯示縮圖">
     </div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="confirmAddClassFundRow()">💰 確認新增</button>
@@ -1027,7 +1031,9 @@
   <div class="modal" style="max-width:520px;text-align:center;">
     <h3 style="margin-bottom:12px;">🧾 收據照片</h3>
     <img id="receiptViewImg" src="" style="max-width:100%;max-height:70vh;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);">
+    <div style="font-size:.78rem;color:#94a3b8;margin-top:8px;" id="receiptViewHint">如果上面看不到縮圖，可能是 Google Drive 那個檔案還沒設成「知道連結的使用者可檢視」。</div>
     <div class="modal-btns" style="margin-top:14px;">
+      <a id="receiptViewOpenLink" href="#" target="_blank" rel="noopener" class="btn" style="background:linear-gradient(135deg,#1565c0,#42a5f5);color:#fff;text-decoration:none;">🔗 開啟原始檔案</a>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('receiptViewModal')">關閉</button>
     </div>
   </div>
@@ -7817,15 +7823,19 @@ function renderClassFund(){
       const td=document.createElement('td');
       const val=row[colIdx]!==undefined?row[colIdx]:'';
       const valStr=String(val);
-      // 「收據」欄位如果是嵌入的照片（data:image/... 開頭的字串），顯示縮圖，
-      // 點一下用 Modal 放大看，而不是當成文字讓人點擊編輯。
-      if(colIdx===cReceipt && valStr.indexOf('data:image')===0){
+      // 「收據」欄位如果是網址（貼 Google Drive 分享連結），顯示縮圖，
+      // 點縮圖用 Modal 放大看；雙擊還是可以編輯／修正連結文字。
+      if(colIdx===cReceipt && /^https?:\/\//i.test(valStr)){
+        const thumbSrc = driveThumbUrl(valStr, 160) || valStr;
+        const bigSrc = driveThumbUrl(valStr, 1000) || valStr;
         const thumb=document.createElement('img');
-        thumb.src=valStr;
+        thumb.src=thumbSrc;
         thumb.style.cssText='width:40px;height:40px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #fbbf24;vertical-align:middle;';
-        thumb.title='點我放大看收據照片';
-        thumb.onclick=()=>viewReceiptImage(valStr);
+        thumb.title='點我放大看收據照片，雙擊格子可以修改連結';
+        thumb.onerror=()=>{ thumb.remove(); td.textContent='🧾 有連結（縮圖載入失敗）'; };
+        thumb.onclick=()=>viewReceiptImage(bigSrc, valStr);
         td.appendChild(thumb);
+        td.ondblclick=()=>editClassFundCell(td,rowIdx,colIdx,valStr);
         tr.appendChild(td);
         return;
       }
@@ -7877,7 +7887,7 @@ function editClassFundCell(td,rowIdx,colIdx,oldVal){
     classFundData.rows[rowIdx][colIdx]=newVal;
 
     const ci=fundColIdx('收入'), ce=fundColIdx('支出'), cb=fundColIdx('結餘');
-    const changedCells=[{rowIdx,colIdx,value:newVal}];
+    const changedCells = newVal!==oldVal ? [{rowIdx,colIdx,value:newVal}] : [];
     if((colIdx===ci || colIdx===ce) && newVal!==oldVal && cb>=0){
       let prevBalance = rowIdx>0 ? fundToNum(classFundData.rows[rowIdx-1][cb]) : 0;
       for(let r=rowIdx; r<classFundData.rows.length; r++){
@@ -7893,7 +7903,7 @@ function editClassFundCell(td,rowIdx,colIdx,oldVal){
     localStorage.setItem('cls_classFundData',JSON.stringify(classFundData));
     if(useCloud&&db) db.ref('class306/classFundData').set(classFundData).catch(()=>{});
 
-    if(classFundUrl){
+    if(classFundUrl && changedCells.length){
       try{
         for(const c of changedCells){
           await callApi({action:'updateCell', row:c.rowIdx+CLASSFUND_DATA_START_ROW, col:c.colIdx+1, value:c.value}, classFundUrl);
@@ -7914,7 +7924,16 @@ function openClassFundAddModal(){
   document.getElementById('fundAddContent').value = '';
   document.getElementById('fundAddAmount').value = '';
   document.getElementById('fundAddNote').value = '';
+  document.getElementById('fundAddReceiptLink').value = '';
   openModal('classFundAddModal');
+}
+
+// 把 Google Drive 分享連結（例如 .../file/d/檔案ID/view）轉成可以直接顯示的縮圖網址。
+// 不是 Drive 連結（抓不到檔案 ID）就回傳 null，讓呼叫端自己決定要不要直接拿原網址當圖片試試看。
+function driveThumbUrl(url, size){
+  const m = String(url).match(/\/d\/([a-zA-Z0-9_-]{10,})/) || String(url).match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if(!m) return null;
+  return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w' + (size||200);
 }
 
 async function confirmAddClassFundRow(){
@@ -7923,6 +7942,7 @@ async function confirmAddClassFundRow(){
   const content = document.getElementById('fundAddContent').value.trim();
   const amount = fundToNum(document.getElementById('fundAddAmount').value);
   const note = document.getElementById('fundAddNote').value.trim();
+  const receiptLink = document.getElementById('fundAddReceiptLink').value.trim();
   if(!content){ toast('⚠️ 請填寫內容'); return; }
   if(!amount){ toast('⚠️ 請填寫金額'); return; }
 
@@ -7930,7 +7950,7 @@ async function confirmAddClassFundRow(){
     classFundData.headers = ['日期','內容','收入','支出','結餘','備註','收據'];
   }
   const headers = classFundData.headers;
-  const cDate=fundColIdx('日期'), cContent=fundColIdx('內容'), ci=fundColIdx('收入'), ce=fundColIdx('支出'), cb=fundColIdx('結餘'), cNote=fundColIdx('備註');
+  const cDate=fundColIdx('日期'), cContent=fundColIdx('內容'), ci=fundColIdx('收入'), ce=fundColIdx('支出'), cb=fundColIdx('結餘'), cNote=fundColIdx('備註'), cReceipt=fundColIdx('收據');
   const rows = classFundData.rows || (classFundData.rows=[]);
   const prevBalance = rows.length ? fundToNum(rows[rows.length-1][cb]) : 0;
   const newBalance = type==='income' ? prevBalance + amount : prevBalance - amount;
@@ -7943,6 +7963,7 @@ async function confirmAddClassFundRow(){
   if(type==='expense' && ce>=0) row[ce]=amount;
   if(cb>=0) row[cb]=newBalance;
   if(cNote>=0) row[cNote]=note;
+  if(cReceipt>=0 && receiptLink) row[cReceipt]=receiptLink;
 
   rows.push(row);
   localStorage.setItem('cls_classFundData',JSON.stringify(classFundData));
@@ -7961,21 +7982,17 @@ async function confirmAddClassFundRow(){
   }
 }
 
-function viewReceiptImage(dataUrl){
-  document.getElementById('receiptViewImg').src = dataUrl;
+function viewReceiptImage(imgUrl, linkUrl){
+  document.getElementById('receiptViewImg').src = imgUrl;
+  const openLink = document.getElementById('receiptViewOpenLink');
+  if(openLink) openLink.href = linkUrl || imgUrl;
   openModal('receiptViewModal');
 }
 
 function exportClassFundCSV(){
   const data=classFundData;
   if(!data||!data.rows||!data.rows.length){ toast('⚠️ 目前沒有班費紀錄可以匯出'); return; }
-  // 收據照片是內嵌的 data:image 長字串，CSV 裡放不下也沒有意義，改成提示文字。
-  const cReceipt=fundColIdx('收據');
-  const safeRows=data.rows.map(r=>r.map((v,ci)=>{
-    const s=String(v!==undefined&&v!==null?v:'');
-    return (ci===cReceipt && s.indexOf('data:image')===0) ? '[有收據照片，請到班網查看]' : s;
-  }));
-  const rows=[data.headers,...safeRows].map(r=>r.join(','));
+  const rows=[data.headers,...data.rows].map(r=>r.join(','));
   const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='班費收支.csv'; a.click();
