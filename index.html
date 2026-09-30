@@ -986,6 +986,42 @@
   </div>
 </div>
 
+<!-- ─────────────── 班費收支：新增一筆 MODAL ─────────────── -->
+<div class="modal-overlay" id="classFundAddModal">
+  <div class="modal" style="max-width:440px;" onkeydown="if(event.key==='Enter' && event.target.tagName!=='SELECT'){event.preventDefault();confirmAddClassFundRow();}">
+    <h3>💰 新增一筆班費紀錄</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="fundAddDate">
+      </div>
+      <div class="form-group">
+        <label>類型</label>
+        <select id="fundAddType">
+          <option value="income">收入</option>
+          <option value="expense" selected>支出</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>內容</label>
+      <input type="text" id="fundAddContent" placeholder="例如：數學練習簿50元">
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>金額</label>
+      <input type="number" id="fundAddAmount" min="0" step="1" placeholder="例如：1300">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>備註（選填）</label>
+      <input type="text" id="fundAddNote" placeholder="例如：50元/本，26人，共1300元">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="confirmAddClassFundRow()">💰 確認新增</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('classFundAddModal')">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────────── BATCH STAR MODAL ─────────────── -->
 <div class="modal-overlay" id="batchStarModal">
   <div class="modal" onkeydown="if(event.key==='Enter' && event.target.tagName!=='SELECT'){event.preventDefault();confirmBatchStar();}">
@@ -3996,6 +4032,61 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
 
 </div>
 
+<!-- ─────────────── 班費收支 ─────────────── -->
+<div id="page-classfund" class="page">
+  <div style="display:flex;align-items:center;margin-bottom:16px;">
+    <span class="section-title" style="margin-bottom:0;">💰 班費收支</span>
+  </div>
+
+  <!-- Apps Script 設定（跟成長紀錄那邊完全獨立的一組，指向另一份 Google 試算表） -->
+  <div class="drive-panel">
+    <div class="drive-panel-header">
+      <div class="drive-panel-title">🔗 Google Sheets 雙向同步（班費）</div>
+      <div class="drive-btn-row">
+        <button class="btn btn-drive-import" onclick="syncClassFund()">🔄 同步班費</button>
+        <button class="btn" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;padding:8px 18px;font-size:.88rem;" onclick="openClassFundAddModal()">➕ 新增一筆</button>
+        <button class="btn btn-drive-export" onclick="exportClassFundCSV()">📥 匯出 CSV</button>
+      </div>
+    </div>
+    <div style="margin:10px 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="classFundUrl" type="text" placeholder="貼上班費專用的 Apps Script 網址（跟成長紀錄不同，要另外部署一次）" style="flex:1;min-width:200px;border-radius:10px;border:2px solid #81c784;padding:7px 12px;font-size:.82rem;font-family:'Nunito',sans-serif;">
+      <button class="btn btn-success btn-sm" onclick="saveClassFundUrl()">💾 儲存</button>
+    </div>
+    <div style="font-size:.8rem;color:#4a7c4e;line-height:1.7;">
+      📌 這組網址要另外設定，跟「成長紀錄」的網址是分開的兩個 Apps Script（因為指向不同的試算表）。設定一次之後，點「同步班費」即可從 Google Sheets 抓取最新收支紀錄。<br>
+      ✏️ 在下方表格直接點格子也可以編輯，<strong>會自動同步回 Google Sheets</strong>，結餘也會自動重新計算。
+    </div>
+    <div id="classFundSyncTime" style="margin-top:8px;font-size:.78rem;color:#94a3b8;font-weight:700;">🕐 尚未成功同步過</div>
+    <div id="classFundSyncStatus" style="margin-top:8px;font-size:.82rem;font-weight:700;color:#16a34a;display:none;"></div>
+  </div>
+
+  <!-- 收支摘要卡 -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;">
+    <div class="card" style="margin-bottom:0;text-align:center;background:#f0fdf4;border:2px solid #bbf7d0;">
+      <div style="font-size:.85rem;color:#16a34a;font-weight:800;margin-bottom:4px;">💚 總收入</div>
+      <div id="fundTotalIncome" style="font-size:1.5rem;font-weight:900;color:#16a34a;">0</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;background:#fef2f2;border:2px solid #fecaca;">
+      <div style="font-size:.85rem;color:#dc2626;font-weight:800;margin-bottom:4px;">🧾 總支出</div>
+      <div id="fundTotalExpense" style="font-size:1.5rem;font-weight:900;color:#dc2626;">0</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;background:#eff6ff;border:2px solid #bfdbfe;">
+      <div style="font-size:.85rem;color:#2563eb;font-weight:800;margin-bottom:4px;">💰 目前結餘</div>
+      <div id="fundBalance" style="font-size:1.5rem;font-weight:900;color:#2563eb;">0</div>
+    </div>
+  </div>
+
+  <!-- 收支明細表格 -->
+  <div class="card" style="overflow-x:auto;padding:0;">
+    <div id="classFundWrap" style="min-width:600px;">
+      <div id="noClassFund" style="text-align:center;padding:40px;color:#94a3b8;font-weight:700;">
+        請先設定班費專用的 Apps Script 網址，然後點「同步班費」載入收支紀錄 📊
+      </div>
+      <table id="classFundTable" style="display:none;width:100%;border-collapse:collapse;font-size:.85rem;"></table>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   /* ── 成長圖 Modal ── */
@@ -4096,11 +4187,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -7350,6 +7441,11 @@ let appsScriptUrl = localStorage.getItem('cls_appsUrl') || '';
 let gradeSheetData = {};
 let currentGradeSheet = '306國語';
 
+// ─── 班費收支（跟成績登記共用同一套同步機制，但指向另一個 Google 試算表，網址分開存）───
+let classFundUrl = localStorage.getItem('cls_classFundUrl') || '';
+let classFundData = { headers: [], rows: [] }; // { headers:['日期','內容','收入','支出','結餘','備註',...], rows:[[...],...] }
+let classFundEditMode = false;
+
 // ─── 依「單元」自動配色（例如 L1、L2 是不同單元，就給不同顏色區塊）───
 const UNIT_COLOR_PALETTE = [
   {bg:'#e0f2fe', bd:'#38bdf8'}, {bg:'#fce7f3', bd:'#f472b6'},
@@ -7385,8 +7481,8 @@ function saveAppsUrl(){
   toast('✅ Apps Script 網址已儲存！');
 }
 
-function showSyncStatus(msg, isErr=false){
-  const el = document.getElementById('syncStatus');
+function showSyncStatus(msg, isErr=false, elId='syncStatus'){
+  const el = document.getElementById(elId);
   if(!el) return;
   el.style.display = 'block';
   el.style.color = isErr ? '#dc2626' : '#16a34a';
@@ -7396,9 +7492,11 @@ function showSyncStatus(msg, isErr=false){
 
 // 直接 fetch（第一優先——實測這個 Apps Script 網址其實有正常回應 CORS，
 // 直接 fetch 最快、最穩，不用依賴 JSONP 或第三方代理伺服器）
-async function directFetch(params){
+// targetUrl 沒傳的話預設用成績登記那組 appsScriptUrl，這樣舊的呼叫方式完全不用改。
+async function directFetch(params, targetUrl){
+  const base = targetUrl || appsScriptUrl;
   const qs = new URLSearchParams(params).toString();
-  const url = appsScriptUrl + '?' + qs;
+  const url = base + '?' + qs;
   const res = await Promise.race([
     fetch(url, {mode:'cors'}),
     new Promise((_,r)=>setTimeout(()=>r(null),8000))
@@ -7410,11 +7508,12 @@ async function directFetch(params){
 }
 
 // JSONP fetch（備用一：直接 fetch 失敗時才用，例如瀏覽器政策擋掉跨網域請求）
-function jsonpFetch(params){
+function jsonpFetch(params, targetUrl){
+  const base = targetUrl || appsScriptUrl;
   return new Promise((resolve, reject)=>{
     const cbName = 'gs_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const qs = new URLSearchParams({...params, callback: cbName}).toString();
-    const url = appsScriptUrl + '?' + qs;
+    const url = base + '?' + qs;
     const script = document.createElement('script');
     const timer = setTimeout(()=>{
       delete window[cbName]; script.remove();
@@ -7431,9 +7530,10 @@ function jsonpFetch(params){
 }
 
 // CORS proxy fetch（備用二：最後手段，透過第三方代理伺服器轉發）
-async function proxyFetch(params){
+async function proxyFetch(params, targetUrl){
+  const base = targetUrl || appsScriptUrl;
   const qs = new URLSearchParams(params).toString();
-  const url = appsScriptUrl + '?' + qs;
+  const url = base + '?' + qs;
   const proxies = [
     `https://corsproxy.io/?${encodeURIComponent(url)}`,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -7456,14 +7556,15 @@ async function proxyFetch(params){
 }
 
 // 自動嘗試 直接fetch → JSONP → proxy 備用
-async function callApi(params){
-  try{ return await directFetch(params); }
+// targetUrl 可選：不傳就沿用成績登記的 Apps Script 網址；班費支出等其他功能會傳自己的網址進來。
+async function callApi(params, targetUrl){
+  try{ return await directFetch(params, targetUrl); }
   catch(e){
     console.warn('直接 fetch 失敗，改用 JSONP：', e.message);
-    try{ return await jsonpFetch(params); }
+    try{ return await jsonpFetch(params, targetUrl); }
     catch(e2){
       console.warn('JSONP 失敗，改用 proxy：', e2.message);
-      return await proxyFetch(params);
+      return await proxyFetch(params, targetUrl);
     }
   }
 }
@@ -7603,6 +7704,246 @@ function exportCSV(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');a.href=url;a.download=currentGradeSheet+'.csv';a.click();
   URL.revokeObjectURL(url); toast('📥 成績已匯出！');
+}
+
+// ─── 班費收支：跟成長紀錄共用同一套 callApi／directFetch／jsonpFetch／proxyFetch，
+// 但網址（classFundUrl）跟資料表都是獨立的一份，互不影響。
+// 這份試算表實際結構（已經打開她分享的班費表確認過）：
+// 第1列＝合併的大標題，第2列才是欄位標題（日期/內容/收入/支出/結餘/備註/收據），第3列開始才是資料，
+// 所以資料陣列的 index 要 +3 才是試算表裡的實際列號（成長紀錄那邊沒有標題列，是 +2）。
+const CLASSFUND_DATA_START_ROW = 3;
+const FUND_DEFAULT_COLS = { '日期':0, '內容':1, '收入':2, '支出':3, '結餘':4, '備註':5, '收據':6 };
+
+function saveClassFundUrl(){
+  const v = document.getElementById('classFundUrl').value.trim();
+  if(!v){ toast('⚠️ 請貼上班費專用的 Apps Script 網址'); return; }
+  classFundUrl = v;
+  localStorage.setItem('cls_classFundUrl', v);
+  if(useCloud && db) db.ref('class306/classFundUrl').set(v).catch(()=>{});
+  toast('✅ 班費 Apps Script 網址已儲存！');
+}
+
+async function syncClassFund(){
+  if(!classFundUrl){ toast('⚠️ 請先設定並儲存班費專用的 Apps Script 網址'); return; }
+  showSyncStatus('⏳ 從 Google Sheets 同步班費中…', false, 'classFundSyncStatus');
+  try{
+    const data = await callApi({ action:'getData' }, classFundUrl);
+    if(data.error) throw new Error(data.error);
+    classFundData = { headers: data.headers, rows: data.rows };
+    if(useCloud && db) db.ref('class306/classFundData').set(classFundData).catch(()=>{});
+    localStorage.setItem('cls_classFundData', JSON.stringify(classFundData));
+    renderClassFund();
+    showSyncStatus('✅ 同步完成！共 ' + data.rows.length + ' 筆紀錄', false, 'classFundSyncStatus');
+    recordClassFundSyncSuccess();
+  }catch(e){
+    showSyncStatus('⚠️ ' + e.message, true, 'classFundSyncStatus');
+  }
+}
+
+function recordClassFundSyncSuccess(){
+  const now = new Date();
+  const display = now.toLocaleDateString('zh-TW') + ' ' + now.toLocaleTimeString('zh-TW', {hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem('cls_classFundSyncTime', display);
+  if(useCloud && db) db.ref('class306/classFundSyncTime').set(display).catch(()=>{});
+  renderClassFundSyncTime(display);
+}
+function renderClassFundSyncTime(display){
+  const el = document.getElementById('classFundSyncTime');
+  if(!el) return;
+  el.textContent = display ? `🕐 上次成功同步：${display}` : '🕐 尚未成功同步過';
+}
+
+function fundColIdx(name){
+  const i = classFundData.headers ? classFundData.headers.indexOf(name) : -1;
+  return i>=0 ? i : (FUND_DEFAULT_COLS[name] !== undefined ? FUND_DEFAULT_COLS[name] : -1);
+}
+
+function fundToNum(v){
+  if(v===undefined||v===null||v==='') return 0;
+  const n = parseFloat(String(v).replace(/[,，]/g,''));
+  return isNaN(n) ? 0 : n;
+}
+
+function classFundSummary(){
+  const rows = classFundData.rows || [];
+  const ci = fundColIdx('收入'), ce = fundColIdx('支出'), cb = fundColIdx('結餘');
+  let income=0, expense=0;
+  rows.forEach(r=>{ income += fundToNum(r[ci]); expense += fundToNum(r[ce]); });
+  const balance = rows.length ? fundToNum(rows[rows.length-1][cb]) : 0;
+  return { income, expense, balance };
+}
+
+function renderClassFund(){
+  const data = classFundData;
+  const table = document.getElementById('classFundTable');
+  const noMsg = document.getElementById('noClassFund');
+  if(!table || !noMsg) return;
+  const incEl=document.getElementById('fundTotalIncome'), expEl=document.getElementById('fundTotalExpense'), balEl=document.getElementById('fundBalance');
+  if(!data || !data.headers || !data.headers.length){
+    table.style.display='none'; noMsg.style.display='block';
+    if(incEl) incEl.textContent='0'; if(expEl) expEl.textContent='0'; if(balEl) balEl.textContent='0';
+    return;
+  }
+  noMsg.style.display='none'; table.style.display='table';
+  table.innerHTML='';
+  const ci=fundColIdx('收入'), ce=fundColIdx('支出');
+  const thead=document.createElement('thead');
+  const htr=document.createElement('tr');
+  data.headers.forEach((h,colIdx)=>{
+    const th=document.createElement('th');
+    th.textContent=h||'';
+    th.title='雙擊可改名';
+    th.style.color='var(--dark)';
+    th.ondblclick=()=>editClassFundHeader(th,colIdx,h);
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr); table.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  data.rows.forEach((row,rowIdx)=>{
+    const tr=document.createElement('tr');
+    data.headers.forEach((h,colIdx)=>{
+      const td=document.createElement('td');
+      const val=row[colIdx]!==undefined?row[colIdx]:'';
+      td.textContent=String(val);
+      if(colIdx===ci && fundToNum(val)>0){ td.style.color='#16a34a'; td.style.fontWeight='800'; }
+      if(colIdx===ce && fundToNum(val)>0){ td.style.color='#dc2626'; td.style.fontWeight='800'; }
+      td.style.cursor='pointer'; td.title='點擊編輯';
+      td.onclick=()=>editClassFundCell(td,rowIdx,colIdx,String(val));
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  const sum = classFundSummary();
+  if(incEl) incEl.textContent = sum.income.toLocaleString('zh-TW');
+  if(expEl) expEl.textContent = sum.expense.toLocaleString('zh-TW');
+  if(balEl) balEl.textContent = sum.balance.toLocaleString('zh-TW');
+}
+
+function editClassFundHeader(th,colIdx,oldVal){
+  const input=document.createElement('input');
+  input.className='grade-cell-edit'; input.style.width='70px'; input.value=oldVal;
+  th.textContent=''; th.appendChild(input); input.focus(); input.select();
+  const done=async()=>{
+    const newVal=input.value.trim()||oldVal;
+    th.textContent=newVal;
+    classFundData.headers[colIdx]=newVal;
+    localStorage.setItem('cls_classFundData',JSON.stringify(classFundData));
+    if(useCloud&&db) db.ref('class306/classFundData').set(classFundData).catch(()=>{});
+    if(classFundUrl){
+      try{ await callApi({action:'updateHeader',col:colIdx+1,value:newVal}, classFundUrl); showSyncStatus('✅ 已更新 Google Sheets 標題', false, 'classFundSyncStatus'); }
+      catch(e){ showSyncStatus('⚠️ 更新失敗：'+e.message, true, 'classFundSyncStatus'); }
+    }
+  };
+  input.onblur=done;
+  input.onkeydown=e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape')th.textContent=oldVal;};
+}
+
+// 點格子編輯：如果改的是「收入」或「支出」，會自動從這一列開始重新累計「結餘」，
+// 並把所有改動過的格子（包含結餘）都同步推回 Google Sheets。
+function editClassFundCell(td,rowIdx,colIdx,oldVal){
+  const input=document.createElement('input');
+  input.className='grade-cell-edit'; input.type='text'; input.value=oldVal;
+  td.textContent=''; td.appendChild(input); input.focus(); input.select();
+  const done=async()=>{
+    const newVal=input.value.trim();
+    td.textContent=newVal;
+    classFundData.rows[rowIdx][colIdx]=newVal;
+
+    const ci=fundColIdx('收入'), ce=fundColIdx('支出'), cb=fundColIdx('結餘');
+    const changedCells=[{rowIdx,colIdx,value:newVal}];
+    if((colIdx===ci || colIdx===ce) && newVal!==oldVal && cb>=0){
+      let prevBalance = rowIdx>0 ? fundToNum(classFundData.rows[rowIdx-1][cb]) : 0;
+      for(let r=rowIdx; r<classFundData.rows.length; r++){
+        const inc = fundToNum(classFundData.rows[r][ci]);
+        const exp = fundToNum(classFundData.rows[r][ce]);
+        const bal = prevBalance + inc - exp;
+        classFundData.rows[r][cb] = bal;
+        changedCells.push({rowIdx:r, colIdx:cb, value:bal});
+        prevBalance = bal;
+      }
+      renderClassFund();
+    }
+    localStorage.setItem('cls_classFundData',JSON.stringify(classFundData));
+    if(useCloud&&db) db.ref('class306/classFundData').set(classFundData).catch(()=>{});
+
+    if(classFundUrl){
+      try{
+        for(const c of changedCells){
+          await callApi({action:'updateCell', row:c.rowIdx+CLASSFUND_DATA_START_ROW, col:c.colIdx+1, value:c.value}, classFundUrl);
+        }
+        showSyncStatus('✅ 已同步到 Google Sheets', false, 'classFundSyncStatus');
+      }catch(e){
+        showSyncStatus('⚠️ 同步失敗：'+e.message, true, 'classFundSyncStatus');
+      }
+    }
+  };
+  input.onblur=done;
+  input.onkeydown=e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape')td.textContent=oldVal;};
+}
+
+function openClassFundAddModal(){
+  document.getElementById('fundAddDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('fundAddType').value = 'expense';
+  document.getElementById('fundAddContent').value = '';
+  document.getElementById('fundAddAmount').value = '';
+  document.getElementById('fundAddNote').value = '';
+  openModal('classFundAddModal');
+}
+
+async function confirmAddClassFundRow(){
+  const dateVal = document.getElementById('fundAddDate').value;
+  const type = document.getElementById('fundAddType').value;
+  const content = document.getElementById('fundAddContent').value.trim();
+  const amount = fundToNum(document.getElementById('fundAddAmount').value);
+  const note = document.getElementById('fundAddNote').value.trim();
+  if(!content){ toast('⚠️ 請填寫內容'); return; }
+  if(!amount){ toast('⚠️ 請填寫金額'); return; }
+
+  if(!classFundData.headers || !classFundData.headers.length){
+    classFundData.headers = ['日期','內容','收入','支出','結餘','備註','收據'];
+  }
+  const headers = classFundData.headers;
+  const cDate=fundColIdx('日期'), cContent=fundColIdx('內容'), ci=fundColIdx('收入'), ce=fundColIdx('支出'), cb=fundColIdx('結餘'), cNote=fundColIdx('備註');
+  const rows = classFundData.rows || (classFundData.rows=[]);
+  const prevBalance = rows.length ? fundToNum(rows[rows.length-1][cb]) : 0;
+  const newBalance = type==='income' ? prevBalance + amount : prevBalance - amount;
+
+  const dateDisplay = dateVal ? dateVal.replace(/-/g,'/') : '';
+  const row = new Array(headers.length).fill('');
+  if(cDate>=0) row[cDate]=dateDisplay;
+  if(cContent>=0) row[cContent]=content;
+  if(type==='income' && ci>=0) row[ci]=amount;
+  if(type==='expense' && ce>=0) row[ce]=amount;
+  if(cb>=0) row[cb]=newBalance;
+  if(cNote>=0) row[cNote]=note;
+
+  rows.push(row);
+  localStorage.setItem('cls_classFundData',JSON.stringify(classFundData));
+  if(useCloud&&db) db.ref('class306/classFundData').set(classFundData).catch(()=>{});
+  renderClassFund();
+  closeModal('classFundAddModal');
+  toast('✅ 已新增一筆班費紀錄！');
+
+  if(classFundUrl){
+    try{
+      await callApi({action:'addRow', values: JSON.stringify(row)}, classFundUrl);
+      showSyncStatus('✅ 已同步新增到 Google Sheets', false, 'classFundSyncStatus');
+    }catch(e){
+      showSyncStatus('⚠️ 新增同步失敗，稍後可以按「同步班費」重新整理：'+e.message, true, 'classFundSyncStatus');
+    }
+  }
+}
+
+function exportClassFundCSV(){
+  const data=classFundData;
+  if(!data||!data.rows||!data.rows.length){ toast('⚠️ 目前沒有班費紀錄可以匯出'); return; }
+  const rows=[data.headers,...data.rows].map(r=>r.join(','));
+  const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='班費收支.csv'; a.click();
+  URL.revokeObjectURL(url); toast('📥 班費紀錄已匯出！');
 }
 
 // ─── MISSIONS ───
@@ -7932,6 +8273,24 @@ async function initApp() {
     const inp = document.getElementById('appsScriptUrl');
     if(inp && appsScriptUrl) inp.value = appsScriptUrl;
     renderLastSyncTime(localStorage.getItem('cls_lastSyncTime') || '');
+  } catch(e){}
+
+  // 恢復已儲存的「班費收支」Apps Script 網址和資料（跟成績登記完全獨立的一組，指向另一個 Google 試算表）
+  try {
+    const savedFund = localStorage.getItem('cls_classFundData');
+    if(savedFund) classFundData = JSON.parse(savedFund);
+    if(useCloud && db){
+      const fundUrlSnap = await Promise.race([db.ref('class306/classFundUrl').get(), new Promise((_,r)=>setTimeout(()=>r('t'),3000))]);
+      if(fundUrlSnap && fundUrlSnap.exists && fundUrlSnap.exists()){ classFundUrl = fundUrlSnap.val(); localStorage.setItem('cls_classFundUrl', classFundUrl); }
+      const fundSnap = await Promise.race([db.ref('class306/classFundData').get(), new Promise((_,r)=>setTimeout(()=>r('t'),3000))]);
+      if(fundSnap && fundSnap.exists && fundSnap.exists()){ classFundData = fundSnap.val() || {headers:[],rows:[]}; localStorage.setItem('cls_classFundData', JSON.stringify(classFundData)); }
+      const fundSyncSnap = await Promise.race([db.ref('class306/classFundSyncTime').get(), new Promise((_,r)=>setTimeout(()=>r('t'),3000))]);
+      if(fundSyncSnap && fundSyncSnap.exists && fundSyncSnap.exists()){ localStorage.setItem('cls_classFundSyncTime', fundSyncSnap.val()); }
+    }
+    const fundInp = document.getElementById('classFundUrl');
+    if(fundInp && classFundUrl) fundInp.value = classFundUrl;
+    renderClassFundSyncTime(localStorage.getItem('cls_classFundSyncTime') || '');
+    renderClassFund();
   } catch(e){}
 
   // 渲染畫面
