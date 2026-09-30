@@ -1022,6 +1022,17 @@
   </div>
 </div>
 
+<!-- ─────────────── 班費收支：收據照片放大檢視 MODAL ─────────────── -->
+<div class="modal-overlay" id="receiptViewModal">
+  <div class="modal" style="max-width:520px;text-align:center;">
+    <h3 style="margin-bottom:12px;">🧾 收據照片</h3>
+    <img id="receiptViewImg" src="" style="max-width:100%;max-height:70vh;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.15);">
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('receiptViewModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────────── BATCH STAR MODAL ─────────────── -->
 <div class="modal-overlay" id="batchStarModal">
   <div class="modal" onkeydown="if(event.key==='Enter' && event.target.tagName!=='SELECT'){event.preventDefault();confirmBatchStar();}">
@@ -7799,16 +7810,30 @@ function renderClassFund(){
   });
   thead.appendChild(htr); table.appendChild(thead);
   const tbody=document.createElement('tbody');
+  const cReceipt=fundColIdx('收據');
   data.rows.forEach((row,rowIdx)=>{
     const tr=document.createElement('tr');
     data.headers.forEach((h,colIdx)=>{
       const td=document.createElement('td');
       const val=row[colIdx]!==undefined?row[colIdx]:'';
-      td.textContent=String(val);
+      const valStr=String(val);
+      // 「收據」欄位如果是嵌入的照片（data:image/... 開頭的字串），顯示縮圖，
+      // 點一下用 Modal 放大看，而不是當成文字讓人點擊編輯。
+      if(colIdx===cReceipt && valStr.indexOf('data:image')===0){
+        const thumb=document.createElement('img');
+        thumb.src=valStr;
+        thumb.style.cssText='width:40px;height:40px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid #fbbf24;vertical-align:middle;';
+        thumb.title='點我放大看收據照片';
+        thumb.onclick=()=>viewReceiptImage(valStr);
+        td.appendChild(thumb);
+        tr.appendChild(td);
+        return;
+      }
+      td.textContent=valStr;
       if(colIdx===ci && fundToNum(val)>0){ td.style.color='#16a34a'; td.style.fontWeight='800'; }
       if(colIdx===ce && fundToNum(val)>0){ td.style.color='#dc2626'; td.style.fontWeight='800'; }
       td.style.cursor='pointer'; td.title='點擊編輯';
-      td.onclick=()=>editClassFundCell(td,rowIdx,colIdx,String(val));
+      td.onclick=()=>editClassFundCell(td,rowIdx,colIdx,valStr);
       tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -7936,10 +7961,21 @@ async function confirmAddClassFundRow(){
   }
 }
 
+function viewReceiptImage(dataUrl){
+  document.getElementById('receiptViewImg').src = dataUrl;
+  openModal('receiptViewModal');
+}
+
 function exportClassFundCSV(){
   const data=classFundData;
   if(!data||!data.rows||!data.rows.length){ toast('⚠️ 目前沒有班費紀錄可以匯出'); return; }
-  const rows=[data.headers,...data.rows].map(r=>r.join(','));
+  // 收據照片是內嵌的 data:image 長字串，CSV 裡放不下也沒有意義，改成提示文字。
+  const cReceipt=fundColIdx('收據');
+  const safeRows=data.rows.map(r=>r.map((v,ci)=>{
+    const s=String(v!==undefined&&v!==null?v:'');
+    return (ci===cReceipt && s.indexOf('data:image')===0) ? '[有收據照片，請到班網查看]' : s;
+  }));
+  const rows=[data.headers,...safeRows].map(r=>r.join(','));
   const blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='班費收支.csv'; a.click();
