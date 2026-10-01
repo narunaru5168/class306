@@ -1899,6 +1899,22 @@
   </div>
 </div>
 
+<!-- ─────────────── 學生小考走勢 MODAL ─────────────── -->
+<div class="modal-overlay" id="quizTrendModal">
+  <div class="modal" style="max-width:560px;">
+    <h3 id="quizTrendName" style="margin-bottom:10px;">📈 小考走勢</h3>
+    <div style="margin-bottom:10px;">
+      <select id="quizTrendSubjectSelect" onchange="renderQuizTrend()" style="width:100%;padding:7px 10px;border-radius:10px;border:2px solid #e2e8f0;font-family:'Nunito',sans-serif;"></select>
+    </div>
+    <div id="quizTrendNoData" style="text-align:center;padding:30px;color:#94a3b8;font-weight:700;display:none;">目前還沒有足夠的小考資料（至少要同步到2次以上小考成績）</div>
+    <canvas id="quizTrendCanvas" height="180"></canvas>
+    <div id="quizTrendSummary" style="margin-top:10px;font-size:.85rem;color:#475569;text-align:center;"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('quizTrendModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─────────────── CLASS OFFICERS（班級幹部登記表）─────────────── -->
 <div id="page-officers" class="page">
   <div style="display:flex;align-items:center;margin-bottom:10px;">
@@ -6723,6 +6739,103 @@ function mutualAidTier(count){
   if(count>=1)  return {emoji:'🌱', label:'發芽小組'};
   return {emoji:'🌰', label:'種子小組'};
 }
+
+// 小組「目前程度」一覽：用跟配對同一套 computeStudentAvgScore，算出這組最高/最低/平均，
+// 方便一眼看出哪組落差過大（可能需要再微調）或過小（可能都是程度接近的同學）。
+function groupScoreSummary(group){
+  const members = (group.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
+  const scores = members.map(s=>computeStudentAvgScore(s)).filter(v=>v!==null);
+  if(!scores.length) return null;
+  return {
+    avg: scores.reduce((a,b)=>a+b,0)/scores.length,
+    max: Math.max(...scores),
+    min: Math.min(...scores),
+    count: scores.length,
+    total: members.length,
+  };
+}
+
+// ─── 個別學生的「小考走勢」：用本學期各單元小考分數（已經是時間順序）畫走勢圖 ───
+// 不需要額外存歷史資料，直接從已同步的成長紀錄裡，把欄位標題含「小考」的分數依序抓出來。
+function extractQuizTrend(student, sheetName){
+  const sheet = gradeSheetData[sheetName];
+  if(!sheet || !sheet.headers || !sheet.rows) return {labels:[], scores:[]};
+  const seatNum = parseInt(student.seatNo, 10);
+  const row = sheet.rows.find(r=>{
+    const rSeat = parseInt(r[0], 10);
+    return (!isNaN(seatNum) && rSeat===seatNum) || (r[2] && student.name && String(r[2]).trim()===student.name.trim());
+  });
+  if(!row) return {labels:[], scores:[]};
+  const labels=[], scores=[];
+  sheet.headers.forEach((h,ci)=>{
+    if(ci<4) return; // 跳過座號/學號/姓名/性別
+    if(!h || String(h).indexOf('小考')===-1) return; // 只抓小考類型欄位，不要混進作業、總成績
+    const v = parseFloat(row[ci]);
+    if(!isNaN(v) && isFinite(v)){ labels.push(h); scores.push(v); }
+  });
+  return {labels, scores};
+}
+function availableTrendSubjects(student){
+  return Object.keys(gradeSheetData||{}).filter(sheetName=>extractQuizTrend(student, sheetName).scores.length>=2);
+}
+let quizTrendChart = null;
+let quizTrendStudentId = null;
+function openQuizTrend(studentId){
+  const s = students.find(x=>x.id===studentId);
+  if(!s) return;
+  quizTrendStudentId = studentId;
+  const subjects = availableTrendSubjects(s);
+  const sel = document.getElementById('quizTrendSubjectSelect');
+  const noData = document.getElementById('quizTrendNoData');
+  const canvas = document.getElementById('quizTrendCanvas');
+  document.getElementById('quizTrendName').textContent = `📈 ${s.seatNo||''}號 ${s.name}的小考走勢`;
+  if(subjects.length===0){
+    sel.innerHTML = '';
+    noData.style.display = 'block';
+    canvas.style.display = 'none';
+    document.getElementById('quizTrendSummary').textContent = '';
+    if(quizTrendChart){ quizTrendChart.destroy(); quizTrendChart=null; }
+  } else {
+    sel.innerHTML = subjects.map(sub=>`<option value="${sub}">${sub}</option>`).join('');
+    noData.style.display = 'none';
+    canvas.style.display = 'block';
+    renderQuizTrend();
+  }
+  openModal('quizTrendModal');
+}
+function renderQuizTrend(){
+  const s = students.find(x=>x.id===quizTrendStudentId);
+  if(!s) return;
+  const sheetName = document.getElementById('quizTrendSubjectSelect').value;
+  if(!sheetName) return;
+  const {labels, scores} = extractQuizTrend(s, sheetName);
+  const canvas = document.getElementById('quizTrendCanvas');
+  if(quizTrendChart){ quizTrendChart.destroy(); quizTrendChart=null; }
+  if(labels.length<2){
+    document.getElementById('quizTrendSummary').textContent = '這一科的小考資料還不夠畫走勢（至少要有2次小考成績）';
+    return;
+  }
+  const ctx = canvas.getContext('2d');
+  quizTrendChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:[{ label: sheetName+' 小考分數', data: scores, borderColor:'#5BB8F5', backgroundColor:'rgba(91,184,245,.15)', fill:true, tension:.3, pointRadius:4 }] },
+    options:{ responsive:true, scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{display:false} } }
+  });
+
+  // 摘要：拿「最早幾次」平均 跟「最近幾次」平均比較，粗略判斷整體是進步、退步還是持平
+  const n = scores.length;
+  const chunk = Math.max(1, Math.floor(n/3));
+  const early = scores.slice(0, chunk);
+  const recent = scores.slice(-chunk);
+  const earlyAvg = early.reduce((a,b)=>a+b,0)/early.length;
+  const recentAvg = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const diff = recentAvg - earlyAvg;
+  let trendLabel = '➡️ 大致持平';
+  if(diff >= 5) trendLabel = '📈 進步中';
+  else if(diff <= -5) trendLabel = '📉 退步中，要多留意';
+  document.getElementById('quizTrendSummary').innerHTML =
+    `最早 ${early.length} 次平均 <strong>${earlyAvg.toFixed(1)}</strong> → 最近 ${recent.length} 次平均 <strong>${recentAvg.toFixed(1)}</strong>　${trendLabel}`;
+}
 function renderMutualAidGroups(){
   ensureMutualAidDefaults();
   const wrap = document.getElementById('mutualAidGroupList');
@@ -6736,10 +6849,11 @@ function renderMutualAidGroups(){
     const chips = members.map((s,i)=>{
       const isLeader = i===leaderIdx;
       return `<span style="background:${isLeader?'#fef3c7':'#eff6ff'};color:${isLeader?'#92400e':'#0369a1'};border-radius:16px;padding:3px 9px;font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
-        ${isLeader?'👑 ':''}${s.seatNo||''}${s.name}
+        <span style="cursor:pointer;" title="點我看小考走勢" onclick="openQuizTrend(${s.id})">${isLeader?'👑 ':''}${s.seatNo||''}${s.name} 📈</span>
         <span style="cursor:pointer;opacity:.6;" onclick="removeFromMutualAidGroup(${g.id},${s.id})">✕</span>
       </span>`;
     }).join('');
+    const scoreSummary = groupScoreSummary(g);
     return `
     <div class="card" style="padding:14px 16px;margin-bottom:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -6754,6 +6868,7 @@ function renderMutualAidGroups(){
       <div style="font-size:.8rem;font-weight:800;color:#7c3aed;margin-bottom:8px;">
         ${leader ? `👑 本輪組長：${leader.seatNo||''}號 ${leader.name}` : '尚無組員，無法指派組長'}
       </div>
+      ${scoreSummary ? `<div style="font-size:.78rem;color:#475569;margin-bottom:8px;">📊 目前程度：平均 <strong>${scoreSummary.avg.toFixed(1)}</strong>｜最高 ${scoreSummary.max.toFixed(1)}｜最低 ${scoreSummary.min.toFixed(1)}${scoreSummary.count<scoreSummary.total?`（${scoreSummary.total-scoreSummary.count}人尚無成績資料）`:''}</div>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;min-height:24px;">
         ${chips || '<span style="font-size:.78rem;color:#cbd5e1;">尚未加入學生</span>'}
       </div>
