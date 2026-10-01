@@ -6925,11 +6925,16 @@ function renderTrendHighlights(){
     wrap.innerHTML = `<div style="font-size:.8rem;color:#94a3b8;">目前還沒有偵測到明顯的進步或穩定高分（同一科至少要有2次小考成績才能判斷）</div>`;
     return;
   }
+  // 每一筆除了可以點名字看走勢圖，旁邊也直接放一個「⭐ 加星」按鈕——
+  // 不用先點進去看圖再找按鈕，在這個提醒清單上就能直接加，一樣要老師自己按才會加、按過一次後會變成「已加星」。
   wrap.innerHTML = rows.map(r=>{
     const bg = r.type==='improving' ? '#dcfce7' : '#fef9c3';
     const color = r.type==='improving' ? '#15803d' : '#92400e';
     const subjectShort = String(r.sheetName).replace(/^306/,'');
-    return `<span style="background:${bg};color:${color};border-radius:16px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;" title="點我看詳細走勢" onclick="openQuizTrend(${r.student.id})">${r.emoji} ${r.student.seatNo||''}${r.student.name}（${subjectShort}：${r.label}，近期平均${r.recentAvg.toFixed(1)}）</span>`;
+    return `<span style="background:${bg};color:${color};border-radius:16px;padding:4px 6px 4px 10px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+      <span style="cursor:pointer;" title="點我看詳細走勢" onclick="openQuizTrend(${r.student.id})">${r.emoji} ${r.student.seatNo||''}${r.student.name}（${subjectShort}：${r.label}，近期平均${r.recentAvg.toFixed(1)}）</span>
+      <button type="button" class="btn" style="font-size:.72rem;padding:3px 9px;background:#fff;color:${color};border:1px solid ${color};" onclick="suggestStarFromTrend(${r.student.id}, this, '${r.label}')">⭐ 加星</button>
+    </span>`;
   }).join('');
 }
 let quizTrendChart = null;
@@ -6985,19 +6990,22 @@ function renderQuizTrend(){
   }
   document.getElementById('quizTrendSummary').innerHTML = summaryHtml;
 
-  // 進步幅度明顯時，提供一個「建議加星」按鈕讓老師自己判斷要不要給——不自動加星，
-  // 避免把猜題、單次失常誤判成持續進步；老師可以結合平時觀察決定。
+  // 進步幅度明顯、或分數一直維持在高水準時，提供一個「建議加星」按鈕讓老師自己判斷要不要給——
+  // 不自動加星，避免把猜題、單次失常或單純運氣好誤判成真的進步／值得獎勵；老師可以結合平時觀察決定。
   const starWrap = document.getElementById('quizTrendStarBtnWrap');
   if(diff >= 5){
-    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;" onclick="suggestStarFromTrend(${s.id}, this)">💡 幫 ${s.name} 加1顆星（進步中）</button>`;
+    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;" onclick="suggestStarFromTrend(${s.id}, this, '進步中')">💡 幫 ${s.name} 加1顆星（進步中）</button>`;
+  } else if(stats.highlight && stats.highlight.type==='steady-high'){
+    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;background:#eab308;" onclick="suggestStarFromTrend(${s.id}, this, '穩定高分')">🌟 幫 ${s.name} 加1顆星（穩定高分）</button>`;
   } else {
     starWrap.innerHTML = '';
   }
 }
-function suggestStarFromTrend(studentId, btnEl){
+function suggestStarFromTrend(studentId, btnEl, reason){
   const s = students.find(x=>x.id===studentId);
   if(!s) return;
-  if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示進步中）`)) return;
+  reason = reason || '進步中';
+  if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示${reason}）`)) return;
   s.stars = (s.stars||0) + 1;
   save(); renderStudents(); updateStats();
   toast(`⭐ 已幫 ${s.name} 加 1 顆星！`);
