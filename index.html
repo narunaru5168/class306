@@ -1851,11 +1851,13 @@
   <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;line-height:1.7;">
     每組有一位「組長」，職責是<strong>先關心、先幫忙組員</strong>，不是管人；組長會定期輪替，讓每個人都有機會練習。<br>
     遇到小狀況鼓勵組內先互相幫忙、想辦法解決，真的解決不了再來找老師——這裡的紀錄純粹是給老師參考，不計分、不排名。<br>
-    💡 也可以當作「學習小組」用：用「依最近成績配對」自動把程度不同的同學混在同一組，鼓勵互相教、互相陪練習，記錄一筆「教同學訂正」「一起複習」這類互助，一樣會累積小組獎勵。
+    💡 也可以當作「學習小組」用：用「依最近成績配對」自動把程度不同的同學混在同一組，鼓勵互相教、互相陪練習，記錄一筆「教同學訂正」「一起複習」這類互助，一樣會累積小組獎勵。<br>
+    🏆 每個月可以按一次「本月進步結算」：只看每組「比上個月進步多少」，不是比誰分數最高，所以起點較弱的組一樣有機會拿到最多星星；沒有進步的組不扣星、也不會被排名公開比較。
   </div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
     <button class="btn" style="background:#eef2ff;border:2px solid #818cf8;color:#4338ca;font-size:.82rem;padding:8px 16px;" onclick="regroupMutualAidByGrades()">📊 依最近成績配對（強配弱，當學習小組用）</button>
+    <button class="btn" style="background:#fdf4ff;border:2px solid #d946ef;color:#a21caf;font-size:.82rem;padding:8px 16px;" onclick="openMonthlySettleModal()">🏆 本月進步結算</button>
     <button class="btn" style="background:#fff9e6;border:2px solid #fbbf24;color:#b45309;font-size:.82rem;padding:8px 16px;" onclick="syncMutualAidWithSeating()">🔗 依照座位表自動分組（每排一組）</button>
     <button class="btn btn-primary" style="font-size:.82rem;padding:8px 16px;" onclick="randomAssignMutualAid()">🎲 隨機重新分組</button>
     <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.82rem;padding:8px 16px;" onclick="addMutualAidGroup()">＋ 新增小組</button>
@@ -1909,8 +1911,24 @@
     <div id="quizTrendNoData" style="text-align:center;padding:30px;color:#94a3b8;font-weight:700;display:none;">目前還沒有足夠的小考資料（至少要同步到2次以上小考成績）</div>
     <canvas id="quizTrendCanvas" height="180"></canvas>
     <div id="quizTrendSummary" style="margin-top:10px;font-size:.85rem;color:#475569;text-align:center;"></div>
+    <div id="quizTrendStarBtnWrap" style="margin-top:10px;text-align:center;"></div>
     <div class="modal-btns" style="margin-top:14px;">
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('quizTrendModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── 小組本月進步結算 MODAL ─────────────── -->
+<div class="modal-overlay" id="monthlySettleModal">
+  <div class="modal" style="max-width:560px;">
+    <h3 style="margin-bottom:6px;">🏆 本月進步結算</h3>
+    <div style="font-size:.8rem;color:#94a3b8;margin-bottom:12px;line-height:1.6;">
+      只比較「跟上次結算比起來，這組進步了多少」，不是比誰分數最高——所以起點較弱的組只要有進步，一樣能拿到最多星星。沒有進步的組不扣星、也不公開排名，單純這次先不加星。
+    </div>
+    <div id="monthlySettleList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:360px;overflow-y:auto;"></div>
+    <div class="modal-btns" style="margin-top:10px;">
+      <button class="btn btn-success" onclick="applyMonthlySettlement()">✅ 套用星星並記錄本月基準</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('monthlySettleModal')">取消</button>
     </div>
   </div>
 </div>
@@ -4239,6 +4257,7 @@ let cleaningZones = []; // { id, name, targetCount, studentIds:[] } 打掃區域
 let cleaningAssignTarget = null; // 目前正在加人到哪個打掃區域
 let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助小組（組長會輪替）
 let mutualAidAssignTarget = null; // 目前正在加人到哪個互助小組
+let groupMonthlySnapshot = {}; // { [groupId]: { period:'YYYY-MM', avg: number } } 每組上次「月結算」時的平均分數，用來算「這個月進步了多少」
 let classOfficers = {}; // { positionId: [studentId, ...] } 班級幹部指派名單
 let officerAssignTarget = null; // 目前正在指派哪個幹部職位
 let pendingChallenges = {}; // { pushId: {studentId, studentName, createdAt} } 轉盤抽到「語詞遊戲挑戰」但還沒去玩的待完成紀錄，存在獨立路徑（跟 pendingStarAwards 一樣用 push/remove），伙伴名冊卡片上會顯示按鈕，隨時可以點開繼續玩
@@ -4329,6 +4348,7 @@ async function doSaveAll() {
   await saveField('class306/classRoles', classRoles, 'cls_classRoles');
   await saveField('class306/traitBadges', traitBadges, 'cls_traitBadges');
   await saveField('class306/mutualAidGroups', mutualAidGroups, 'cls_mutualAidGroups');
+  await saveField('class306/groupMonthlySnapshot', groupMonthlySnapshot, 'cls_groupMonthlySnapshot');
   await saveField('class306/classOfficers', classOfficers, 'cls_classOfficers');
   await saveField('class306/officerPositions', officerPositions, 'cls_officerPositions');
 }
@@ -4351,7 +4371,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal, coVal, opVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4373,6 +4393,7 @@ async function loadData() {
     fetchField('class306/mutualAidGroups', []),
     fetchField('class306/classOfficers', {}),
     fetchField('class306/officerPositions', []),
+    fetchField('class306/groupMonthlySnapshot', {}),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4395,6 +4416,8 @@ async function loadData() {
   mutualAidGroups = maVal !== null ? maVal : JSON.parse(localStorage.getItem('cls_mutualAidGroups')||'[]');
   classOfficers = coVal !== null ? coVal : JSON.parse(localStorage.getItem('cls_classOfficers')||'{}');
   officerPositions = opVal !== null ? opVal : JSON.parse(localStorage.getItem('cls_officerPositions')||'[]');
+  groupMonthlySnapshot = gmsVal !== null ? gmsVal : JSON.parse(localStorage.getItem('cls_groupMonthlySnapshot')||'{}');
+  if(!groupMonthlySnapshot || typeof groupMonthlySnapshot !== 'object' || Array.isArray(groupMonthlySnapshot)) groupMonthlySnapshot = {};
 
   // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
   // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
@@ -6755,6 +6778,84 @@ function groupScoreSummary(group){
   };
 }
 
+// ─── 小組「本月進步結算」───
+// 原則：只比較「跟上次結算比起來進步了多少」，不是比當下分數的高低——這樣起點較弱、
+// 已經被刻意配對了強同學帶的那幾組，也有公平機會拿到最多星星，而不會因為先天分數較低就永遠墊底。
+// 沒有進步的組不扣星、不公開排名羞辱，單純這次不加星，鼓勵但不懲罰。
+function currentMonthPeriod(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+// rank 是「依進步幅度排序後」的名次（0=進步最多），只有「真的有進步（delta>0）」的組才會進到排名，
+// 星星依名次遞減，但最低仍保底1顆——避免第4、5名的組明明也進步了，卻一顆星都拿不到而失去動力。
+function starsForImprovementRank(rank){
+  if(rank===0) return 3;
+  if(rank===1) return 2;
+  return 1;
+}
+function computeMonthlySettlement(){
+  ensureMutualAidDefaults();
+  const period = currentMonthPeriod();
+  const rows = mutualAidGroups.map(g=>{
+    const summary = groupScoreSummary(g);
+    const currentAvg = summary ? summary.avg : null;
+    const prev = groupMonthlySnapshot[g.id];
+    const prevAvg = (prev && typeof prev.avg === 'number') ? prev.avg : null;
+    const delta = (currentAvg!==null && prevAvg!==null) ? (currentAvg - prevAvg) : null;
+    return { group: g, currentAvg, prevAvg, delta, stars: 0 };
+  });
+  const improved = rows.filter(r=>r.delta!==null && r.delta>0).sort((a,b)=>b.delta-a.delta);
+  improved.forEach((r,i)=>{ r.stars = starsForImprovementRank(i); });
+  return { period, rows };
+}
+let monthlySettleData = null;
+function openMonthlySettleModal(){
+  if(!students.length){ toast('⚠️ 請先新增學生！'); return; }
+  const hasAnyGrades = Object.values(gradeSheetData||{}).some(d=>d && d.rows && d.rows.length);
+  if(!hasAnyGrades){ toast('⚠️ 目前還沒有同步過任何成長紀錄，請先到「成長紀錄」頁面同步至少一科'); return; }
+  monthlySettleData = computeMonthlySettlement();
+  renderMonthlySettleModal();
+  openModal('monthlySettleModal');
+}
+function renderMonthlySettleModal(){
+  const wrap = document.getElementById('monthlySettleList');
+  if(!wrap || !monthlySettleData) return;
+  wrap.innerHTML = monthlySettleData.rows.map(r=>{
+    const g = r.group;
+    let statusHtml;
+    if(r.currentAvg===null){
+      statusHtml = `<span style="color:#94a3b8;">這組還沒有成績資料，先略過</span>`;
+    } else if(r.prevAvg===null){
+      statusHtml = `<span style="color:#94a3b8;">目前平均 ${r.currentAvg.toFixed(1)}（還沒有上次基準，這次先建立，之後才能比進步）</span>`;
+    } else if(r.delta>0){
+      statusHtml = `<span style="color:#16a34a;font-weight:800;">📈 ${r.prevAvg.toFixed(1)} → ${r.currentAvg.toFixed(1)}（進步 ${r.delta.toFixed(1)} 分）${r.stars>0?`　將加 <strong>${r.stars}</strong> 顆星/人`:''}</span>`;
+    } else {
+      statusHtml = `<span style="color:#94a3b8;">${r.prevAvg.toFixed(1)} → ${r.currentAvg.toFixed(1)}（這次沒有進步，不扣星、先不加星）</span>`;
+    }
+    return `<div style="border:2px solid #f3e8ff;border-radius:12px;padding:10px 12px;">
+      <div style="font-weight:800;font-size:.88rem;margin-bottom:3px;">${g.name}</div>
+      <div style="font-size:.8rem;">${statusHtml}</div>
+    </div>`;
+  }).join('');
+}
+function applyMonthlySettlement(){
+  if(!monthlySettleData) return;
+  const { period, rows } = monthlySettleData;
+  let totalStarGroups = 0;
+  rows.forEach(r=>{
+    if(r.currentAvg===null) return; // 這組沒成績資料，不建立基準、不加星
+    if(r.stars>0){
+      const members = (r.group.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
+      members.forEach(s=>{ s.stars = (s.stars||0) + r.stars; });
+      totalStarGroups++;
+    }
+    groupMonthlySnapshot[r.group.id] = { period, avg: r.currentAvg };
+  });
+  save(); renderStudents(); updateStats(); renderMutualAidGroups();
+  closeModal('monthlySettleModal');
+  toast(totalStarGroups>0 ? `🏆 已套用本月進步星星，共有 ${totalStarGroups} 組進步、記錄新基準！` : '📌 已記錄本月基準（這次還沒有組達到進步標準）');
+}
+
 // ─── 個別學生的「小考走勢」：用本學期各單元小考分數（已經是時間順序）畫走勢圖 ───
 // 不需要額外存歷史資料，直接從已同步的成長紀錄裡，把欄位標題含「小考」的分數依序抓出來。
 function extractQuizTrend(student, sheetName){
@@ -6794,6 +6895,7 @@ function openQuizTrend(studentId){
     noData.style.display = 'block';
     canvas.style.display = 'none';
     document.getElementById('quizTrendSummary').textContent = '';
+    document.getElementById('quizTrendStarBtnWrap').innerHTML = '';
     if(quizTrendChart){ quizTrendChart.destroy(); quizTrendChart=null; }
   } else {
     sel.innerHTML = subjects.map(sub=>`<option value="${sub}">${sub}</option>`).join('');
@@ -6813,6 +6915,7 @@ function renderQuizTrend(){
   if(quizTrendChart){ quizTrendChart.destroy(); quizTrendChart=null; }
   if(labels.length<2){
     document.getElementById('quizTrendSummary').textContent = '這一科的小考資料還不夠畫走勢（至少要有2次小考成績）';
+    document.getElementById('quizTrendStarBtnWrap').innerHTML = '';
     return;
   }
   const ctx = canvas.getContext('2d');
@@ -6835,6 +6938,24 @@ function renderQuizTrend(){
   else if(diff <= -5) trendLabel = '📉 退步中，要多留意';
   document.getElementById('quizTrendSummary').innerHTML =
     `最早 ${early.length} 次平均 <strong>${earlyAvg.toFixed(1)}</strong> → 最近 ${recent.length} 次平均 <strong>${recentAvg.toFixed(1)}</strong>　${trendLabel}`;
+
+  // 進步幅度明顯時，提供一個「建議加星」按鈕讓老師自己判斷要不要給——不自動加星，
+  // 避免把猜題、單次失常誤判成持續進步；老師可以結合平時觀察決定。
+  const starWrap = document.getElementById('quizTrendStarBtnWrap');
+  if(diff >= 5){
+    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;" onclick="suggestStarFromTrend(${s.id}, this)">💡 幫 ${s.name} 加1顆星（進步中）</button>`;
+  } else {
+    starWrap.innerHTML = '';
+  }
+}
+function suggestStarFromTrend(studentId, btnEl){
+  const s = students.find(x=>x.id===studentId);
+  if(!s) return;
+  if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示進步中）`)) return;
+  s.stars = (s.stars||0) + 1;
+  save(); renderStudents(); updateStats();
+  toast(`⭐ 已幫 ${s.name} 加 1 顆星！`);
+  if(btnEl){ btnEl.disabled = true; btnEl.textContent = '✅ 已加星'; btnEl.style.opacity = .6; }
 }
 function renderMutualAidGroups(){
   ensureMutualAidDefaults();
