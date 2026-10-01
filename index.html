@@ -1863,6 +1863,10 @@
     <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.82rem;padding:8px 16px;" onclick="addMutualAidGroup()">＋ 新增小組</button>
   </div>
 
+  <div class="section-title" style="font-size:1rem;margin-top:0;">📈 進步 / 穩定高分提醒</div>
+  <div style="font-size:.78rem;color:#94a3b8;margin-bottom:8px;">不用一個個點進去看，這裡會自動列出目前「小考進步中」或「分數一直維持很高（穩定高分）」的學生，點名字可以看詳細走勢。</div>
+  <div id="trendHighlightList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;"></div>
+
   <div id="mutualAidGroupList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;"></div>
 
   <div class="section-title" style="font-size:1rem;margin-top:20px;">🙋 尚未分組</div>
@@ -6879,6 +6883,55 @@ function extractQuizTrend(student, sheetName){
 function availableTrendSubjects(student){
   return Object.keys(gradeSheetData||{}).filter(sheetName=>extractQuizTrend(student, sheetName).scores.length>=2);
 }
+// 統一算一次「早期平均 vs 最近平均」，走勢圖視窗跟下面的「進步/穩定高分提醒」共用同一套判斷，
+// 避免兩邊各寫一次邏輯、門檻值之後改一邊忘了改另一邊。
+const TREND_STEADY_HIGH_MIN = 95; // 持平、但分數一直維持在這個分數以上（例如常常考100分），算「穩定高分」，不是單純的「沒進步」
+function computeTrendStats(student, sheetName){
+  const {labels, scores} = extractQuizTrend(student, sheetName);
+  if(scores.length < 2) return null;
+  const n = scores.length;
+  const chunk = Math.max(1, Math.floor(n/3));
+  const early = scores.slice(0, chunk);
+  const recent = scores.slice(-chunk);
+  const earlyAvg = early.reduce((a,b)=>a+b,0)/early.length;
+  const recentAvg = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const diff = recentAvg - earlyAvg;
+  let trendLabel = '➡️ 大致持平';
+  if(diff >= 5) trendLabel = '📈 進步中';
+  else if(diff <= -5) trendLabel = '📉 退步中，要多留意';
+  let highlight = null;
+  if(diff >= 5) highlight = { type:'improving', emoji:'📈', label:'進步中' };
+  else if(diff > -5 && recentAvg >= TREND_STEADY_HIGH_MIN) highlight = { type:'steady-high', emoji:'🌟', label:'穩定高分' };
+  return { labels, scores, early, recent, earlyAvg, recentAvg, diff, trendLabel, highlight };
+}
+// 全班掃一次，抓出目前「進步中」或「穩定高分（例如一直都考100分附近）」的學生與科目，
+// 老師不用一個一個點進去看，打開頁面就能看到名單。
+function studentTrendHighlights(student){
+  const hits = [];
+  availableTrendSubjects(student).forEach(sheetName=>{
+    const stats = computeTrendStats(student, sheetName);
+    if(stats && stats.highlight) hits.push({ sheetName, diff: stats.diff, recentAvg: stats.recentAvg, ...stats.highlight });
+  });
+  return hits;
+}
+function renderTrendHighlights(){
+  const wrap = document.getElementById('trendHighlightList');
+  if(!wrap) return;
+  const rows = [];
+  seatSortedStudents().forEach(s=>{
+    studentTrendHighlights(s).forEach(h=>rows.push({ student:s, ...h }));
+  });
+  if(!rows.length){
+    wrap.innerHTML = `<div style="font-size:.8rem;color:#94a3b8;">目前還沒有偵測到明顯的進步或穩定高分（同一科至少要有2次小考成績才能判斷）</div>`;
+    return;
+  }
+  wrap.innerHTML = rows.map(r=>{
+    const bg = r.type==='improving' ? '#dcfce7' : '#fef9c3';
+    const color = r.type==='improving' ? '#15803d' : '#92400e';
+    const subjectShort = String(r.sheetName).replace(/^306/,'');
+    return `<span style="background:${bg};color:${color};border-radius:16px;padding:4px 10px;font-size:.78rem;font-weight:700;cursor:pointer;" title="點我看詳細走勢" onclick="openQuizTrend(${r.student.id})">${r.emoji} ${r.student.seatNo||''}${r.student.name}（${subjectShort}：${r.label}，近期平均${r.recentAvg.toFixed(1)}）</span>`;
+  }).join('');
+}
 let quizTrendChart = null;
 let quizTrendStudentId = null;
 function openQuizTrend(studentId){
@@ -6910,14 +6963,15 @@ function renderQuizTrend(){
   if(!s) return;
   const sheetName = document.getElementById('quizTrendSubjectSelect').value;
   if(!sheetName) return;
-  const {labels, scores} = extractQuizTrend(s, sheetName);
+  const stats = computeTrendStats(s, sheetName);
   const canvas = document.getElementById('quizTrendCanvas');
   if(quizTrendChart){ quizTrendChart.destroy(); quizTrendChart=null; }
-  if(labels.length<2){
+  if(!stats){
     document.getElementById('quizTrendSummary').textContent = '這一科的小考資料還不夠畫走勢（至少要有2次小考成績）';
     document.getElementById('quizTrendStarBtnWrap').innerHTML = '';
     return;
   }
+  const { labels, scores, early, recent, earlyAvg, recentAvg, diff, trendLabel } = stats;
   const ctx = canvas.getContext('2d');
   quizTrendChart = new Chart(ctx, {
     type:'line',
@@ -6925,19 +6979,11 @@ function renderQuizTrend(){
     options:{ responsive:true, scales:{ y:{ min:0, max:100 } }, plugins:{ legend:{display:false} } }
   });
 
-  // 摘要：拿「最早幾次」平均 跟「最近幾次」平均比較，粗略判斷整體是進步、退步還是持平
-  const n = scores.length;
-  const chunk = Math.max(1, Math.floor(n/3));
-  const early = scores.slice(0, chunk);
-  const recent = scores.slice(-chunk);
-  const earlyAvg = early.reduce((a,b)=>a+b,0)/early.length;
-  const recentAvg = recent.reduce((a,b)=>a+b,0)/recent.length;
-  const diff = recentAvg - earlyAvg;
-  let trendLabel = '➡️ 大致持平';
-  if(diff >= 5) trendLabel = '📈 進步中';
-  else if(diff <= -5) trendLabel = '📉 退步中，要多留意';
-  document.getElementById('quizTrendSummary').innerHTML =
-    `最早 ${early.length} 次平均 <strong>${earlyAvg.toFixed(1)}</strong> → 最近 ${recent.length} 次平均 <strong>${recentAvg.toFixed(1)}</strong>　${trendLabel}`;
+  let summaryHtml = `最早 ${early.length} 次平均 <strong>${earlyAvg.toFixed(1)}</strong> → 最近 ${recent.length} 次平均 <strong>${recentAvg.toFixed(1)}</strong>　${trendLabel}`;
+  if(stats.highlight && stats.highlight.type==='steady-high'){
+    summaryHtml += `　🌟 分數一直維持在高水準，是穩定高分`;
+  }
+  document.getElementById('quizTrendSummary').innerHTML = summaryHtml;
 
   // 進步幅度明顯時，提供一個「建議加星」按鈕讓老師自己判斷要不要給——不自動加星，
   // 避免把猜題、單次失常誤判成持續進步；老師可以結合平時觀察決定。
@@ -6969,8 +7015,15 @@ function renderMutualAidGroups(){
     const tier = mutualAidTier(logCount);
     const chips = members.map((s,i)=>{
       const isLeader = i===leaderIdx;
-      return `<span style="background:${isLeader?'#fef3c7':'#eff6ff'};color:${isLeader?'#92400e':'#0369a1'};border-radius:16px;padding:3px 9px;font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
-        <span style="cursor:pointer;" title="點我看小考走勢" onclick="openQuizTrend(${s.id})">${isLeader?'👑 ':''}${s.seatNo||''}${s.name} 📈</span>
+      // 有進步/穩定高分的學生，名字會變色凸顯出來，老師掃一眼小組卡片就能看到，不用每個都點進去確認
+      const highlights = studentTrendHighlights(s);
+      const hasImproving = highlights.some(h=>h.type==='improving');
+      const hasSteadyHigh = highlights.some(h=>h.type==='steady-high');
+      let bg = isLeader?'#fef3c7':'#eff6ff', color = isLeader?'#92400e':'#0369a1', border = '2px solid transparent', trailIcon = '📈', title = '點我看小考走勢';
+      if(hasImproving){ bg='#dcfce7'; color='#15803d'; border='2px solid #22c55e'; trailIcon='📈'; title='📈 進步中！點我看小考走勢'; }
+      else if(hasSteadyHigh){ bg='#fef9c3'; color='#92400e'; border='2px solid #eab308'; trailIcon='🌟'; title='🌟 穩定高分！點我看小考走勢'; }
+      return `<span style="background:${bg};color:${color};border:${border};border-radius:16px;padding:3px 9px;font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:3px;">
+        <span style="cursor:pointer;" title="${title}" onclick="openQuizTrend(${s.id})">${isLeader?'👑 ':''}${s.seatNo||''}${s.name} ${trailIcon}</span>
         <span style="cursor:pointer;opacity:.6;" onclick="removeFromMutualAidGroup(${g.id},${s.id})">✕</span>
       </span>`;
     }).join('');
@@ -7005,6 +7058,7 @@ function renderMutualAidGroups(){
     </div>`;
   }).join('');
   renderMutualAidUnassigned();
+  renderTrendHighlights();
 }
 function renderMutualAidUnassigned(){
   const wrap = document.getElementById('mutualAidUnassignedList');
