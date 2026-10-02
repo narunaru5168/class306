@@ -6910,9 +6910,19 @@ function studentTrendHighlights(student){
   const hits = [];
   availableTrendSubjects(student).forEach(sheetName=>{
     const stats = computeTrendStats(student, sheetName);
-    if(stats && stats.highlight) hits.push({ sheetName, diff: stats.diff, recentAvg: stats.recentAvg, ...stats.highlight });
+    if(stats && stats.highlight) hits.push({ sheetName, diff: stats.diff, recentAvg: stats.recentAvg, n: stats.scores.length, ...stats.highlight });
   });
   return hits;
+}
+// 是否已經加過星星：直接用夥伴名冊本來就有的星星紀錄（s.log）來判斷，不用另外存一份重複資料。
+// 標記裡帶著「目前累積幾筆小考資料」，所以只要之後有新的小考分數進來、判斷又變成同一種狀態，
+// 還是會被當成「新的一次」可以再加——不會因為加過一次就永遠不能再給這個科目加星星。
+function trendStarReason(sheetName, label, n){
+  return `小考走勢：${String(sheetName).replace(/^306/,'')}${label}（第${n}筆資料時）`;
+}
+function hasTrendStarAlready(student, sheetName, label, n){
+  const reason = trendStarReason(sheetName, label, n);
+  return (student.log||[]).some(l=>l.reason===reason);
 }
 function renderTrendHighlights(){
   const wrap = document.getElementById('trendHighlightList');
@@ -6926,14 +6936,19 @@ function renderTrendHighlights(){
     return;
   }
   // 每一筆除了可以點名字看走勢圖，旁邊也直接放一個「⭐ 加星」按鈕——
-  // 不用先點進去看圖再找按鈕，在這個提醒清單上就能直接加，一樣要老師自己按才會加、按過一次後會變成「已加星」。
+  // 不用先點進去看圖再找按鈕，在這個提醒清單上就能直接加。是否「已經加過」直接查夥伴名冊的星星紀錄，
+  // 所以重新整理頁面也不會忘記、也不怕手滑重複加兩次。
   wrap.innerHTML = rows.map(r=>{
     const bg = r.type==='improving' ? '#dcfce7' : '#fef9c3';
     const color = r.type==='improving' ? '#15803d' : '#92400e';
     const subjectShort = String(r.sheetName).replace(/^306/,'');
+    const already = hasTrendStarAlready(r.student, r.sheetName, r.label, r.n);
+    const btnHtml = already
+      ? `<button type="button" class="btn" disabled style="font-size:.72rem;padding:3px 9px;opacity:.5;">✅ 已加過</button>`
+      : `<button type="button" class="btn" style="font-size:.72rem;padding:3px 9px;background:#fff;color:${color};border:1px solid ${color};" onclick="suggestStarFromTrend(${r.student.id}, this, '${r.label}', '${r.sheetName}', ${r.n})">⭐ 加星</button>`;
     return `<span style="background:${bg};color:${color};border-radius:16px;padding:4px 6px 4px 10px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
       <span style="cursor:pointer;" title="點我看詳細走勢" onclick="openQuizTrend(${r.student.id})">${r.emoji} ${r.student.seatNo||''}${r.student.name}（${subjectShort}：${r.label}，近期平均${r.recentAvg.toFixed(1)}）</span>
-      <button type="button" class="btn" style="font-size:.72rem;padding:3px 9px;background:#fff;color:${color};border:1px solid ${color};" onclick="suggestStarFromTrend(${r.student.id}, this, '${r.label}')">⭐ 加星</button>
+      ${btnHtml}
     </span>`;
   }).join('');
 }
@@ -6992,24 +7007,42 @@ function renderQuizTrend(){
 
   // 進步幅度明顯、或分數一直維持在高水準時，提供一個「建議加星」按鈕讓老師自己判斷要不要給——
   // 不自動加星，避免把猜題、單次失常或單純運氣好誤判成真的進步／值得獎勵；老師可以結合平時觀察決定。
+  // 是否「已經加過」直接查夥伴名冊的星星紀錄（s.log），跟提醒清單那邊用同一套判斷。
   const starWrap = document.getElementById('quizTrendStarBtnWrap');
+  const n = scores.length;
   if(diff >= 5){
-    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;" onclick="suggestStarFromTrend(${s.id}, this, '進步中')">💡 幫 ${s.name} 加1顆星（進步中）</button>`;
+    if(hasTrendStarAlready(s, sheetName, '進步中', n)){
+      starWrap.innerHTML = `<button class="btn" disabled style="font-size:.8rem;padding:6px 14px;opacity:.5;">✅ 已加過星星了（進步中）</button>`;
+    } else {
+      starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;" onclick="suggestStarFromTrend(${s.id}, this, '進步中', '${sheetName}', ${n})">💡 幫 ${s.name} 加1顆星（進步中）</button>`;
+    }
   } else if(stats.highlight && stats.highlight.type==='steady-high'){
-    starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;background:#eab308;" onclick="suggestStarFromTrend(${s.id}, this, '穩定高分')">🌟 幫 ${s.name} 加1顆星（穩定高分）</button>`;
+    if(hasTrendStarAlready(s, sheetName, '穩定高分', n)){
+      starWrap.innerHTML = `<button class="btn" disabled style="font-size:.8rem;padding:6px 14px;opacity:.5;">✅ 已加過星星了（穩定高分）</button>`;
+    } else {
+      starWrap.innerHTML = `<button class="btn btn-success" style="font-size:.8rem;padding:6px 14px;background:#eab308;" onclick="suggestStarFromTrend(${s.id}, this, '穩定高分', '${sheetName}', ${n})">🌟 幫 ${s.name} 加1顆星（穩定高分）</button>`;
+    }
   } else {
     starWrap.innerHTML = '';
   }
 }
-function suggestStarFromTrend(studentId, btnEl, reason){
+function suggestStarFromTrend(studentId, btnEl, label, sheetName, n){
   const s = students.find(x=>x.id===studentId);
   if(!s) return;
-  reason = reason || '進步中';
-  if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示${reason}）`)) return;
-  s.stars = (s.stars||0) + 1;
+  label = label || '進步中';
+  if(hasTrendStarAlready(s, sheetName, label, n)){ toast('這一筆之前已經加過星星了'); return; }
+  if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示${label}）`)) return;
+  grantStars(s, 1);
+  s.log = s.log || [];
+  s.log.push({id:generateId(), reason: trendStarReason(sheetName, label, n), amt:1, date:new Date().toLocaleDateString('zh-TW')});
+  if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
+  if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
+  if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
+  if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
   save(); renderStudents(); updateStats();
-  toast(`⭐ 已幫 ${s.name} 加 1 顆星！`);
-  if(btnEl){ btnEl.disabled = true; btnEl.textContent = '✅ 已加星'; btnEl.style.opacity = .6; }
+  toast(`⭐ 已幫 ${s.name} 加 1 顆星！（${label}，記錄在夥伴名冊的星星紀錄裡）`);
+  renderMutualAidGroups(); // 重新整理提醒清單/小組卡片上的按鈕狀態，避免同一筆資料被重複加星
+  if(quizTrendStudentId === studentId) renderQuizTrend(); // 如果走勢圖視窗正開著這個學生，按鈕也要立刻變成「已加過」
 }
 function renderMutualAidGroups(){
   ensureMutualAidDefaults();
