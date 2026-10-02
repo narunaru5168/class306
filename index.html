@@ -1731,8 +1731,10 @@
       <button class="btn" style="background:#fff9e6;border:2px solid #fbbf24;color:#b45309;font-size:.82rem;padding:8px 16px;" onclick="shuffleSeatingByGender()">🚻 男女交錯排座位</button>
       <button class="btn" style="background:#eef2ff;border:2px solid #818cf8;color:#4338ca;font-size:.82rem;padding:8px 16px;" onclick="openSeatingImportModal()">📋 貼上座號快速排座位</button>
       <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="openSeatingSizeModal()">📐 調整座位表大小</button>
+      <button class="btn" style="background:#ecfdf5;border:2px solid #10b981;color:#047857;font-size:.82rem;padding:8px 16px;" onclick="rotateSeatingMonthly()">🔁 每月輪動</button>
       <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
     </div>
+    <div style="font-size:.78rem;color:#94a3b8;margin:-6px 0 14px;">💡「每月輪動」：每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持，不用擔心排亂。</div>
   </div>
 
   <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px;">
@@ -1759,6 +1761,12 @@
     <div class="form-group" style="margin-bottom:12px;">
       <label>這個座位坐誰？</label>
       <select id="seatAssignSelect"></select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:700;cursor:pointer;">
+        <input type="checkbox" id="seatAssignFixed" style="width:16px;height:16px;">
+        📌 這個學生座位固定不動（例如健康因素），「每月輪動」不會移動他
+      </label>
     </div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="confirmSeatAssign()">確認</button>
@@ -4769,7 +4777,10 @@ function renderStudents(){
       <div class="trait-badge-row">${(s.traitBadges||[]).slice(-5).map(b=>`<span title="${b.label}">${b.emoji}</span>`).join('')}</div>
       <div class="badge-row">${(s.badges||[]).slice(-3).map(b=>`<span class="badge">${b}</span>`).join('')}</div>
       ${(s.repairTasks||[]).filter(t=>!t.done).length>0?`<div class="repair-indicator" onclick="openRepairTasksModal(${s.id})" style="cursor:pointer;" title="點擊查看並標記完成">🔧 有修復任務待完成</div>`:''}
-      ${pendingList.length>0 ? `<div style="margin:2px 0 4px;"><button class="btn" style="background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:5px 10px;font-size:.7rem;font-weight:800;width:100%;" onclick="startGameChallenge(${s.id},'${pendingList[0][0]}')" title="轉盤抽到但還沒去玩的語詞遊戲挑戰，點一下就開始">🎮 待完成挑戰${pendingList.length>1?` ×${pendingList.length}`:''}（點我開始）</button></div>` : ''}
+      ${pendingList.length>0 ? `<div style="margin:2px 0 4px;display:flex;gap:4px;">
+          <button class="btn" style="flex:1;background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:5px 8px;font-size:.7rem;font-weight:800;" onclick="startGameChallenge(${s.id},'${pendingList[0][0]}')" title="轉盤抽到但還沒去玩的語詞遊戲挑戰，點一下就開始">🎮 待完成挑戰${pendingList.length>1?` ×${pendingList.length}`:''}（點我開始）</button>
+          <button class="btn" style="background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;padding:5px 9px;font-size:.7rem;font-weight:800;" onclick="clearPendingChallengeManually(${s.id},'${pendingList[0][0]}','${s.name}')" title="如果已經玩過、分頁被關掉卡住不會消失，或不想玩了，點這裡手動清除">✕</button>
+        </div>` : ''}
       <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
       <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
@@ -5885,7 +5896,7 @@ function ensureTeamDefaults(){
     teamScores = names.map((n,i)=>({id:generateId(), name:`第${n}組`, color:colors[i], scores:{}}));
   }
 }
-function teamTotal(t){ return teamCategories.reduce((a,c)=>a+(t.scores[c]||0),0); }
+function teamTotal(t){ return teamCategories.reduce((a,c)=>a+((t.scores||{})[c]||0),0); }
 function renderTeamScoreTable(){
   ensureTeamDefaults();
   const table = document.getElementById('teamScoreTable');
@@ -5899,6 +5910,7 @@ function renderTeamScoreTable(){
   });
   html += '<th style="padding:8px;">總分</th></tr></thead><tbody>';
   teamScores.forEach(t=>{
+    t.scores = t.scores || {};
     html += `<tr style="border-top:1px solid #e2e8f0;"><td style="padding:8px;font-weight:800;white-space:nowrap;">
       <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color};margin-right:6px;"></span>
       <span style="cursor:pointer;" onclick="renameTeam(${t.id})" title="點擊改名">${t.name}</span>
@@ -5908,11 +5920,11 @@ function renderTeamScoreTable(){
       const val = t.scores[c]||0;
       html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
         <button onclick="adjustTeamScore(${t.id},'${c}',-1)" style="width:24px;height:24px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:800;">－</button>
-        <span style="display:inline-block;min-width:26px;font-weight:800;">${val}</span>
+        <span style="display:inline-block;min-width:26px;font-weight:800;${val<0?'color:#dc2626;':''}">${val}</span>
         <button onclick="adjustTeamScore(${t.id},'${c}',1)" style="width:24px;height:24px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;font-weight:800;">＋</button>
       </td>`;
     });
-    html += `<td style="padding:8px;text-align:center;font-weight:900;font-size:1.05rem;color:#3b82f6;">${teamTotal(t)}</td></tr>`;
+    html += `<td style="padding:8px;text-align:center;font-weight:900;font-size:1.05rem;color:${teamTotal(t)<0?'#dc2626':'#3b82f6'};">${teamTotal(t)}</td></tr>`;
   });
   html += '</tbody>';
   table.innerHTML = html;
@@ -5948,7 +5960,7 @@ function renameTeamCategory(idx){
   const old = teamCategories[idx];
   const name = prompt('修改項目名稱：', old);
   if(name===null || !name.trim()) return;
-  teamScores.forEach(t=>{ if(t.scores[old]!==undefined){ t.scores[name.trim()] = t.scores[old]; delete t.scores[old]; } });
+  teamScores.forEach(t=>{ t.scores = t.scores || {}; if(t.scores[old]!==undefined){ t.scores[name.trim()] = t.scores[old]; delete t.scores[old]; } });
   teamCategories[idx] = name.trim();
   save(); renderTeamScoreTable();
 }
@@ -5956,13 +5968,14 @@ function removeTeamCategory(idx){
   if(!confirm('確定要刪除這個評分項目嗎？')) return;
   const name = teamCategories[idx];
   teamCategories.splice(idx,1);
-  teamScores.forEach(t=>{ delete t.scores[name]; });
+  teamScores.forEach(t=>{ t.scores = t.scores || {}; delete t.scores[name]; });
   save(); renderTeamScoreTable();
 }
 function adjustTeamScore(id, cat, delta){
   const t = teamScores.find(x=>x.id===id);
   if(!t) return;
-  t.scores[cat] = Math.max(0, (t.scores[cat]||0) + delta);
+  t.scores = t.scores || {};
+  t.scores[cat] = (t.scores[cat]||0) + delta;
   save(); renderTeamScoreTable();
 }
 function resetTeamCompetition(){
@@ -6296,8 +6309,9 @@ function renderSeatingChart(){
       const sid = seatingChart.seats[key];
       const stu = sid!=null ? students.find(s=>s.id===sid) : null;
       html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"
-        style="height:${cellHeight}px;border-radius:8px;border:2px solid ${stu?'#5BB8F5':'#e2e8f0'};background:${stu?'#eff6ff':'#f8fafc'};
+        style="position:relative;height:${cellHeight}px;border-radius:8px;border:2px solid ${stu?(stu.seatFixed?'#eab308':'#5BB8F5'):'#e2e8f0'};background:${stu?(stu.seatFixed?'#fefce8':'#eff6ff'):'#f8fafc'};
         display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':'pointer'};padding:2px 1px;text-align:center;overflow:hidden;">
+        ${stu && stu.seatFixed ? `<div style="position:absolute;top:1px;right:3px;font-size:.7rem;" title="座位固定，每月輪動不會移動">📌</div>` : ''}
         ${stu
           ? `<div style="font-weight:900;font-size:${nameFontSize};line-height:1.1;color:#0369a1;">${stu.seatNo||''}${stu.name}</div>`
           : `<div style="font-size:.68rem;color:#cbd5e1;">空位</div>`}
@@ -6328,11 +6342,19 @@ function openSeatAssignModal(key){
     return `<option value="${s.id}" ${s.id===currentSid?'selected':''}>${label}</option>`;
   }).join('');
   sel.innerHTML = `<option value="">-- 空位（不指派）--</option>${options}`;
+  const fixedCb = document.getElementById('seatAssignFixed');
+  function syncFixedCheckbox(){
+    const stu = students.find(s=>s.id==sel.value);
+    fixedCb.checked = !!(stu && stu.seatFixed);
+  }
+  sel.onchange = syncFixedCheckbox;
+  syncFixedCheckbox();
   openModal('seatAssignModal');
 }
 function confirmSeatAssign(){
   const sel = document.getElementById('seatAssignSelect');
   const key = seatAssignTarget;
+  const fixedCb = document.getElementById('seatAssignFixed');
   if(!sel.value){
     delete seatingChart.seats[key];
   } else {
@@ -6347,10 +6369,44 @@ function confirmSeatAssign(){
       else delete seatingChart.seats[oldKeyOfNew];
     }
     seatingChart.seats[key] = newSid;
+    const stu = students.find(s=>s.id===newSid);
+    if(stu) stu.seatFixed = !!(fixedCb && fixedCb.checked);
   }
   save(); renderSeatingChart();
   closeModal('seatAssignModal');
   toast('🪑 座位已更新！');
+}
+// 「每月輪動」：每一排的座位往前移動一格（最靠近黑板的那格繞到最後面）。
+// 不是整排一起轉，而是「男生自己的位置」「女生自己的位置」分開各自輪動——
+// 這樣不管這一排原本是幾個人、男女比例是多少（例如3女2男這種沒辦法整排一起轉的情況），
+// 轉完之後一定還是合法的男女交錯順序，不會把原本排好的交錯排法弄壞。
+// 被老師標記「座位固定」📌 的學生（例如因為健康因素需要固定座位）會被整個跳過，完全不會被移動。
+function rotateSeatingMonthly(){
+  if(!Object.keys(seatingChart.seats||{}).length){ toast('⚠️ 目前還沒有排座位，沒辦法輪動'); return; }
+  if(!confirm('確定要進行「每月輪動」嗎？\n\n每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持。')) return;
+
+  const colSizes = seatingChart.colSizes || [];
+  const newSeats = { ...seatingChart.seats };
+  let fixedCount = 0;
+  colSizes.forEach((count, c)=>{
+    const occupants = [];
+    for(let r=0;r<count;r++){
+      const key = seatKey(c,r);
+      const sid = seatingChart.seats[key];
+      const stu = sid!=null ? students.find(s=>s.id===sid) : null;
+      occupants.push({ r, key, stu });
+    }
+    ['boy','girl'].forEach(gender=>{
+      const group = occupants.filter(o=>o.stu && o.stu.gender===gender && !o.stu.seatFixed);
+      if(group.length < 2) return; // 不到2人沒什麼好輪的
+      const sids = group.map(o=>o.stu.id);
+      group.forEach((o, i)=>{ newSeats[o.key] = sids[(i+1) % sids.length]; });
+    });
+    occupants.forEach(o=>{ if(o.stu && o.stu.seatFixed) fixedCount++; });
+  });
+  seatingChart.seats = newSeats;
+  save(); renderSeatingChart();
+  toast(`🔁 已完成本月輪動！${fixedCount>0 ? `（${fixedCount}位座位固定的同學沒有被移動）` : ''}`);
 }
 function clearSeatAssign(){
   delete seatingChart.seats[seatAssignTarget];
@@ -7682,6 +7738,21 @@ function pendingChallengesFor(sid){
   return Object.entries(pendingChallenges||{})
     .filter(([,v])=>v && v.studentId==sid)
     .sort((a,b)=>(a[1].createdAt||0)-(b[1].createdAt||0));
+}
+
+// 手動清除一筆卡住的「待完成挑戰」紀錄——正常情況下學生玩完（成功拿到分數，或90秒時間到）
+// wordgame.html 會自動把這筆記錄清掉，但如果學生玩到一半就把分頁關掉、切換裝置、或剛好斷線，
+// 紀錄就會一直卡在「待完成挑戰」裡不會自己消失。這時老師可以直接在伙伴名冊這裡按✕手動清除。
+function clearPendingChallengeManually(sid, cid, name){
+  if(!cid) return;
+  if(!confirm(`確定要清除「${name}」這筆待完成挑戰紀錄嗎？\n\n（如果她已經玩過、或不打算玩了，可以安心清除；如果其實還沒去玩，清除後要再抽一次轉盤才會有新的挑戰機會）`)) return;
+  if(!(useCloud && db)){ toast('⚠️ 目前無法連線雲端，請稍後再試'); return; }
+  db.ref('class306/pendingChallenges/' + cid).remove().then(()=>{
+    toast(`✅ 已清除「${name}」的待完成挑戰紀錄`);
+  }).catch(e=>{
+    console.warn('清除待完成挑戰失敗', e);
+    toast('⚠️ 清除失敗，請檢查網路連線');
+  });
 }
 
 // 監聽語詞遊戲挑戰成功後送回來的星星獎勵（獨立的資料路徑，用 push/remove，
