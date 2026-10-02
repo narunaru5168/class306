@@ -4243,6 +4243,7 @@ let dutyRoles = []; // { id, name, dutyIndex } 「這週換你試試看」任務
 let correctionTrackers = []; // { id, name, doneSeats:[seatNo,...] } 任務追蹤表
 let teamScores = [];      // { id, name, color, scores:{項目:分數,...} } 小組競賽（特殊活動限定）
 let teamCategories = [];  // [項目名稱, ...]
+const GROUP_COLORS = ['#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6','#f43f5e']; // 跟「冒險基地」小組競賽的組別顏色統一，座位表排別標籤也共用這組顏色
 let weeklyTodos = {};     // { '週一': [{id,text,priority,note,done}], ... } 班級一週待辦
 let readingLog = [];      // { id, studentId, studentName, book, mood, note, date } 閱讀打卡
 const WEEKDAYS = ['週一','週二','週三','週四','週五'];
@@ -5891,9 +5892,8 @@ function toggleCorrectionSeat(trackerId, seatNo){
 function ensureTeamDefaults(){
   if(teamCategories.length===0) teamCategories = ['功課','學習表現','自律','健康'];
   if(teamScores.length===0){
-    const colors=['#f97316','#eab308','#22c55e','#3b82f6','#a855f7'];
     const names=['一','二','三','四','五'];
-    teamScores = names.map((n,i)=>({id:generateId(), name:`第${n}組`, color:colors[i], scores:{}}));
+    teamScores = names.map((n,i)=>({id:generateId(), name:`第${n}組`, color:GROUP_COLORS[i], scores:{}}));
   }
 }
 function teamTotal(t){ return teamCategories.reduce((a,c)=>a+((t.scores||{})[c]||0),0); }
@@ -5932,8 +5932,7 @@ function renderTeamScoreTable(){
 function addTeam(){
   const name = prompt('這組叫什麼名字？（例如：第四組、閃電隊）');
   if(!name || !name.trim()) return;
-  const colors=['#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6','#f43f5e'];
-  teamScores.push({id:generateId(), name:name.trim(), color:colors[teamScores.length%colors.length], scores:{}});
+  teamScores.push({id:generateId(), name:name.trim(), color:GROUP_COLORS[teamScores.length%GROUP_COLORS.length], scores:{}});
   save(); renderTeamScoreTable();
 }
 function removeTeam(id){
@@ -6294,7 +6293,9 @@ function renderSeatingChart(){
     const count = colSizes[c];
     const colHeight = maxSeats * cellHeight + (maxSeats - 1) * gap;
     html += `<div style="display:flex;flex-direction:column;gap:${gap}px;flex:1;min-width:0;">
-      <div style="text-align:center;font-size:${labelFontSize};font-weight:800;color:#94a3b8;height:${labelHeight}px;display:flex;align-items:center;justify-content:center;">第${c+1}排</div>
+      <div style="text-align:center;font-size:${labelFontSize};font-weight:800;color:#64748b;height:${labelHeight}px;display:flex;align-items:center;justify-content:center;gap:4px;">
+        <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${GROUP_COLORS[c%GROUP_COLORS.length]};flex-shrink:0;"></span>第${c+1}排
+      </div>
       <div style="display:flex;flex-direction:column;gap:${gap}px;height:${colHeight}px;justify-content:${seatingViewFromBoard?'flex-end':'flex-start'};">`;
     // 學生視角：r=0（離黑板最近）排在最上面，因為黑板在畫面上方。
     // 黑板視角：老師面對全班，離黑板最近的座位視覺上要在最下面，所以整排順序上下顛倒
