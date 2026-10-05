@@ -1732,10 +1732,11 @@
       <button class="btn" style="background:#eef2ff;border:2px solid #818cf8;color:#4338ca;font-size:.82rem;padding:8px 16px;" onclick="openSeatingImportModal()">📋 貼上座號快速排座位</button>
       <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="openSeatingSizeModal()">📐 調整座位表大小</button>
       <button class="btn" style="background:#ecfdf5;border:2px solid #10b981;color:#047857;font-size:.82rem;padding:8px 16px;" onclick="rotateSeatingMonthly()">🔁 每月輪動</button>
+      <button class="btn" style="background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;font-size:.82rem;padding:8px 16px;" onclick="rotateSeatingMonthlyBackward()">🔁 往後輪動</button>
       <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
       <button class="btn" style="background:#fff;border:2px solid #94a3b8;color:#475569;font-size:.82rem;padding:8px 16px;" onclick="undoSeatingChange()">↩️ 還原上一次調整</button>
     </div>
-    <div style="font-size:.78rem;color:#94a3b8;margin:-6px 0 14px;">💡「每月輪動」：每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持，不用擔心排亂。</div>
+    <div style="font-size:.78rem;color:#94a3b8;margin:-6px 0 14px;">💡「每月輪動」：每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面）。「往後輪動」則是相反方向（最後面的人繞到最前面）。標記「座位固定」📌 的學生都不會被移動，男女交錯順序會自動維持，不用擔心排亂。</div>
   </div>
 
   <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px;">
@@ -6396,14 +6397,18 @@ function confirmSeatAssign(){
   closeModal('seatAssignModal');
   toast('🪑 座位已更新！');
 }
-// 「每月輪動」：每一排的座位往前移動一格（最靠近黑板的那格繞到最後面）。
-// 不是整排一起轉，而是「男生自己的位置」「女生自己的位置」分開各自輪動——
-// 這樣不管這一排原本是幾個人、男女比例是多少（例如3女2男這種沒辦法整排一起轉的情況），
-// 轉完之後一定還是合法的男女交錯順序，不會把原本排好的交錯排法弄壞。
-// 被老師標記「座位固定」📌 的學生（例如因為健康因素需要固定座位）會被整個跳過，完全不會被移動。
-function rotateSeatingMonthly(){
+// 「每月輪動」：每一排的座位往前或往後移動一格（方向由 dir 決定），不是整排一起轉，
+// 而是「男生自己的位置」「女生自己的位置」分開各自輪動——這樣不管這一排原本是幾個人、
+// 男女比例是多少（例如3女2男這種沒辦法整排一起轉的情況），轉完之後一定還是合法的男女交錯順序，
+// 不會把原本排好的交錯排法弄壞。被老師標記「座位固定」📌 的學生會被整個跳過，完全不會被移動。
+// dir==='forward'：最前面（離黑板最近）的人繞到最後面，其他人往前遞補一格。
+// dir==='backward'：最後面的人繞到最前面，其他人往後退一格（跟 forward 方向相反）。
+function rotateSeatingByDir(dir){
   if(!Object.keys(seatingChart.seats||{}).length){ toast('⚠️ 目前還沒有排座位，沒辦法輪動'); return; }
-  if(!confirm('確定要進行「每月輪動」嗎？\n\n每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持。')) return;
+  const desc = dir==='backward'
+    ? '每一排的男生、女生會各自往後退一格（最後面的人繞到最前面）'
+    : '每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面）';
+  if(!confirm(`確定要進行「每月輪動」嗎？\n\n${desc}，標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持。`)) return;
   snapshotSeatingForUndo();
 
   const colSizes = seatingChart.colSizes || [];
@@ -6421,14 +6426,21 @@ function rotateSeatingMonthly(){
       const group = occupants.filter(o=>o.stu && o.stu.gender===gender && !o.stu.seatFixed);
       if(group.length < 2) return; // 不到2人沒什麼好輪的
       const sids = group.map(o=>o.stu.id);
-      group.forEach((o, i)=>{ newSeats[o.key] = sids[(i+1) % sids.length]; });
+      const n = sids.length;
+      group.forEach((o, i)=>{
+        const srcIdx = dir==='backward' ? (i-1+n)%n : (i+1)%n;
+        newSeats[o.key] = sids[srcIdx];
+      });
     });
     occupants.forEach(o=>{ if(o.stu && o.stu.seatFixed) fixedCount++; });
   });
   seatingChart.seats = newSeats;
   save(); renderSeatingChart();
-  toast(`🔁 已完成本月輪動！${fixedCount>0 ? `（${fixedCount}位座位固定的同學沒有被移動）` : ''}`);
+  const dirLabel = dir==='backward' ? '往後輪動' : '每月輪動';
+  toast(`🔁 已完成${dirLabel}！${fixedCount>0 ? `（${fixedCount}位座位固定的同學沒有被移動）` : ''}`);
 }
+function rotateSeatingMonthly(){ rotateSeatingByDir('forward'); }
+function rotateSeatingMonthlyBackward(){ rotateSeatingByDir('backward'); }
 function clearSeatAssign(){
   snapshotSeatingForUndo();
   delete seatingChart.seats[seatAssignTarget];
