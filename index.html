@@ -1733,6 +1733,7 @@
       <button class="btn" style="background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="openSeatingSizeModal()">📐 調整座位表大小</button>
       <button class="btn" style="background:#ecfdf5;border:2px solid #10b981;color:#047857;font-size:.82rem;padding:8px 16px;" onclick="rotateSeatingMonthly()">🔁 每月輪動</button>
       <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.82rem;padding:8px 16px;" onclick="clearAllSeating()">🗑 全部清空</button>
+      <button class="btn" style="background:#fff;border:2px solid #94a3b8;color:#475569;font-size:.82rem;padding:8px 16px;" onclick="undoSeatingChange()">↩️ 還原上一次調整</button>
     </div>
     <div style="font-size:.78rem;color:#94a3b8;margin:-6px 0 14px;">💡「每月輪動」：每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持，不用擔心排亂。</div>
   </div>
@@ -4263,6 +4264,7 @@ const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
 let drawState = { drawnIds: [], excludeMode: true }; // 幸運籤筒：本輪已抽過的學生 id、是否啟用不重複抽選
 let seatingChart = { colSizes: [5,4,5,4,4,4], seats: {} }; // 座位表：colSizes 是每一排（直排）各坐幾人，seats 用 "col-row" 當 key 存學生 id
+let seatingChartUndo = null; // 上一次調整座位前的完整快照，給「↩️ 還原上一次調整」用；每次要改動座位前先存一份，按還原就跟目前狀態互換（所以可以再按一次還原復原）
 let seatAssignTarget = null; // 目前正在編輯哪個座位（"row-col"）
 let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=黑板視角（老師站講台看全班，左右相反）
 let seatingProjectorMode = false; // 投影模式：隱藏操作按鈕，座位格子放到接近全螢幕
@@ -4357,6 +4359,7 @@ async function doSaveAll() {
   await saveField('class306/siteTitle', siteTitle, 'cls_siteTitle');
   await saveField('class306/drawState', drawState, 'cls_drawState');
   await saveField('class306/seatingChart', seatingChart, 'cls_seatingChart');
+  await saveField('class306/seatingChartUndo', seatingChartUndo, 'cls_seatingChartUndo');
   await saveField('class306/cleaningZones', cleaningZones, 'cls_cleaningZones');
   await saveField('class306/classRoles', classRoles, 'cls_classRoles');
   await saveField('class306/traitBadges', traitBadges, 'cls_traitBadges');
@@ -4384,7 +4387,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4400,6 +4403,7 @@ async function loadData() {
     fetchField('class306/siteTitle', SITE_TITLE_DEFAULT),
     fetchField('class306/drawState', { drawnIds: [], excludeMode: true }),
     fetchField('class306/seatingChart', { colSizes: [5,4,5,4,4,4], seats: {} }),
+    fetchField('class306/seatingChartUndo', null),
     fetchField('class306/cleaningZones', []),
     fetchField('class306/classRoles', []),
     fetchField('class306/traitBadges', []),
@@ -4423,6 +4427,7 @@ async function loadData() {
   siteTitle = stVal !== null ? stVal : (localStorage.getItem('cls_siteTitle') || SITE_TITLE_DEFAULT);
   drawState = dsVal !== null ? dsVal : JSON.parse(localStorage.getItem('cls_drawState')||'{"drawnIds":[],"excludeMode":true}');
   seatingChart = scVal !== null ? scVal : JSON.parse(localStorage.getItem('cls_seatingChart')||'{"colSizes":[5,4,5,4,4,4],"seats":{}}');
+  seatingChartUndo = scuVal !== null ? scuVal : JSON.parse(localStorage.getItem('cls_seatingChartUndo')||'null');
   cleaningZones = czVal !== null ? czVal : JSON.parse(localStorage.getItem('cls_cleaningZones')||'[]');
   classRoles = crVal !== null ? crVal : JSON.parse(localStorage.getItem('cls_classRoles')||'[]');
   traitBadges = tbVal !== null ? tbVal : JSON.parse(localStorage.getItem('cls_traitBadges')||'[]');
@@ -6352,9 +6357,23 @@ function openSeatAssignModal(key){
   syncFixedCheckbox();
   openModal('seatAssignModal');
 }
+// 任何會動到座位的操作，動手之前都先呼叫這個，把「動之前」的完整座位表存一份起來，
+// 這樣「↩️ 還原上一次調整」按鈕才有東西可以還原。
+function snapshotSeatingForUndo(){
+  seatingChartUndo = JSON.parse(JSON.stringify(seatingChart));
+}
+function undoSeatingChange(){
+  if(!seatingChartUndo){ toast('⚠️ 目前沒有可以還原的上一步'); return; }
+  const current = JSON.parse(JSON.stringify(seatingChart));
+  seatingChart = seatingChartUndo;
+  seatingChartUndo = current; // 存回目前這版，所以不小心連按兩次還原，等於又換回來，不會弄丟資料
+  save(); renderSeatingChart();
+  toast('↩️ 已還原成上一次調整前的座位（再按一次可以換回來）');
+}
 function confirmSeatAssign(){
   const sel = document.getElementById('seatAssignSelect');
   const key = seatAssignTarget;
+  snapshotSeatingForUndo();
   const fixedCb = document.getElementById('seatAssignFixed');
   if(!sel.value){
     delete seatingChart.seats[key];
@@ -6385,6 +6404,7 @@ function confirmSeatAssign(){
 function rotateSeatingMonthly(){
   if(!Object.keys(seatingChart.seats||{}).length){ toast('⚠️ 目前還沒有排座位，沒辦法輪動'); return; }
   if(!confirm('確定要進行「每月輪動」嗎？\n\n每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面），標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持。')) return;
+  snapshotSeatingForUndo();
 
   const colSizes = seatingChart.colSizes || [];
   const newSeats = { ...seatingChart.seats };
@@ -6410,6 +6430,7 @@ function rotateSeatingMonthly(){
   toast(`🔁 已完成本月輪動！${fixedCount>0 ? `（${fixedCount}位座位固定的同學沒有被移動）` : ''}`);
 }
 function clearSeatAssign(){
+  snapshotSeatingForUndo();
   delete seatingChart.seats[seatAssignTarget];
   save(); renderSeatingChart();
   closeModal('seatAssignModal');
@@ -6420,6 +6441,7 @@ function shuffleSeating(){
   if(!students.length){ toast('⚠️ 請先新增學生！'); return; }
   if(students.length > total){ toast(`⚠️ 座位只有 ${total} 個，但有 ${students.length} 位學生，請先調整座位表大小`); return; }
   if(!confirm('確定要重新隨機排座位嗎？目前的座位安排會被打亂重排')) return;
+  snapshotSeatingForUndo();
   const shuffled = [...students].sort(()=>Math.random()-0.5);
   const newSeats = {};
   let idx = 0;
@@ -6438,6 +6460,7 @@ function shuffleSeatingByGender(){
   if(!students.length){ toast('⚠️ 請先新增學生！'); return; }
   if(students.length > total){ toast(`⚠️ 座位只有 ${total} 個，但有 ${students.length} 位學生，請先調整座位表大小`); return; }
   if(!confirm('確定要用「男女交錯」方式重新排座位嗎？相鄰的座位會盡量安排不同性別，目前的座位安排會被打亂重排')) return;
+  snapshotSeatingForUndo();
 
   let boys = students.filter(s=>s.gender==='boy').sort(()=>Math.random()-0.5);
   let girls = students.filter(s=>s.gender==='girl').sort(()=>Math.random()-0.5);
@@ -6468,6 +6491,7 @@ function shuffleSeatingByGender(){
 function clearAllSeating(){
   if(Object.keys(seatingChart.seats).length===0){ toast('目前座位表本來就是空的'); return; }
   if(!confirm('確定要清空整個座位表嗎？')) return;
+  snapshotSeatingForUndo();
   seatingChart.seats = {};
   save(); renderSeatingChart();
   toast('🗑 已清空座位表');
@@ -6494,6 +6518,7 @@ function applySeatingImport(){
   const newColSizes = parsedCols.map(nums=>nums.length);
   const totalSeats = newColSizes.reduce((a,n)=>a+n,0);
   if(!confirm(`確定要套用這份新的座位表嗎？（共 ${parsedCols.length} 排，總計 ${totalSeats} 個座位）目前的座位安排會被取代`)) return;
+  snapshotSeatingForUndo();
 
   const newSeats = {};
   const notFound = [];
@@ -6540,6 +6565,7 @@ function applySeatingSize(){
     const inp = document.getElementById('seatingColSize_'+i);
     newColSizes.push(Math.max(1, Math.min(10, parseInt(inp && inp.value)||4)));
   }
+  snapshotSeatingForUndo();
   Object.keys(seatingChart.seats).forEach(k=>{
     const [c,r] = k.split('-').map(Number);
     if(c>=numCols || r>=newColSizes[c]) delete seatingChart.seats[k];
