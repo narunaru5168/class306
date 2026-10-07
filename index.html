@@ -816,6 +816,37 @@
   </div>
 </div>
 
+<!-- ── 幸運詩籤 Modal（轉盤結果出來後，彈出的那張詩籤卡）── -->
+<div class="modal-overlay" id="fortuneSlipModal">
+  <div class="modal" style="max-width:360px;text-align:center;padding:28px 24px;">
+    <div id="fortuneSlipCard" style="border-radius:18px;padding:26px 20px;">
+      <div style="font-size:.8rem;font-weight:800;letter-spacing:2px;opacity:.75;margin-bottom:6px;">今日幸運詩籤</div>
+      <div id="fortuneSlipIcon" style="font-size:2.6rem;line-height:1;margin-bottom:4px;"></div>
+      <div id="fortuneSlipGrade" style="font-family:'Baloo 2',cursive;font-size:1.6rem;font-weight:800;margin-bottom:14px;"></div>
+      <div id="fortuneSlipQuoteBox" style="margin-bottom:14px;">
+        <div id="fortuneSlipQuote" style="font-family:'Baloo 2',cursive;font-size:1.02rem;font-weight:700;line-height:1.6;opacity:.9;"></div>
+        <div id="fortuneSlipSource" style="font-size:.74rem;font-weight:700;opacity:.65;margin-top:4px;"></div>
+        <div id="fortuneSlipMeaning" style="font-size:.78rem;font-weight:700;opacity:.8;margin-top:8px;padding-top:8px;border-top:1.5px dashed currentColor;line-height:1.6;"></div>
+      </div>
+      <div id="fortuneSlipText" style="font-size:.9rem;font-weight:700;line-height:1.7;"></div>
+    </div>
+    <button class="btn btn-sun" style="margin-top:18px;" onclick="closeModal('fortuneSlipModal')">🙏 謝謝詩籤，收下了</button>
+  </div>
+</div>
+
+<!-- ── 幸運詩籤管理 Modal（新增／編輯／刪除詩籤內容）── -->
+<div class="modal-overlay" id="fortuneSlipManageModal">
+  <div class="modal" style="max-width:520px;">
+    <h3>🧧 管理幸運詩籤內容</h3>
+    <p style="font-size:.8rem;color:#64748b;margin-bottom:12px;">轉盤結果出來後會隨機抽一張詩籤給學生看。等級只影響卡片顏色，內容都可以自己改，建議維持正向、鼓勵的語氣。</p>
+    <div id="fortuneSlipManageList" style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
+    <button class="btn" style="margin-top:12px;background:#fff;border:2px solid #cbd5e1;color:#555;font-size:.82rem;" onclick="addFortuneSlip()">＋ 新增一句詩籤</button>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('fortuneSlipManageModal')">完成</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 個人成長圖 Modal ── -->
 <div class="modal-overlay" id="growthModal">
   <div class="modal">
@@ -1405,6 +1436,7 @@
       <div class="reward-result" id="wheelResult"></div>
       <button class="btn" id="undoSpinBtn" style="display:none;background:#fee2e2;color:#dc2626;font-size:.8rem;padding:6px 14px;margin-top:8px;" onclick="undoLastWheelSpin()">↩️ 撤銷剛剛這次抽選</button>
       <div style="margin-top:12px;font-size:.78rem;color:#94a3b8;text-align:center;">✨ 轉盤結果由機率決定，鼓勵繼續努力！</div>
+      <button class="btn" onclick="openFortuneSlipManage()" style="margin-top:10px;background:#fff;border:2px solid #e2e8f0;color:#94a3b8;font-size:.72rem;padding:5px 12px;">🧧 管理幸運詩籤內容</button>
     </div>
 
     <!-- DART -->
@@ -4247,6 +4279,48 @@ let teamScores = [];      // { id, name, color, scores:{項目:分數,...} } 小
 let teamCategories = [];  // [項目名稱, ...]
 const GROUP_COLORS = ['#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899','#14b8a6','#f43f5e']; // 跟「冒險基地」小組競賽的組別顏色統一，座位表排別標籤也共用這組顏色
 let weeklyTodos = {};     // { '週一': [{id,text,priority,note,done}], ... } 班級一週待辦
+// ─── 幸運詩籤（好運抽抽樂轉盤的加碼內容）───
+// 等級全部都是正向的（大吉～平安），沒有「凶」這種等級，避免孩子抽到不好的結果反而失去期待感，
+// 設計重點是「期待＋心理滿足」，不是真的占卜。等級只決定卡片的顏色/圖示風格，內容本身都是鼓勵／溫柔提醒語。
+const FORTUNE_GRADE_META = {
+  '大吉': { color:'#dc2626', bg:'linear-gradient(135deg,#fee2e2,#fecaca)', icon:'🧧' },
+  '中吉': { color:'#ea580c', bg:'linear-gradient(135deg,#ffedd5,#fed7aa)', icon:'🍀' },
+  '小吉': { color:'#ca8a04', bg:'linear-gradient(135deg,#fef9c3,#fef08a)', icon:'🌿' },
+  '吉':   { color:'#16a34a', bg:'linear-gradient(135deg,#dcfce7,#bbf7d0)', icon:'☀️' },
+  '平安': { color:'#2563eb', bg:'linear-gradient(135deg,#dbeafe,#bfdbfe)', icon:'🌙' },
+};
+const FORTUNE_GRADES = Object.keys(FORTUNE_GRADE_META);
+const FORTUNE_SLIPS_DEFAULT = [
+  { grade:'大吉', quote:'學而時習之，不亦說乎？', source:'《論語．學而》', meaning:'學習新的東西後，常常拿出來練習、複習，是一件很開心的事。', text:'今日文昌星高照，讀書特別容易開竅，遇到不懂的地方不妨大膽提問，會有意外收穫。' },
+  { grade:'大吉', quote:'有朋自遠方來，不亦樂乎？', source:'《論語．學而》', meaning:'有朋友從很遠的地方來看你，是一件很快樂的事，代表友情很珍貴。', text:'人氣指數爆表的一天，主動找同學聊天、合作，會發現友情升溫得特別快。' },
+  { grade:'大吉', quote:'天生我材必有用，千金散盡還復來。', source:'李白〈將進酒〉', meaning:'每個人天生都有自己的才能跟用處，不用擔心暫時的失去，機會還會再來。', text:'心情晴朗無雲，做什麼事都特別有動力，是嘗試新挑戰的好時機。' },
+  { grade:'大吉', quote:'莫愁前路無知己，天下誰人不識君。', source:'高適〈別董大〉', meaning:'不要擔心以後的路上沒有知心朋友，像你這麼棒的人，到哪裡都會被欣賞。', text:'貴人運旺，今天提出的想法容易得到老師和同學的肯定，放心表達自己吧。' },
+  { grade:'大吉', quote:'讀書破萬卷，下筆如有神。', source:'杜甫〈奉贈韋左丞丈二十二韻〉', meaning:'書讀得多、讀得透徹，寫起文章來就會特別順手、特別厲害。', text:'學習運大吉，專注力特別集中，花同樣的時間能學到比平常更多的東西。' },
+  { grade:'大吉', quote:'會當凌絕頂，一覽眾山小。', source:'杜甫〈望嶽〉', meaning:'努力爬上山頂後，就能看見底下所有的山都變得很小，比喻努力突破後，眼界會變得更開闊。', text:'勇氣指數全開，今天很適合去做那件你一直想做、但有點害怕的小事。' },
+  { grade:'中吉', quote:'千里之行，始於足下。', source:'《道德經》', meaning:'再遙遠的路，也是從踏出第一步開始走的，比喻任何大目標都要從小小的第一步做起。', text:'穩紮穩打的一天，雖然不是大風大浪，但每一步都走得很踏實，繼續保持。' },
+  { grade:'中吉', quote:'三人行，必有我師焉。', source:'《論語．述而》', meaning:'跟任何一群人在一起，裡面一定有值得你學習的地方，要懂得向身邊的人學習。', text:'合作運不錯，跟夥伴一起完成任務會特別順利，記得謝謝幫助你的人。' },
+  { grade:'中吉', quote:'工欲善其事，必先利其器。', source:'《論語．衛靈公》', meaning:'想把事情做好，要先把工具、環境準備好，比喻做事前先整理、準備很重要。', text:'今天適合整理自己的書包和心情，把雜亂的地方收拾好，會覺得輕鬆很多。' },
+  { grade:'中吉', quote:'知之為知之，不知為不知，是知也。', source:'《論語．為政》', meaning:'知道的就說知道，不知道的就老實說不知道，這才是真正聰明、誠實的態度。', text:'細心運上升，仔細檢查作業和考卷，可以抓到平常容易漏掉的小地方。' },
+  { grade:'中吉', quote:'己所不欲，勿施於人。', source:'《論語．衛靈公》', meaning:'自己不喜歡被別人這樣對待，就不要這樣對待別人，要懂得同理心。', text:'今天的笑容特別有魔力，一個微笑就能讓身邊的人心情變好。' },
+  { grade:'中吉', quote:'業精於勤，荒於嬉。', source:'韓愈〈進學解〉', meaning:'學問要靠勤勞才能變得精通，貪玩、偷懶會讓努力白費。', text:'耐心運旺，遇到一時解不開的題目，多試幾次就會找到方法。' },
+  { grade:'小吉', quote:'玉不琢，不成器；人不學，不知義。', source:'《三字經》', meaning:'玉石不經過雕刻，就不會變成漂亮的器物；人不經過學習，就不會懂得做人處事的道理。', text:'小小的進步也值得開心，今天比昨天多懂一點、多勇敢一點，就很棒了。' },
+  { grade:'小吉', quote:'春色滿園關不住，一枝紅杏出牆來。', source:'葉紹翁〈遊園不值〉', meaning:'滿園的春天美景是關不住的，就像生命力旺盛的時候，自然會展現出來。', text:'動一動身體、伸展一下，今天的精神會變得更好。' },
+  { grade:'小吉', quote:'勿以惡小而為之，勿以善小而不為。', source:'劉備〈遺詔敕後主〉', meaning:'不要因為是小壞事就去做，也不要因為是小好事就不去做，小小的善意一樣很重要。', text:'今天適合主動幫忙做一件小事，雖然不起眼，但會讓教室更溫暖。' },
+  { grade:'小吉', quote:'靜以修身，儉以養德。', source:'諸葛亮〈誡子書〉', meaning:'安靜專注可以培養品格，節省不浪費可以培養好的德行。', text:'靜下心來聽別人說話的一天，你會發現朋友其實有很多你不知道的優點。' },
+  { grade:'小吉', quote:'少壯不努力，老大徒傷悲。', source:'漢樂府〈長歌行〉', meaning:'年輕的時候不努力，等年紀大了只會白白地後悔、傷心。', text:'吃飯睡覺都顧好，身體狀態穩穩的，學習起來也會比較有力氣。' },
+  { grade:'小吉', quote:'讀書百遍，其義自見。', source:'《三國志》裴松之注引（董遇）', meaning:'同一段文章多讀幾遍，裡面的意思自然就會漸漸清楚、看懂了。', text:'今天很適合整理錯題，把之前不會的題目搞懂，比學新的更划算。' },
+  { grade:'吉',   quote:'不積小流，無以成江海。', source:'《荀子．勸學》', meaning:'沒有一條條小小的水流慢慢匯集，就不會變成江河大海，比喻累積小小的努力才能成就大事。', text:'平凡但美好的一天，照著自己的步調前進，不用跟別人比較。' },
+  { grade:'吉',   quote:'誰知盤中餐，粒粒皆辛苦。', source:'李紳〈憫農〉', meaning:'有誰知道碗裡的飯，每一粒都是農夫辛苦種出來的，要懂得珍惜、感謝別人的付出。', text:'今天的小確幸藏在細節裡，多留意身邊的人和事，會發現很多值得感謝的小事。' },
+  { grade:'吉',   quote:'沉舟側畔千帆過，病樹前頭萬木春。', source:'劉禹錫〈酬樂天揚州初逢席上見贈〉', meaning:'沉船的旁邊仍有千百艘船繼續前進，枯萎的樹前方仍有新生的樹木長得茂盛，比喻就算遇到挫折，新的希望還是會不斷出現。', text:'慢慢來比較快，今天不用急，一步一步把事情做好就好。' },
+  { grade:'吉',   quote:'知者不惑，仁者不憂，勇者不懼。', source:'《論語．子罕》', meaning:'有智慧的人不會迷惘，有仁心的人不會憂愁，有勇氣的人不會害怕。', text:'今天適合練習深呼吸，遇到緊張的時刻，吸一口氣再開始，會更穩。' },
+  { grade:'吉',   quote:'繩鋸木斷，水滴石穿。', source:'宋．羅大經《鶴林玉露》', meaning:'繩子來回摩擦也能把木頭鋸斷，水滴不斷滴落也能把石頭滴穿，比喻只要堅持不放棄，再困難的事也能做到。', text:'你的努力雖然現在還看不出明顯的成果，但都有被好好記錄下來。' },
+  { grade:'吉',   quote:'海納百川，有容乃大。', source:'林則徐（自題對聯）', meaning:'大海能容納所有的河流，才會變得這麼廣闊，比喻一個人心胸寬大、願意接納別人，才會變得更有氣度。', text:'今天很適合當一個好聽眾，認真聽，也是一種很棒的能力。' },
+  { grade:'平安', quote:'行到水窮處，坐看雲起時。', source:'王維〈終南別業〉', meaning:'走到溪水的盡頭，就坐下來看雲朵慢慢升起，比喻遇到路走不通的時候，不妨放慢腳步，換個心情欣賞眼前的風景。', text:'平平安安的一天，沒有特別的驚喜，也沒有特別的困難，好好享受這份平靜。' },
+  { grade:'平安', quote:'知足者富。', source:'《道德經》', meaning:'懂得滿足、珍惜現在所擁有的，就是最富有的人。', text:'今天最重要的任務，就是好好照顧自己，休息也是一種很重要的練習。' },
+  { grade:'平安', quote:'心靜自然涼。', source:'俗語', meaning:'只要心情平靜下來，自然就會感覺輕鬆、沒那麼煩躁。', text:'心情平穩的一天，不用勉強自己很厲害，當自己就已經很好了。' },
+  { grade:'平安', quote:'採菊東籬下，悠然見南山。', source:'陶淵明〈飲酒〉其五', meaning:'在家門邊的籬笆下採著菊花，不經意間抬頭就看見遠方悠閒的南山，比喻放慢腳步享受眼前生活，自然能看見美好的風景。', text:'今天適合放慢腳步，看看身邊的小事物，會發現生活其實很溫柔。' },
+];
+let fortuneSlips = [];    // { grade, text } 幸運詩籤內容，預設帶一組，之後可在「管理詩籤內容」裡新增/編輯/刪除
 let readingLog = [];      // { id, studentId, studentName, book, mood, note, date } 閱讀打卡
 const WEEKDAYS = ['週一','週二','週三','週四','週五'];
 const PRIORITY_COLORS = {高:'#ef4444', 中:'#f59e0b', 低:'#22c55e'};
@@ -4368,6 +4442,7 @@ async function doSaveAll() {
   await saveField('class306/groupMonthlySnapshot', groupMonthlySnapshot, 'cls_groupMonthlySnapshot');
   await saveField('class306/classOfficers', classOfficers, 'cls_classOfficers');
   await saveField('class306/officerPositions', officerPositions, 'cls_officerPositions');
+  await saveField('class306/fortuneSlips', fortuneSlips, 'cls_fortuneSlips');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -4388,7 +4463,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4412,6 +4487,7 @@ async function loadData() {
     fetchField('class306/classOfficers', {}),
     fetchField('class306/officerPositions', []),
     fetchField('class306/groupMonthlySnapshot', {}),
+    fetchField('class306/fortuneSlips', null),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4437,6 +4513,7 @@ async function loadData() {
   officerPositions = opVal !== null ? opVal : JSON.parse(localStorage.getItem('cls_officerPositions')||'[]');
   groupMonthlySnapshot = gmsVal !== null ? gmsVal : JSON.parse(localStorage.getItem('cls_groupMonthlySnapshot')||'{}');
   if(!groupMonthlySnapshot || typeof groupMonthlySnapshot !== 'object' || Array.isArray(groupMonthlySnapshot)) groupMonthlySnapshot = {};
+  fortuneSlips = fsVal !== null ? fsVal : JSON.parse(localStorage.getItem('cls_fortuneSlips')||'null');
 
   // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
   // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
@@ -4450,6 +4527,10 @@ async function loadData() {
   if(!seatingChart.seats || typeof seatingChart.seats !== 'object' || Array.isArray(seatingChart.seats)) seatingChart.seats = {};
 
   if(!classOfficers || typeof classOfficers !== 'object') classOfficers = {};
+
+  // fortuneSlips 第一次使用（雲端跟本機都還沒存過）就帶入預設的那組詩籤內容，
+  // 之後只要存過一次（就算全部刪光變成空陣列），就尊重老師自己管理的內容，不會再被預設內容蓋回去。
+  if(!Array.isArray(fortuneSlips)) fortuneSlips = FORTUNE_SLIPS_DEFAULT.map(s=>({...s}));
 }
 
 
@@ -6397,23 +6478,59 @@ function confirmSeatAssign(){
   closeModal('seatAssignModal');
   toast('🪑 座位已更新！');
 }
-// 「每月輪動」：每一排的座位往前或往後移動一格（方向由 dir 決定），不是整排一起轉，
-// 而是「男生自己的位置」「女生自己的位置」分開各自輪動——這樣不管這一排原本是幾個人、
-// 男女比例是多少（例如3女2男這種沒辦法整排一起轉的情況），轉完之後一定還是合法的男女交錯順序，
-// 不會把原本排好的交錯排法弄壞。被老師標記「座位固定」📌 的學生會被整個跳過，完全不會被移動。
-// dir==='forward'：最前面（離黑板最近）的人繞到最後面，其他人往前遞補一格。
-// dir==='backward'：最後面的人繞到最前面，其他人往後退一格（跟 forward 方向相反）。
+// 一整排（扣掉座位固定的學生）照原本順序整體位移一格、最前/最後的人輪到另一端——
+// 這是老師心裡想的規則，例如「01、18、06、25」往後移動變成「25、01、06」。
+// 大部分情況這樣做完還是合法的男女交錯（人數是偶數、且沒有座位固定的學生卡在中間時一定沒問題）。
+// 但如果這一排人數是單數（例如3女2男的5人排），或扣掉座位固定的人之後剩下單數，
+// 整排直接位移就會讓某兩個相鄰座位變成同性別相鄰、破壞交錯——這種情況才改用「男生女生分開各自輪動」
+// 的保守做法頂替，確保男女交錯一定不會被破壞。dir==='backward' 時最後一位繞到最前面，其他人往後退一格；
+// dir==='forward' 時最前面繞到最後面，其他人往前遞補一格。
+function rotateColumnSeats(occupants, dir){
+  const movable = occupants.filter(o=>o.stu && !o.stu.seatFixed);
+  if(movable.length < 2) return { result: {}, usedFallback: false };
+  const n = movable.length;
+
+  const literal = {};
+  movable.forEach((o,i)=>{
+    const srcIdx = dir==='backward' ? (i-1+n)%n : (i+1)%n;
+    literal[o.key] = movable[srcIdx].stu.id;
+  });
+
+  // 套用整排位移的結果後，檢查整排（含固定座位）相鄰兩格是否還保持男女交錯
+  const seq = occupants.map(o=>{
+    if(o.stu && o.stu.seatFixed) return o.stu.gender;
+    if(literal[o.key]!=null){ const s = students.find(x=>x.id===literal[o.key]); return s ? s.gender : null; }
+    return o.stu ? o.stu.gender : null;
+  });
+  let literalOk = true;
+  for(let i=1;i<seq.length;i++){ if(seq[i] && seq[i-1] && seq[i]===seq[i-1]){ literalOk = false; break; } }
+  if(literalOk) return { result: literal, usedFallback: false };
+
+  // 保守備案：男生女生分開各自輪動（一定合法，但結果會跟「整排直接位移」不完全一樣）
+  const fallback = {};
+  ['boy','girl'].forEach(gender=>{
+    const group = movable.filter(o=>o.stu.gender===gender);
+    if(group.length < 2) return;
+    const gn = group.length;
+    group.forEach((o,i)=>{
+      const srcIdx = dir==='backward' ? (i-1+gn)%gn : (i+1)%gn;
+      fallback[o.key] = group[srcIdx].stu.id;
+    });
+  });
+  return { result: fallback, usedFallback: true };
+}
 function rotateSeatingByDir(dir){
   if(!Object.keys(seatingChart.seats||{}).length){ toast('⚠️ 目前還沒有排座位，沒辦法輪動'); return; }
   const desc = dir==='backward'
-    ? '每一排的男生、女生會各自往後退一格（最後面的人繞到最前面）'
-    : '每一排的男生、女生會各自往前移動一格（最前面的人繞到最後面）';
-  if(!confirm(`確定要進行「每月輪動」嗎？\n\n${desc}，標記「座位固定」📌 的學生不會被移動，男女交錯順序會自動維持。`)) return;
+    ? '每一排會整排往後移動一格（最後面的人繞到最前面）'
+    : '每一排會整排往前移動一格（最前面的人繞到最後面）';
+  if(!confirm(`確定要進行輪動嗎？\n\n${desc}，標記「座位固定」📌 的學生不會被移動。少數人數是單數的排，為了不破壞男女交錯順序，會改成男女分開各自輪動。`)) return;
   snapshotSeatingForUndo();
 
   const colSizes = seatingChart.colSizes || [];
   const newSeats = { ...seatingChart.seats };
   let fixedCount = 0;
+  const fallbackCols = [];
   colSizes.forEach((count, c)=>{
     const occupants = [];
     for(let r=0;r<count;r++){
@@ -6422,22 +6539,18 @@ function rotateSeatingByDir(dir){
       const stu = sid!=null ? students.find(s=>s.id===sid) : null;
       occupants.push({ r, key, stu });
     }
-    ['boy','girl'].forEach(gender=>{
-      const group = occupants.filter(o=>o.stu && o.stu.gender===gender && !o.stu.seatFixed);
-      if(group.length < 2) return; // 不到2人沒什麼好輪的
-      const sids = group.map(o=>o.stu.id);
-      const n = sids.length;
-      group.forEach((o, i)=>{
-        const srcIdx = dir==='backward' ? (i-1+n)%n : (i+1)%n;
-        newSeats[o.key] = sids[srcIdx];
-      });
-    });
+    const { result, usedFallback } = rotateColumnSeats(occupants, dir);
+    Object.assign(newSeats, result);
+    if(usedFallback) fallbackCols.push(c+1);
     occupants.forEach(o=>{ if(o.stu && o.stu.seatFixed) fixedCount++; });
   });
   seatingChart.seats = newSeats;
   save(); renderSeatingChart();
   const dirLabel = dir==='backward' ? '往後輪動' : '每月輪動';
-  toast(`🔁 已完成${dirLabel}！${fixedCount>0 ? `（${fixedCount}位座位固定的同學沒有被移動）` : ''}`);
+  let msg = `🔁 已完成${dirLabel}！`;
+  if(fixedCount>0) msg += `（${fixedCount}位座位固定的同學沒有被移動）`;
+  if(fallbackCols.length>0) msg += `　⚠️ 第${fallbackCols.join('、')}排人數是單數，改用男女分開各自輪動以維持交錯`;
+  toast(msg);
 }
 function rotateSeatingMonthly(){ rotateSeatingByDir('forward'); }
 function rotateSeatingMonthlyBackward(){ rotateSeatingByDir('backward'); }
@@ -7720,8 +7833,125 @@ function spinWheel(){
     // 記錄這次抽選的所有影響，方便一鍵撤銷
     lastSpinRecord = { studentId: sid, studentName: stu.name, resultLabel: result.label, starDeltas, spinChanceDeltas };
     document.getElementById('undoSpinBtn').style.display = 'inline-block';
+
+    // 轉盤結果出來、慶祝動畫跑完之後，加碼彈出一張幸運詩籤卡，讓整個抽選多一層期待感
+    setTimeout(()=>{ showFortuneSlipCard(); }, 1100);
   }
   requestAnimationFrame(step);
+}
+// ─── 幸運詩籤 ───
+function showFortuneSlipCard(){
+  if(!fortuneSlips.length) return;
+  const slip = fortuneSlips[Math.floor(Math.random()*fortuneSlips.length)];
+  const meta = FORTUNE_GRADE_META[slip.grade] || FORTUNE_GRADE_META['吉'];
+  const card = document.getElementById('fortuneSlipCard');
+  card.style.background = meta.bg;
+  card.style.color = meta.color;
+  document.getElementById('fortuneSlipIcon').textContent = meta.icon;
+  document.getElementById('fortuneSlipGrade').textContent = slip.grade;
+  document.getElementById('fortuneSlipText').textContent = slip.text;
+  const quoteBox = document.getElementById('fortuneSlipQuoteBox');
+  if(slip.quote && slip.quote.trim()){
+    quoteBox.style.display = 'block';
+    document.getElementById('fortuneSlipQuote').textContent = '「' + slip.quote.trim() + '」';
+    document.getElementById('fortuneSlipSource').textContent = slip.source && slip.source.trim() ? '—— ' + slip.source.trim() : '';
+    const meaningEl = document.getElementById('fortuneSlipMeaning');
+    if(slip.meaning && slip.meaning.trim()){
+      meaningEl.style.display = 'block';
+      meaningEl.textContent = '📖 白話意思：' + slip.meaning.trim();
+    } else {
+      meaningEl.style.display = 'none';
+    }
+  } else {
+    quoteBox.style.display = 'none';
+  }
+  openModal('fortuneSlipModal');
+}
+function openFortuneSlipManage(){
+  renderFortuneSlipManageList();
+  openModal('fortuneSlipManageModal');
+}
+function renderFortuneSlipManageList(){
+  const wrap = document.getElementById('fortuneSlipManageList');
+  wrap.innerHTML = '';
+  if(!fortuneSlips.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">目前沒有詩籤內容，點下面「＋ 新增一句詩籤」開始新增吧！</div>';
+    return;
+  }
+  fortuneSlips.forEach((slip,i)=>{
+    const meta = FORTUNE_GRADE_META[slip.grade] || FORTUNE_GRADE_META['吉'];
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-direction:column;gap:6px;border:2px solid #f1f5f9;border-radius:12px;padding:8px;';
+
+    const topLine = document.createElement('div');
+    topLine.style.cssText = 'display:flex;gap:6px;align-items:center;';
+    const gradeSelect = document.createElement('select');
+    gradeSelect.style.cssText = `flex-shrink:0;border-radius:8px;border:2px solid ${meta.color};color:${meta.color};font-weight:800;padding:4px 6px;font-family:'Nunito',sans-serif;font-size:.82rem;`;
+    FORTUNE_GRADES.forEach(g=>{
+      const opt = document.createElement('option');
+      opt.value = g; opt.textContent = g;
+      if(g===slip.grade) opt.selected = true;
+      gradeSelect.appendChild(opt);
+    });
+    gradeSelect.onchange = ()=>{ fortuneSlips[i].grade = gradeSelect.value; save(); renderFortuneSlipManageList(); };
+    const quoteInput = document.createElement('input');
+    quoteInput.type = 'text';
+    quoteInput.value = slip.quote || '';
+    quoteInput.placeholder = '名言佳句（選填，例：學而時習之，不亦說乎？）';
+    quoteInput.style.cssText = "flex:1.4;border:2px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-family:'Nunito',sans-serif;font-size:.8rem;";
+    quoteInput.onchange = ()=>{ fortuneSlips[i].quote = quoteInput.value; save(); };
+    const sourceInput = document.createElement('input');
+    sourceInput.type = 'text';
+    sourceInput.value = slip.source || '';
+    sourceInput.placeholder = '出處（例：《論語．學而》）';
+    sourceInput.style.cssText = "flex:1;border:2px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-family:'Nunito',sans-serif;font-size:.8rem;";
+    sourceInput.onchange = ()=>{ fortuneSlips[i].source = sourceInput.value; save(); };
+    topLine.appendChild(gradeSelect);
+    topLine.appendChild(quoteInput);
+    topLine.appendChild(sourceInput);
+
+    const meaningLine = document.createElement('div');
+    meaningLine.style.cssText = 'display:flex;gap:6px;align-items:center;';
+    const meaningInput = document.createElement('input');
+    meaningInput.type = 'text';
+    meaningInput.value = slip.meaning || '';
+    meaningInput.placeholder = '白話解釋（有填名言佳句的話，建議也寫一句簡單翻譯，避免孩子看不懂）';
+    meaningInput.style.cssText = "flex:1;border:2px solid #e2e8f0;border-radius:8px;padding:4px 8px;font-family:'Nunito',sans-serif;font-size:.8rem;color:#64748b;";
+    meaningInput.onchange = ()=>{ fortuneSlips[i].meaning = meaningInput.value; save(); };
+    meaningLine.appendChild(meaningInput);
+
+    const bottomLine = document.createElement('div');
+    bottomLine.style.cssText = 'display:flex;gap:8px;align-items:flex-start;';
+    const textArea = document.createElement('textarea');
+    textArea.value = slip.text;
+    textArea.placeholder = '鼓勵／提醒的內容';
+    textArea.style.cssText = "flex:1;min-height:44px;border:2px solid #e2e8f0;border-radius:8px;padding:6px 8px;font-family:'Nunito',sans-serif;font-size:.85rem;resize:vertical;";
+    textArea.onchange = ()=>{ fortuneSlips[i].text = textArea.value; save(); };
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.title = '刪除這句詩籤';
+    delBtn.style.cssText = 'flex-shrink:0;border:none;background:none;color:#cbd5e1;font-weight:800;font-size:1rem;cursor:pointer;padding:4px;';
+    delBtn.onclick = ()=>{ removeFortuneSlip(i); };
+    bottomLine.appendChild(textArea);
+    bottomLine.appendChild(delBtn);
+
+    row.appendChild(topLine);
+    row.appendChild(meaningLine);
+    row.appendChild(bottomLine);
+    wrap.appendChild(row);
+  });
+}
+function addFortuneSlip(){
+  fortuneSlips.push({ grade:'吉', quote:'', source:'', meaning:'', text:'' });
+  save();
+  renderFortuneSlipManageList();
+  const textareas = document.querySelectorAll('#fortuneSlipManageList textarea');
+  if(textareas.length) textareas[textareas.length-1].focus();
+}
+function removeFortuneSlip(i){
+  fortuneSlips.splice(i,1);
+  save();
+  renderFortuneSlipManageList();
 }
 function undoLastWheelSpin(){
   if(!lastSpinRecord){ toast('⚠️ 沒有可以撤銷的抽選紀錄'); return; }
