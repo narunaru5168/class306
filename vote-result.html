@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📺 投票結果｜成長獵人訓練所</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #5BB8F5; --sun: #FFD93D; --grass: #6BCB77; --coral: #FF6B6B;
+    --purple: #A855F7; --mint: #4DD9AC; --peach: #FFB347; --cloud: #F0F9FF;
+    --dark: #1E2A4A; --card-bg: #FFFEF7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(160deg, #e0f2fe 0%, #fef9c3 50%, #dcfce7 100%);
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .baloo { font-family: 'Baloo 2', cursive; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .back-link {
+    position: fixed; top: 18px; left: 18px;
+    background: rgba(30,42,74,.12); border-radius: 50px; color: var(--dark);
+    font-weight: 700; font-size: .85rem; padding: 8px 18px; text-decoration: none;
+  }
+  .back-link:hover { background: rgba(30,42,74,.2); }
+
+  .wrap { width: 100%; max-width: 980px; text-align: center; }
+
+  .vote-title {
+    font-family: 'Baloo 2', cursive; font-weight: 800;
+    font-size: clamp(1.8rem, 4.5vw, 3rem);
+    margin-bottom: 8px;
+  }
+  .sub-note { font-size: 1.05rem; font-weight: 700; color: #5a6680; margin-bottom: 36px; }
+
+  .podium { display: flex; flex-direction: column; gap: 22px; }
+
+  .rank-card {
+    background: var(--card-bg); border-radius: 28px; box-shadow: 0 10px 36px rgba(30,42,74,.14);
+    padding: 24px 32px; display: flex; align-items: center; gap: 24px;
+    border-top: 8px solid #e2e8f0; text-align: left;
+  }
+  .rank-card.r1 { border-top-color: var(--sun); box-shadow: 0 0 0 4px #fff3c4, 0 10px 36px rgba(30,42,74,.14); transform: scale(1.04); }
+  .rank-card.r2 { border-top-color: #cbd5e1; }
+  .rank-card.r3 { border-top-color: var(--peach); }
+
+  .medal-big { font-size: clamp(2.2rem, 5vw, 3.2rem); flex-shrink: 0; width: 70px; text-align: center; }
+  .rank-body { flex: 1; min-width: 0; }
+  .rank-name { font-family: 'Baloo 2', cursive; font-weight: 800; font-size: clamp(1.3rem, 3vw, 2rem); word-break: break-word; }
+  .rank-bar-track { height: 18px; border-radius: 10px; background: #eef2f7; overflow: hidden; margin-top: 10px; }
+  .rank-bar-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--sky), var(--purple)); transition: width .6s ease; }
+  .rank-card.r1 .rank-bar-fill { background: linear-gradient(90deg, var(--sun), var(--peach)); }
+  .rank-votes { font-weight: 900; font-size: clamp(1.4rem, 3.2vw, 2.1rem); color: var(--purple); flex-shrink: 0; min-width: 90px; text-align: right; }
+  .rank-card.r1 .rank-votes { color: #b45309; }
+
+  .waiting, .empty-state {
+    background: var(--card-bg); border-radius: 28px; box-shadow: 0 10px 36px rgba(30,42,74,.14);
+    padding: 60px 40px;
+  }
+  .waiting .big-emoji, .empty-state .big-emoji { font-size: 4rem; margin-bottom: 18px; animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .7; } }
+  .waiting .msg, .empty-state .msg { font-family: 'Baloo 2', cursive; font-weight: 800; font-size: 1.5rem; margin-bottom: 10px; }
+  .waiting .detail, .empty-state .detail { font-size: 1rem; color: #5a6680; font-weight: 700; }
+
+  .history-tag {
+    display: inline-block; background: #fef9c3; color: #78350f; font-weight: 800; font-size: .85rem;
+    border-radius: 50px; padding: 6px 18px; margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="vote.html">⬅ 回投票箱</a>
+
+<div class="wrap" id="app">
+  <div class="empty-state">
+    <div class="big-emoji">🗳️</div>
+    <div class="msg">連線中…</div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  let db = null, useCloud = false;
+  try {
+    if (typeof firebase !== "undefined") {
+      firebase.initializeApp({
+        apiKey: "AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+        authDomain: "tpedusso-257723.firebaseapp.com",
+        databaseURL: "https://tpedusso-257723-default-rtdb.firebaseio.com",
+        projectId: "tpedusso-257723",
+        storageBucket: "tpedusso-257723.appspot.com",
+        messagingSenderId: "105193372361",
+        appId: "1:105193372361:web:5591b76255cb86cf566b18"
+      });
+      db = firebase.database();
+      useCloud = true;
+    }
+  } catch(e) { console.warn("Firebase 初始化失敗，改用本地儲存", e); }
+
+  var app = document.getElementById("app");
+  var activeBox = null;
+  var history = [];
+  var gotBox = false, gotHistory = false;
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  var medals = ["🥇","🥈","🥉"];
+
+  function podiumHtml(rows, maxV){
+    return '<div class="podium">' + rows.map(function(o, i){
+      var v = o.votes || 0;
+      var pct = maxV > 0 ? Math.round((v/maxV)*100) : 0;
+      return (
+        '<div class="rank-card r' + (i+1) + '">' +
+          '<div class="medal-big">' + medals[i] + '</div>' +
+          '<div class="rank-body">' +
+            '<div class="rank-name">' + escapeHtml(o.label) + '</div>' +
+            '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '</div>' +
+          '<div class="rank-votes num">' + v + ' 票</div>' +
+        '</div>'
+      );
+    }).join("") + '</div>';
+  }
+
+  function render(){
+    if (!gotBox || !gotHistory) return; // 兩邊資料都回來了才畫，避免畫面閃一下「無資料」又變有資料
+
+    // 情況一：目前有進行中的投票
+    if (activeBox && activeBox.options && activeBox.options.length) {
+      var votable = activeBox.options.filter(function(o){ return !o.disabled; });
+      var canSeeResults = activeBox.showLive || activeBox.revealed;
+
+      if (!canSeeResults) {
+        var voted = Object.keys(activeBox.voterChoices || {}).length;
+        app.innerHTML =
+          '<div class="vote-title">' + escapeHtml(activeBox.title) + '</div>' +
+          '<div class="waiting">' +
+            '<div class="big-emoji">🤫</div>' +
+            '<div class="msg">投票進行中，結果還沒公布</div>' +
+            '<div class="detail">目前已經有 ' + voted + ' 人投票囉，老師按下「公布目前票數」後結果就會出現在這裡</div>' +
+          '</div>';
+        return;
+      }
+
+      var sorted = votable.slice().sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+      var top3 = sorted.slice(0, 3);
+      var maxV = Math.max.apply(null, top3.map(function(o){ return o.votes||0; }).concat([0]));
+
+      if (!top3.length) {
+        app.innerHTML =
+          '<div class="vote-title">' + escapeHtml(activeBox.title) + '</div>' +
+          '<div class="waiting"><div class="big-emoji">🗳️</div><div class="msg">還沒有人投票</div></div>';
+        return;
+      }
+
+      app.innerHTML =
+        '<div class="vote-title">🏆 ' + escapeHtml(activeBox.title) + '</div>' +
+        '<div class="sub-note">前三名票數</div>' +
+        podiumHtml(top3, maxV);
+      return;
+    }
+
+    // 情況二：目前沒有進行中的投票，顯示最近一次的歷史結果
+    if (history && history.length) {
+      var last = history[0];
+      var rows = (last.results || []).slice(0, 3);
+      var maxV2 = Math.max.apply(null, rows.map(function(o){ return o.votes||0; }).concat([0]));
+      if (rows.length) {
+        app.innerHTML =
+          '<div class="history-tag">📜 上一輪投票結果（已結束）</div>' +
+          '<div class="vote-title">' + escapeHtml(last.title) + '</div>' +
+          '<div class="sub-note">前三名票數</div>' +
+          podiumHtml(rows, maxV2);
+        return;
+      }
+    }
+
+    // 情況三：完全沒有任何投票資料
+    app.innerHTML =
+      '<div class="empty-state">' +
+        '<div class="big-emoji">🗳️</div>' +
+        '<div class="msg">目前還沒有投票結果</div>' +
+        '<div class="detail">請老師先到「投票箱」開始一輪投票</div>' +
+      '</div>';
+  }
+
+  if (useCloud && db) {
+    db.ref("class306/voteBox").on("value", function(snap){
+      activeBox = (snap && snap.exists && snap.exists()) ? snap.val() : null;
+      gotBox = true;
+      render();
+    }, function(){ activeBox = null; gotBox = true; render(); });
+    db.ref("class306/voteHistory").on("value", function(snap){
+      history = (snap && snap.exists && snap.exists()) ? snap.val() : [];
+      if (!Array.isArray(history)) history = Object.keys(history || {}).map(function(k){ return history[k]; });
+      gotHistory = true;
+      render();
+    }, function(){ history = []; gotHistory = true; render(); });
+  } else {
+    try { activeBox = JSON.parse(localStorage.getItem("cls_voteBox") || "null"); } catch(e){ activeBox = null; }
+    try { history = JSON.parse(localStorage.getItem("cls_voteHistory") || "[]"); } catch(e){ history = []; }
+    gotBox = true; gotHistory = true;
+    render();
+  }
+})();
+</script>
+</body>
+</html>

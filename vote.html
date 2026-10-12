@@ -219,6 +219,10 @@
         <input type="checkbox" id="showLiveCheck" checked>
         投票期間就即時公開票數（取消勾選＝先秘密投票，老師按「公布結果」才會顯示）
       </label>
+      <label class="check-row">
+        <input type="checkbox" id="showCriteriaCheck">
+        投票期間顯示「模範生選拔標準」給學生參考（適合模範生、幹部這類品德/表現相關的投票）
+      </label>
 
       <label style="font-weight:700;font-size:.85rem;color:#5a6680;display:block;margin-bottom:8px;">投票選項</label>
       <div id="optList"></div>
@@ -252,7 +256,39 @@
         <div><div class="n num" id="totalVotesCount">0</div><div class="l">已投票數</div></div>
         <div><div class="n num" id="totalOptCount">0</div><div class="l">投票選項</div></div>
       </div>
-      <button class="btn btn-sun btn-sm" id="revealBtn" hidden>🔓 公布目前票數</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <button class="btn btn-sun btn-sm" id="revealBtn" hidden>🔓 公布目前票數</button>
+        <a class="btn btn-ghost btn-sm" id="bigScreenLink" href="vote-result.html" target="_blank" rel="noopener">📺 開啟大螢幕結果頁</a>
+      </div>
+    </div>
+
+    <div class="card" id="voterDetailCard">
+      <div class="section-title" style="font-size:1.05rem;cursor:pointer;" id="voterDetailToggle">
+        📋 老師專用：查看投票明細
+        <span id="voterDetailArrow" style="margin-left:auto;font-size:.9rem;">▼</span>
+      </div>
+      <div id="voterDetailBody" hidden>
+        <div style="font-size:.78rem;color:#dc2626;font-weight:800;background:#fee2e2;border-radius:10px;padding:8px 12px;margin-bottom:12px;">
+          ⚠️ 這個區塊會顯示「誰投給誰」，請不要把這個畫面投影給全班看
+        </div>
+        <div id="voterDetailList"></div>
+      </div>
+    </div>
+
+    <div class="card" id="criteriaCard" hidden>
+      <div class="section-title" style="font-size:1.05rem;cursor:pointer;" id="criteriaToggle">
+        🏅 模範生選拔標準（點我展開／收合）
+        <span id="criteriaArrow" style="margin-left:auto;font-size:.9rem;">▼</span>
+      </div>
+      <div id="criteriaBody" hidden style="font-size:.86rem;line-height:1.7;color:#4a5568;">
+        <div style="margin-bottom:10px;"><b>自主行動</b>：具備自主學習及探索的動力，在日常生活表現及學習中獲得喜悅與生活的自信，堪為同學表率者。</div>
+        <div style="margin-bottom:10px;"><b>溝通互動</b>：綜合各學習領域學習表現，擁有適切溝通與表達能力，樂於與人互動，並擁有團隊合作之素養者。</div>
+        <div style="margin-bottom:10px;"><b>多元展能</b>：發展多元智慧，盡展所長，在持續學習及進取中，擁有問題解決及面對挑戰的勇氣，具有特殊優良表現者。</div>
+        <div style="margin-bottom:10px;"><b>品德實踐</b>：擁有同理心及服務學習的精神，表現接納包容、尊親敬長，展現知善、樂善與行善的品德，普獲同學好評者。</div>
+        <div style="margin-bottom:10px;"><b>逆境成長</b>：面對生命中的困境與挑戰，依然保有溫暖善良與樂觀正向的態度，積極面對生活、關懷他人，展現堅韌而充滿希望的生命力。</div>
+        <div><b>勤奮勵志</b>：以勤勉踏實的態度面對學習與生活，能克服環境限制，自我激勵、積極向上，並以自身努力與奮鬥歷程展現生命韌性，帶給周遭同學正向鼓舞與啟發。</div>
+        <div style="margin-top:12px;font-size:.76rem;color:#94a3b8;">參考自臺北市內湖區麗山國民小學模範生選拔原則</div>
+      </div>
     </div>
 
     <div class="card" id="voterGateCard">
@@ -273,7 +309,7 @@
     <div class="card" id="hiddenTallyCard" hidden>
       <div class="reveal-locked">
         <div class="big">🤫</div>
-        目前票數是秘密投票中，老師按「公布目前票數」後大家才看得到
+        現在是秘密投票，大家可以放心投票，票數會先保密，老師按「公布目前票數」後才會顯示結果
       </div>
     </div>
 
@@ -418,6 +454,7 @@
     var box = {
       title: title,
       showLive: document.getElementById("showLiveCheck").checked,
+      showCriteria: document.getElementById("showCriteriaCheck").checked,
       revealed: false,
       startedAt: Date.now(),
       voterChoices: {},
@@ -454,18 +491,20 @@
     document.getElementById("totalOptCount").textContent = votable.length + " / " + activeBox.options.length;
 
     renderVoterGate();
+    renderVoterDetail();
+    document.getElementById("criteriaCard").hidden = !activeBox.showCriteria;
 
     var canSeeResults = activeBox.showLive || activeBox.revealed;
-    revealBtn.hidden = activeBox.showLive || activeBox.revealed;
+    revealBtn.hidden = canSeeResults;
     hiddenTallyCard.hidden = canSeeResults;
-    optGrid.hidden = !canSeeResults;
-    voterGateCard.hidden = !canSeeResults;
+    // 秘密投票期間（canSeeResults=false）：票數和排名要保密，但投票本身還是要能進行，
+    // 所以 voterGateCard（選名字）跟 optGrid（投票卡片）都要一直顯示，只是卡片上不顯示票數。
+    optGrid.hidden = false;
+    voterGateCard.hidden = false;
 
-    if (!canSeeResults) return;
-
-    var maxV = Math.max.apply(null, votable.map(function(o){ return o.votes||0; }).concat([0]));
+    var maxV = canSeeResults ? Math.max.apply(null, votable.map(function(o){ return o.votes||0; }).concat([0])) : 0;
     var medals = ["🥇","🥈","🥉"];
-    var sorted = votable.slice().sort(function(a,b){ return (b.votes||0)-(a.votes||0); });
+    var sorted = canSeeResults ? votable.slice().sort(function(a,b){ return (b.votes||0)-(a.votes||0); }) : [];
 
     optGrid.innerHTML = activeBox.options.map(function(o){
       if (o.disabled) {
@@ -477,12 +516,24 @@
           '</div>'
         );
       }
+      var embed = toEmbedUrl(o.link);
+      if (!canSeeResults) {
+        // 秘密投票中：只顯示選項名稱和投票按鈕，不洩漏任何票數資訊
+        return (
+          '<div class="vote-card" data-id="' + o.id + '">' +
+            '<div class="vname">' + escapeHtml(o.label) + '</div>' +
+            '<div class="vbtns">' +
+              (o.link ? '<button class="btn btn-ghost btn-sm view-btn" type="button">' + (embed ? '▶️ 看內容' : '🔗 開啟連結') + '</button>' : '') +
+              '<button class="btn btn-success btn-sm vote-btn" type="button" style="flex:1;justify-content:center;">⭐ 投這一票</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }
       var v = o.votes || 0;
       var pct = maxV > 0 ? Math.round((v/maxV)*100) : 0;
       var rank = sorted.indexOf(o);
       var medal = (rank < 3 && v > 0) ? medals[rank] : "";
       var isLeader = maxV > 0 && v === maxV;
-      var embed = toEmbedUrl(o.link);
       return (
         '<div class="vote-card' + (isLeader?' leader':'') + '" data-id="' + o.id + '">' +
           '<div class="vname">' + escapeHtml(o.label) + (medal ? '<span class="medal">'+medal+'</span>' : '') + '</div>' +
@@ -642,6 +693,52 @@
   }
   voterSelect.addEventListener("change", renderVoterChoiceInfo);
 
+  // ───────────────────── 老師專用：投票明細（誰投給誰）─────────────────────
+  // 注意：這個區塊只會出現在 vote.html（老師操作頁），絕對不能出現在 vote-result.html（大螢幕投影頁）
+  function renderVoterDetail(){
+    var listEl = document.getElementById("voterDetailList");
+    if (!listEl || !activeBox) { if (listEl) listEl.innerHTML = ""; return; }
+    var voterChoices = activeBox.voterChoices || {};
+    var voterKeys = Object.keys(voterChoices);
+    if (!voterKeys.length) {
+      listEl.innerHTML = '<div style="color:#94a3b8;font-size:.85rem;">目前還沒有人投票</div>';
+      return;
+    }
+    var byOption = {};
+    activeBox.options.forEach(function(o){ byOption[o.id] = []; });
+    voterKeys.forEach(function(voterKey){
+      var optId = voterChoices[voterKey];
+      var student = roster.filter(function(s){ return studentKey(s) === voterKey; })[0];
+      var name = student ? ((student.seatNo ? student.seatNo + "號 " : "") + student.name) : voterKey;
+      if (!byOption[optId]) byOption[optId] = [];
+      byOption[optId].push(name);
+    });
+    var html = activeBox.options.map(function(o){
+      var names = byOption[o.id] || [];
+      return (
+        '<div style="margin-bottom:12px;">' +
+          '<div style="font-weight:800;font-size:.92rem;margin-bottom:4px;">' + escapeHtml(o.label) + '（' + names.length + ' 票）</div>' +
+          (names.length ? '<div style="font-size:.82rem;color:#5a6680;">' + names.map(escapeHtml).join('、') + '</div>' : '<div style="font-size:.8rem;color:#cbd5e1;">（還沒有人投）</div>') +
+        '</div>'
+      );
+    }).join("");
+    listEl.innerHTML = html;
+  }
+
+  document.getElementById("voterDetailToggle").addEventListener("click", function(){
+    var body = document.getElementById("voterDetailBody");
+    var arrow = document.getElementById("voterDetailArrow");
+    body.hidden = !body.hidden;
+    arrow.textContent = body.hidden ? "▼" : "▲";
+  });
+
+  document.getElementById("criteriaToggle").addEventListener("click", function(){
+    var body = document.getElementById("criteriaBody");
+    var arrow = document.getElementById("criteriaArrow");
+    body.hidden = !body.hidden;
+    arrow.textContent = body.hidden ? "▼" : "▲";
+  });
+
   function starBurst(evt){
     var host = document.getElementById("starburst");
     host.hidden = false;
@@ -680,6 +777,7 @@
     activeBox = null;
     saveBox(null);
     document.getElementById("voteTitle").value = "";
+    document.getElementById("showCriteriaCheck").checked = false;
     optList.innerHTML = "";
     showScreen();
     renderHistory();
