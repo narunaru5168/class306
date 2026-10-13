@@ -6071,7 +6071,17 @@ function toggleTeamDailyCheck(teamIdx, studentId, cat){
     if(allChecked && !awarded){
       teamDailyChecks.starsAwarded[t.id] = teamDailyChecks.starsAwarded[t.id] || {};
       teamDailyChecks.starsAwarded[t.id][cat] = true;
-      roster.forEach(s=>{ s.stars = (s.stars||0) + 1; });
+      // 改走跟手動加星一樣的 grantStars()，這樣小組競賽發的星星也會正確累積「潛能抽選」的進度，
+      // 並且寫進學生的星星紀錄 log 裡（方便之後查、也可以用「復原」收回）。
+      roster.forEach(s=>{
+        grantStars(s, 1);
+        s.log = s.log || [];
+        s.log.push({ id: generateId(), reason: `🏆 小組競賽：${t.name}「${cat}」全組達成`, amt: 1, date: new Date().toLocaleDateString('zh-TW') });
+        if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
+        if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
+        if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
+        if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
+      });
       toast(`⭐ ${t.name}「${cat}」今天全組都完成了，每人 +1 顆星星！`);
       confetti();
       renderStudents(); updateStats();
