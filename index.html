@@ -4297,6 +4297,9 @@ const GROUP_COLORS = ['#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899
 // 當下立刻幫全組每位學生各自的個人星星 +1（一天最多四個項目、每項最多 +1，不等到結算才發）。
 let teamDailyChecks = { date: null, checks: {}, starsAwarded: {} };
 // checks: { studentId: { 項目名稱: true } }　starsAwarded: { teamId: { 項目名稱: true } } 防止同一天同一組同一項目重複加星
+// ─── 小組競賽「課堂秩序」自動抓違規：掃描學生今天的扣星紀錄，關鍵字對到的話就提醒老師、預設不給勾 ───
+const DISCIPLINE_KEYWORDS_DEFAULT = ['秩序','吵','鬧','喧嘩','聊天','講話','插話','頂嘴','不雅','奔跑','搗蛋','違規','罵','講不雅字','大聲','吵架','打架'];
+let disciplineKeywords = []; // 老師可以自訂，第一次使用時會帶入 DISCIPLINE_KEYWORDS_DEFAULT
 let weeklyTodos = {};     // { '週一': [{id,text,priority,note,done}], ... } 班級一週待辦
 // ─── 幸運詩籤（好運抽抽樂轉盤的加碼內容）───
 // 等級全部都是正向的（大吉～平安），沒有「凶」這種等級，避免孩子抽到不好的結果反而失去期待感，
@@ -4463,6 +4466,7 @@ async function doSaveAll() {
   await saveField('class306/officerPositions', officerPositions, 'cls_officerPositions');
   await saveField('class306/fortuneSlips', fortuneSlips, 'cls_fortuneSlips');
   await saveField('class306/teamDailyChecks', teamDailyChecks, 'cls_teamDailyChecks');
+  await saveField('class306/disciplineKeywords', disciplineKeywords, 'cls_disciplineKeywords');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -4483,7 +4487,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4509,6 +4513,7 @@ async function loadData() {
     fetchField('class306/groupMonthlySnapshot', {}),
     fetchField('class306/fortuneSlips', null),
     fetchField('class306/teamDailyChecks', null),
+    fetchField('class306/disciplineKeywords', null),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4539,6 +4544,8 @@ async function loadData() {
   if(!teamDailyChecks || typeof teamDailyChecks !== 'object') teamDailyChecks = { date: null, checks: {}, starsAwarded: {} };
   if(!teamDailyChecks.checks || typeof teamDailyChecks.checks !== 'object') teamDailyChecks.checks = {};
   if(!teamDailyChecks.starsAwarded || typeof teamDailyChecks.starsAwarded !== 'object') teamDailyChecks.starsAwarded = {};
+  disciplineKeywords = dkVal !== null ? dkVal : JSON.parse(localStorage.getItem('cls_disciplineKeywords')||'null');
+  if(!Array.isArray(disciplineKeywords)) disciplineKeywords = [...DISCIPLINE_KEYWORDS_DEFAULT];
 
   // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
   // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
@@ -6059,8 +6066,48 @@ function teamTotal(t){
   if(ti<0) return teamCategories.reduce((a,c)=>a+((t.scores||{})[c]||0),0);
   return teamCategories.reduce((a,c)=>a+teamCategoryDisplayValue(ti,c),0);
 }
+// 這個評分項目的名稱看起來是不是「課堂秩序」這一類的（讓老師可以自己改項目名稱，仍然認得出來）
+function isDisciplineCategory(cat){
+  return ['秩序','規矩','行為','紀律'].some(k=>(cat||'').includes(k));
+}
+// 掃描這位學生「今天」的星星紀錄，找出符合違規關鍵字的扣星原因（amt<0 且日期是今天）
+function studentDisciplineIssuesToday(s){
+  const todayStr = new Date().toLocaleDateString('zh-TW');
+  const kws = disciplineKeywords.length ? disciplineKeywords : DISCIPLINE_KEYWORDS_DEFAULT;
+  return (s.log||[]).filter(e=>{
+    if(!e || e.amt>=0) return false;
+    if(e.date !== todayStr) return false;
+    const reason = e.reason||'';
+    return kws.some(k=>k && reason.includes(k));
+  });
+}
+function editDisciplineKeywords(){
+  const current = (disciplineKeywords.length ? disciplineKeywords : DISCIPLINE_KEYWORDS_DEFAULT).join('、');
+  const input = prompt('輸入「課堂秩序」自動抓違規要比對的關鍵字，用「、」分開。\n只要學生今天的扣星原因裡包含任何一個關鍵字，打勾名單就會自動標記他、預設不給勾選。', current);
+  if(input===null) return;
+  disciplineKeywords = input.split(/[、,，]/).map(s=>s.trim()).filter(Boolean);
+  if(!disciplineKeywords.length) disciplineKeywords = [...DISCIPLINE_KEYWORDS_DEFAULT];
+  save();
+  renderTeamDailyCheckModal();
+  toast('✅ 已更新違規關鍵字');
+}
 function toggleTeamDailyCheck(teamIdx, studentId, cat){
   ensureTeamDailyChecksFresh();
+  const wasChecked = !!(teamDailyChecks.checks[studentId] && teamDailyChecks.checks[studentId][cat]);
+  // 正要勾選（不是取消勾選）、而且這個項目是「課堂秩序」這一類的時候，
+  // 先檢查這個學生今天有沒有符合違規關鍵字的扣星紀錄，有的話跳出來跟老師確認一下，
+  // 避免老師忘記某個學生今天其實秩序沒達標、還是順手幫他勾了。
+  if(!wasChecked && isDisciplineCategory(cat)){
+    const s = students.find(x=>x.id===studentId);
+    const issues = s ? studentDisciplineIssuesToday(s) : [];
+    if(issues.length){
+      const reasonsText = issues.map(e=>e.reason).join('、');
+      if(!confirm(`⚠️ ${s?s.name:'這位學生'}今天有扣星紀錄：「${reasonsText}」，看起來今天秩序沒達標。\n\n確定還是要幫他勾選「${cat}」嗎？`)){
+        renderTeamDailyCheckModal(); // 把剛剛被瀏覽器自動打勾的畫面復原回未勾選
+        return;
+      }
+    }
+  }
   teamDailyChecks.checks[studentId] = teamDailyChecks.checks[studentId] || {};
   teamDailyChecks.checks[studentId][cat] = !teamDailyChecks.checks[studentId][cat];
   const t = teamScores[teamIdx];
@@ -6112,12 +6159,25 @@ function renderTeamDailyCheckModal(){
     wrap.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">這組目前在座位表上沒有排到學生，請先確認座位表的排數跟小組數量一致</div>';
     return;
   }
+  const disciplineMode = isDisciplineCategory(cat);
   wrap.innerHTML = '';
+  if(disciplineMode){
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:.76rem;color:#94a3b8;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+    hint.innerHTML = `<span>⚠️ 底下標橘色的是今天有扣星紀錄、看起來秩序沒達標的學生</span><span style="cursor:pointer;text-decoration:underline;flex-shrink:0;" onclick="editDisciplineKeywords()">⚙️ 設定關鍵字</span>`;
+    wrap.appendChild(hint);
+  }
   roster.forEach(s=>{
     const checked = !!(teamDailyChecks.checks[s.id] && teamDailyChecks.checks[s.id][cat]);
+    const issues = disciplineMode ? studentDisciplineIssuesToday(s) : [];
+    const flagged = issues.length > 0;
     const row = document.createElement('label');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:#f8fafc;cursor:pointer;';
-    row.innerHTML = `<input type="checkbox" style="width:20px;height:20px;flex-shrink:0;"${checked?' checked':''}><span style="font-weight:700;">${s.seatNo?s.seatNo+'號 ':''}${s.name}</span>`;
+    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;background:${flagged?'#fff7ed':'#f8fafc'};${flagged?'border:1px solid #fed7aa;':''}`;
+    row.innerHTML = `<input type="checkbox" style="width:20px;height:20px;flex-shrink:0;"${checked?' checked':''}>
+      <span style="flex:1;">
+        <span style="font-weight:700;">${s.seatNo?s.seatNo+'號 ':''}${s.name}</span>
+        ${flagged?`<div style="font-size:.74rem;color:#c2410c;font-weight:700;margin-top:2px;">⚠️ ${issues.map(e=>e.reason).join('、')}</div>`:''}
+      </span>`;
     row.querySelector('input').onchange = ()=>{ toggleTeamDailyCheck(teamIdx, s.id, cat); };
     wrap.appendChild(row);
   });
