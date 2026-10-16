@@ -1219,6 +1219,23 @@
         </div>
       </div>
       <div style="font-size:.75rem;color:#94a3b8;margin-bottom:10px;">雙擊項目名稱可改名；點每一格的分數可以打開「今天完成名單」勾選，分數＝今天勾選的人數（每天自動歸零重新勾）；某個項目當天全組都勾選完成，會立刻幫全組每位學生的個人星星 ⭐ 各加 1 顆；組員自動抓座位表上該排的學生，請確保座位表排數跟小組數量一致</div>
+
+      <div class="card" style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:16px 18px;margin-bottom:14px;color:#fff;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div style="font-weight:800;font-size:.95rem;">🧹 整理時間倒數鈴</div>
+          <div id="cleanupTimerDisplay" style="font-size:1.8rem;font-weight:900;font-family:'Courier New',monospace;letter-spacing:1px;">00:00</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <label style="font-size:.8rem;">自訂分鐘數</label>
+          <input type="number" id="cleanupTimerMinutes" min="0.5" step="0.5" placeholder="例如 3"
+            style="width:70px;text-align:center;border-radius:8px;border:none;padding:5px;color:#333;font-weight:700;"
+            onchange="resetCleanupTimer()">
+          <button class="btn" style="background:#fff;color:#7c3aed;padding:6px 16px;font-size:.8rem;" onclick="startCleanupTimer()">▶ 開始</button>
+          <button class="btn" style="background:#fff;color:#7c3aed;padding:6px 16px;font-size:.8rem;" onclick="pauseCleanupTimer()">⏸ 暫停</button>
+          <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;padding:6px 16px;font-size:.8rem;" onclick="resetCleanupTimer()">↺ 重設</button>
+        </div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:8px;">每天整理時間到了，自己輸入要倒數幾分鐘再按「開始」，時間到會自動響鈴提醒全班（跟任務倒數計時共用鈴聲開關，在任務追蹤表頁面可以關掉）</div>
+      </div>
       <div style="overflow-x:auto;">
         <table id="teamScoreTable" style="width:100%;border-collapse:collapse;font-size:.85rem;"></table>
       </div>
@@ -5920,6 +5937,48 @@ function resetCorrectionTimer(){
   const mins = Math.max(1, parseInt(document.getElementById('correctionTimerMinutes').value)||10);
   correctionTimerSec = mins*60;
   updateCorrectionTimerDisplay();
+}
+
+// ─── 小組競賽：整理時間倒數鈴（老師每次自己輸入要倒數幾分鐘，不用固定分鐘數；響鈴直接共用「任務倒數計時」那套 Web Audio 鈴聲／靜音開關） ───
+let cleanupTimerSec = 0, cleanupTimerInterval = null, cleanupTimerRunning = false;
+function updateCleanupTimerDisplay(){
+  const el = document.getElementById('cleanupTimerDisplay');
+  if(!el) return;
+  const m = Math.floor(cleanupTimerSec/60), s = cleanupTimerSec % 60;
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function startCleanupTimer(){
+  if(cleanupTimerRunning) return;
+  ensureCorrectionTimerAudioCtx(); // 老師按「開始」這個互動就先喚醒 AudioContext，時間到才能順利自動響鈴
+  if(cleanupTimerSec<=0){
+    const mins = parseFloat(document.getElementById('cleanupTimerMinutes').value);
+    if(!mins || mins<=0){ toast('⚠️ 請先輸入要倒數的分鐘數'); return; }
+    cleanupTimerSec = Math.round(mins*60);
+  }
+  cleanupTimerRunning = true;
+  updateCleanupTimerDisplay();
+  cleanupTimerInterval = setInterval(()=>{
+    if(cleanupTimerSec<=0){
+      clearInterval(cleanupTimerInterval);
+      cleanupTimerRunning = false;
+      toast('⏰ 整理時間到！');
+      playCorrectionTimerAlarm();
+      return;
+    }
+    cleanupTimerSec--;
+    updateCleanupTimerDisplay();
+  }, 1000);
+}
+function pauseCleanupTimer(){
+  clearInterval(cleanupTimerInterval);
+  cleanupTimerRunning = false;
+}
+function resetCleanupTimer(){
+  clearInterval(cleanupTimerInterval);
+  cleanupTimerRunning = false;
+  const mins = parseFloat(document.getElementById('cleanupTimerMinutes').value);
+  cleanupTimerSec = (mins && mins>0) ? Math.round(mins*60) : 0;
+  updateCleanupTimerDisplay();
 }
 
 // ─── 任務追蹤表 ───
