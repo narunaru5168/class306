@@ -1578,11 +1578,13 @@
       <button class="btn" style="background:#fff;color:#7c3aed;padding:8px 20px;" onclick="pauseCorrectionTimer()">⏸ 暫停</button>
       <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;padding:8px 20px;" onclick="resetCorrectionTimer()">↺ 重設</button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85rem;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;font-size:.85rem;flex-wrap:wrap;">
       <label>設定時間（分鐘）</label>
       <input type="number" id="correctionTimerMinutes" min="1" max="60" value="10"
         style="width:64px;text-align:center;border-radius:8px;border:none;padding:5px;color:#333;font-weight:700;"
         onchange="resetCorrectionTimer()">
+      <button class="btn" id="correctionTimerMuteBtn" style="background:rgba(255,255,255,.25);color:#fff;padding:5px 12px;font-size:.78rem;" onclick="toggleCorrectionTimerMute()">🔔 響鈴開啟中</button>
+      <button class="btn" style="background:rgba(255,255,255,.25);color:#fff;padding:5px 12px;font-size:.78rem;" onclick="ensureCorrectionTimerAudioCtx();playCorrectionTimerAlarm();">🔈 試聽鈴聲</button>
     </div>
   </div>
 
@@ -5843,6 +5845,45 @@ function advanceDutyRole(id){
 
 // ─── 任務倒數計時 ───
 let correctionTimerSec = 600, correctionTimerInterval = null, correctionTimerRunning = false;
+let correctionTimerMuted = false; // 老師可以用鈴鐺按鈕暫時關掉響鈴，不影響計時本身
+// 響鈴用 Web Audio API 直接合成音效，不需要額外的音檔檔案（GitHub Pages 單純放靜態網頁也能用）。
+// 瀏覽器規定「播放聲音前必須先有一次使用者互動」，所以在老師按下「▶ 開始」的當下就先建立/喚醒 AudioContext，
+// 之後倒數計時真的歸零時才能順利自動響鈴，不會被瀏覽器擋掉。
+let correctionTimerAudioCtx = null;
+function ensureCorrectionTimerAudioCtx(){
+  try {
+    if(!correctionTimerAudioCtx) correctionTimerAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    else if(correctionTimerAudioCtx.state==='suspended') correctionTimerAudioCtx.resume().catch(()=>{});
+  } catch(e){ correctionTimerAudioCtx = null; }
+  return correctionTimerAudioCtx;
+}
+function playCorrectionTimerAlarm(){
+  if(correctionTimerMuted) return;
+  const ctx = ensureCorrectionTimerAudioCtx();
+  if(!ctx) return;
+  const notes = [880, 988, 1175]; // 三個音階，模擬「叮鈴鈴」的鬧鈴感
+  const now = ctx.currentTime;
+  [0, 0.5].forEach(round=>{ // 響兩輪，確保老師在教室裡聽得到
+    notes.forEach((freq,i)=>{
+      const t0 = now + round + i*0.15;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.35, t0+0.02);
+      gain.gain.linearRampToValueAtTime(0, t0+0.14);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0+0.15);
+    });
+  });
+}
+function toggleCorrectionTimerMute(){
+  correctionTimerMuted = !correctionTimerMuted;
+  const btn = document.getElementById('correctionTimerMuteBtn');
+  if(btn) btn.textContent = correctionTimerMuted ? '🔕 響鈴已關閉' : '🔔 響鈴開啟中';
+  if(!correctionTimerMuted) playCorrectionTimerAlarm(); // 重新打開的時候試播一下，讓老師確認聲音有出來
+}
 function updateCorrectionTimerDisplay(){
   const m = Math.floor(correctionTimerSec/60), s = correctionTimerSec % 60;
   const el = document.getElementById('correctionTimerDisplay');
@@ -5850,6 +5891,7 @@ function updateCorrectionTimerDisplay(){
 }
 function startCorrectionTimer(){
   if(correctionTimerRunning) return;
+  ensureCorrectionTimerAudioCtx(); // 在使用者點擊「開始」這個互動的當下先喚醒 AudioContext
   if(correctionTimerSec<=0){
     const mins = Math.max(1, parseInt(document.getElementById('correctionTimerMinutes').value)||10);
     correctionTimerSec = mins*60;
@@ -5861,6 +5903,7 @@ function startCorrectionTimer(){
       clearInterval(correctionTimerInterval);
       correctionTimerRunning = false;
       toast('⏰ 時間到！');
+      playCorrectionTimerAlarm();
       return;
     }
     correctionTimerSec--;
@@ -7948,6 +7991,28 @@ function drawWheel(angle=0){
   ctx.fillText('🌟',cx,cy);
 }
 let lastSpinRecord = null;
+// ─── 抽獎結果的「1分鐘限時」提醒：避免抽到活動類獎勵的同學慢慢來，讓後面排隊的人等太久 ───
+let wheelResultTimerInterval = null;
+const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
+function startWheelResultTimer(){
+  clearInterval(wheelResultTimerInterval);
+  let sec = 60;
+  const el = document.getElementById('wheelResultTimer');
+  if(!el) return;
+  const render = ()=>{ el.textContent = `⏱ 限時 ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}，時間到換下一位同學抽選囉`; };
+  render();
+  wheelResultTimerInterval = setInterval(()=>{
+    sec--;
+    if(sec<=0){
+      clearInterval(wheelResultTimerInterval);
+      const liveEl = document.getElementById('wheelResultTimer');
+      if(liveEl) liveEl.textContent = '⏰ 時間到，換下一位同學抽選囉！';
+      playCorrectionTimerAlarm(); // 跟「任務倒數計時」共用同一組響鈴音效
+      return;
+    }
+    render();
+  }, 1000);
+}
 function spinWheel(){
   if(spinning) return;
   const sid=document.getElementById('wheelStudent').value;
@@ -7965,6 +8030,8 @@ function spinWheel(){
   document.getElementById('spinBtn').disabled=true;
   document.getElementById('wheelResult').style.display='none';
   document.getElementById('undoSpinBtn').style.display='none';
+  clearInterval(wheelResultTimerInterval); // 上一位同學的限時提醒還沒跑完就先清掉，避免跟這次搞混
+  ensureCorrectionTimerAudioCtx(); // 學生點「開始轉」本身就是使用者互動，先借這個機會喚醒音效，等限時倒數結束才能順利響鈴
   const extra=Math.PI*2*(8+Math.random()*8);
   const target=wheelAngle+extra;
   const dur=3000; const start=performance.now();
@@ -7989,7 +8056,12 @@ function spinWheel(){
     document.getElementById('spinBtn').disabled=false;
     const res=document.getElementById('wheelResult');
     res.style.display='block';
-    res.textContent='🎉 恭喜！'+result.label;
+    // 大部分獎勵都是「要去做一件事」的小活動（上台分享、換位子、找人說謝謝…），
+    // 怕一個人慢慢來會讓後面排隊抽選的同學等很久，所以預設都加上 1 分鐘限時、時間到會響鈴提醒。
+    // 只有「立即生效」的獎勵（加星星、再轉一次）跟「語詞遊戲挑戰」（它自己已經有獨立的 90 秒挑戰流程）不需要。
+    const needsAutoTimer = !WHEEL_SKIP_AUTO_TIMER.some(k=>result.label.includes(k));
+    res.innerHTML = '🎉 恭喜！'+result.label + (needsAutoTimer ? '<div id="wheelResultTimer" style="margin-top:8px;font-weight:800;color:#7c3aed;font-size:1.05rem;"></div>' : '');
+    if(needsAutoTimer) startWheelResultTimer();
 
     const starDeltas = {}; // { studentId: 累積變化量 }，撤銷時逐一反向套用
     function addStarDelta(id, amt){ starDeltas[id] = (starDeltas[id]||0) + amt; }
@@ -8172,6 +8244,7 @@ function undoLastWheelSpin(){
   });
 
   save(); renderStudents(); updateStats(); populateWheelSelect();
+  clearInterval(wheelResultTimerInterval);
   document.getElementById('wheelResult').style.display = 'none';
   document.getElementById('undoSpinBtn').style.display = 'none';
   toast(`↩️ 已撤銷「${lastSpinRecord.studentName}」的這次抽選`);
