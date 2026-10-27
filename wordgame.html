@@ -932,22 +932,29 @@ function showChallengeBanner(){
   startChallengeTimers();
 }
 
+// 跟主頁面的倒數計時一樣，改用「結束時間點」（challengeEndAt）反推剩餘秒數，
+// 不要單純每次 tick 就 -1——平板／電腦切到別的視窗、螢幕暫時關掉等情況，setInterval 可能被瀏覽器延後執行，
+// 原本的寫法只要少跑幾次 tick，倒數畫面就會卡住不動；改成每次都用目前時間反推，就算 tick 被延遲，
+// 下一次執行時也能一次跳到正確的剩餘秒數，不會卡住。
+let challengeEndAt = 0;
+function tickChallengeTimer(){
+  if(challengeCompleted){ clearInterval(challengeTimer); return; }
+  challengeTimeLeft = Math.max(0, Math.round((challengeEndAt - Date.now())/1000));
+  updateChallengeBannerText();
+  if(challengeTimeLeft <= 0){
+    clearInterval(challengeTimer);
+    clearInterval(challengeProgressTimer);
+    if(!challengeCompleted) challengeTimeUp();
+  }
+}
 function startChallengeTimers(){
   challengeTimeLeft = CHALLENGE_TIME_LIMIT;
+  challengeEndAt = Date.now() + CHALLENGE_TIME_LIMIT*1000;
   challengeCompleted = false;
   updateChallengeBannerText();
   clearInterval(challengeTimer);
   clearInterval(challengeProgressTimer);
-  challengeTimer = setInterval(()=>{
-    if(challengeCompleted){ clearInterval(challengeTimer); return; }
-    challengeTimeLeft--;
-    updateChallengeBannerText();
-    if(challengeTimeLeft <= 0){
-      clearInterval(challengeTimer);
-      clearInterval(challengeProgressTimer);
-      if(!challengeCompleted) challengeTimeUp();
-    }
-  }, 1000);
+  challengeTimer = setInterval(tickChallengeTimer, 1000);
   // 額外用較快的頻率檢查分數，這樣一達標就能馬上顯示成功，不用等到下一次整秒
   challengeProgressTimer = setInterval(()=>{
     if(challengeCompleted){ clearInterval(challengeProgressTimer); return; }
@@ -959,6 +966,12 @@ function startChallengeTimers(){
     }
   }, 300);
 }
+// 分頁從背景切回前景時，立刻重新校正一次倒數畫面，不用等下一次整秒 tick
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && challengeMode && !challengeCompleted){
+    tickChallengeTimer();
+  }
+});
 
 function completeChallengeSuccess(finalScore){
   if(challengeCompleted) return;
@@ -1060,8 +1073,13 @@ const ctx = canvas.getContext('2d');
 
 let snake, dir, nextDir, tiles, roundQueue, roundIdx, score, timer, running, combo;
 
+// 這台裝置的 localStorage 是「整台裝置共用」的，不是每個學生各自獨立——
+// 如果 key 只用課次（沒有帶學生身分），同一台平板／電腦換下一個學生選名字時，
+// 就會讀到「上一位同學練習留下的本機分數」，然後因為雲端還沒有這位新同學的紀錄，
+// 就把那個其實不屬於他的分數當成「本機比較新」直接補寫上雲端——變成學生只是選了名字、根本還沒玩就有成績。
+// 把 gamePlayerId 一起放進 key 裡，讓每個學生在同一台裝置上也有各自獨立的本機紀錄，就不會互相污染。
 function highScoreKey(){
-  return 'wordgame_best_' + document.getElementById('lessonSelect').value;
+  return 'wordgame_best_' + (gamePlayerId || 'anon') + '_' + document.getElementById('lessonSelect').value;
 }
 function loadBest(){
   let best = 0;
@@ -1270,7 +1288,7 @@ function startGame(){
 let quizQueue, quizIdx, quizScore, quizCombo, quizRunning, quizCurrentRound, quizLocked;
 
 function quizHighKey(){
-  return 'wordgame_quizbest_' + document.getElementById('lessonSelect').value;
+  return 'wordgame_quizbest_' + (gamePlayerId || 'anon') + '_' + document.getElementById('lessonSelect').value;
 }
 function loadQuizBest(){
   let best = 0;
@@ -1361,7 +1379,7 @@ function stopQuiz(){
 let memoryCards, memoryFlipped, memoryMatchedCount, memoryTries, memoryBusy;
 
 function memoryHighKey(){
-  return 'wordgame_memorybest_' + document.getElementById('lessonSelect').value + '_' + document.getElementById('memoryPairCount').value;
+  return 'wordgame_memorybest_' + (gamePlayerId || 'anon') + '_' + document.getElementById('lessonSelect').value + '_' + document.getElementById('memoryPairCount').value;
 }
 function loadMemoryBest(){
   let best = null;
@@ -1487,7 +1505,7 @@ let runnerRounds, runnerRoundIdx, runnerTiles, runnerScore, runnerCombo, runnerR
 let runnerChar, runnerRAF, runnerLastTs;
 
 function runnerHighKey(){
-  return 'wordgame_runnerbest_' + document.getElementById('lessonSelect').value;
+  return 'wordgame_runnerbest_' + (gamePlayerId || 'anon') + '_' + document.getElementById('lessonSelect').value;
 }
 function loadRunnerBest(){
   let best = 0;

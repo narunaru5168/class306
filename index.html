@@ -5861,7 +5861,7 @@ function advanceDutyRole(id){
 }
 
 // ─── 任務倒數計時 ───
-let correctionTimerSec = 600, correctionTimerInterval = null, correctionTimerRunning = false;
+let correctionTimerSec = 600, correctionTimerInterval = null, correctionTimerRunning = false, correctionTimerEndAt = 0;
 let correctionTimerMuted = false; // 老師可以用鈴鐺按鈕暫時關掉響鈴，不影響計時本身
 // 響鈴用 Web Audio API 直接合成音效，不需要額外的音檔檔案（GitHub Pages 單純放靜態網頁也能用）。
 // 瀏覽器規定「播放聲音前必須先有一次使用者互動」，所以在老師按下「▶ 開始」的當下就先建立/喚醒 AudioContext，
@@ -5906,6 +5906,22 @@ function updateCorrectionTimerDisplay(){
   const el = document.getElementById('correctionTimerDisplay');
   if(el) el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
+// 用「結束時間點」（correctionTimerEndAt）取代原本每一秒單純 -1 的算法：
+// 如果分頁被瀏覽器丟到背景（切分頁、切視窗、平板螢幕暫時關掉），setInterval 可能被延後甚至長時間不執行，
+// 原本「每次 tick 就 -1」的寫法只要少跑幾次 tick，顯示就會卡住不動；
+// 改成每次 tick 都直接用目前時間跟結束時間點反推剩餘秒數，就算 tick 被延遲，回來時也能一次跳到正確數字，不會卡住。
+function tickCorrectionTimer(){
+  if(!correctionTimerRunning) return;
+  const remain = Math.max(0, Math.round((correctionTimerEndAt - Date.now())/1000));
+  correctionTimerSec = remain;
+  updateCorrectionTimerDisplay();
+  if(remain<=0){
+    clearInterval(correctionTimerInterval);
+    correctionTimerRunning = false;
+    toast('⏰ 時間到！');
+    playCorrectionTimerAlarm();
+  }
+}
 function startCorrectionTimer(){
   if(correctionTimerRunning) return;
   ensureCorrectionTimerAudioCtx(); // 在使用者點擊「開始」這個互動的當下先喚醒 AudioContext
@@ -5913,23 +5929,17 @@ function startCorrectionTimer(){
     const mins = Math.max(1, parseInt(document.getElementById('correctionTimerMinutes').value)||10);
     correctionTimerSec = mins*60;
   }
+  correctionTimerEndAt = Date.now() + correctionTimerSec*1000;
   correctionTimerRunning = true;
   updateCorrectionTimerDisplay();
-  correctionTimerInterval = setInterval(()=>{
-    if(correctionTimerSec<=0){
-      clearInterval(correctionTimerInterval);
-      correctionTimerRunning = false;
-      toast('⏰ 時間到！');
-      playCorrectionTimerAlarm();
-      return;
-    }
-    correctionTimerSec--;
-    updateCorrectionTimerDisplay();
-  }, 1000);
+  clearInterval(correctionTimerInterval);
+  correctionTimerInterval = setInterval(tickCorrectionTimer, 1000);
 }
 function pauseCorrectionTimer(){
   clearInterval(correctionTimerInterval);
+  if(correctionTimerRunning) correctionTimerSec = Math.max(0, Math.round((correctionTimerEndAt - Date.now())/1000));
   correctionTimerRunning = false;
+  updateCorrectionTimerDisplay();
 }
 function resetCorrectionTimer(){
   clearInterval(correctionTimerInterval);
@@ -5940,12 +5950,25 @@ function resetCorrectionTimer(){
 }
 
 // ─── 小組競賽：整理時間倒數鈴（老師每次自己輸入要倒數幾分鐘，不用固定分鐘數；響鈴直接共用「任務倒數計時」那套 Web Audio 鈴聲／靜音開關） ───
-let cleanupTimerSec = 0, cleanupTimerInterval = null, cleanupTimerRunning = false;
+let cleanupTimerSec = 0, cleanupTimerInterval = null, cleanupTimerRunning = false, cleanupTimerEndAt = 0;
 function updateCleanupTimerDisplay(){
   const el = document.getElementById('cleanupTimerDisplay');
   if(!el) return;
   const m = Math.floor(cleanupTimerSec/60), s = cleanupTimerSec % 60;
   el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+// 跟任務倒數計時一樣改用「結束時間點」反推剩餘秒數，避免分頁被丟到背景時卡住不動
+function tickCleanupTimer(){
+  if(!cleanupTimerRunning) return;
+  const remain = Math.max(0, Math.round((cleanupTimerEndAt - Date.now())/1000));
+  cleanupTimerSec = remain;
+  updateCleanupTimerDisplay();
+  if(remain<=0){
+    clearInterval(cleanupTimerInterval);
+    cleanupTimerRunning = false;
+    toast('⏰ 整理時間到！');
+    playCorrectionTimerAlarm();
+  }
 }
 function startCleanupTimer(){
   if(cleanupTimerRunning) return;
@@ -5955,23 +5978,17 @@ function startCleanupTimer(){
     if(!mins || mins<=0){ toast('⚠️ 請先輸入要倒數的分鐘數'); return; }
     cleanupTimerSec = Math.round(mins*60);
   }
+  cleanupTimerEndAt = Date.now() + cleanupTimerSec*1000;
   cleanupTimerRunning = true;
   updateCleanupTimerDisplay();
-  cleanupTimerInterval = setInterval(()=>{
-    if(cleanupTimerSec<=0){
-      clearInterval(cleanupTimerInterval);
-      cleanupTimerRunning = false;
-      toast('⏰ 整理時間到！');
-      playCorrectionTimerAlarm();
-      return;
-    }
-    cleanupTimerSec--;
-    updateCleanupTimerDisplay();
-  }, 1000);
+  clearInterval(cleanupTimerInterval);
+  cleanupTimerInterval = setInterval(tickCleanupTimer, 1000);
 }
 function pauseCleanupTimer(){
   clearInterval(cleanupTimerInterval);
+  if(cleanupTimerRunning) cleanupTimerSec = Math.max(0, Math.round((cleanupTimerEndAt - Date.now())/1000));
   cleanupTimerRunning = false;
+  updateCleanupTimerDisplay();
 }
 function resetCleanupTimer(){
   clearInterval(cleanupTimerInterval);
@@ -5980,6 +5997,16 @@ function resetCleanupTimer(){
   cleanupTimerSec = (mins && mins>0) ? Math.round(mins*60) : 0;
   updateCleanupTimerDisplay();
 }
+
+// 分頁從背景切回前景時，三個倒數計時都立刻重新校正一次顯示，不用等下一次整秒 tick，
+// 這樣就算剛剛分頁在背景被瀏覽器延遲執行，切回來的當下畫面也會馬上跳到正確的剩餘時間。
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible'){
+    tickCorrectionTimer();
+    tickCleanupTimer();
+    if(typeof tickWheelResultTimer === 'function') tickWheelResultTimer();
+  }
+});
 
 // ─── 任務追蹤表 ───
 function renderCorrectionTrackers(){
@@ -8051,26 +8078,32 @@ function drawWheel(angle=0){
 }
 let lastSpinRecord = null;
 // ─── 抽獎結果的「1分鐘限時」提醒：避免抽到活動類獎勵的同學慢慢來，讓後面排隊的人等太久 ───
-let wheelResultTimerInterval = null;
+// 跟任務倒數計時／整理時間倒數鈴一樣，改用「結束時間點」反推剩餘秒數（而不是每秒單純 -1），
+// 避免分頁被瀏覽器丟到背景時，倒數畫面卡住不動、永遠停在某個數字。
+let wheelResultTimerInterval = null, wheelResultTimerRunning = false, wheelResultTimerEndAt = 0;
 const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
+function tickWheelResultTimer(){
+  if(!wheelResultTimerRunning) return;
+  const el = document.getElementById('wheelResultTimer');
+  if(!el){ clearInterval(wheelResultTimerInterval); wheelResultTimerRunning = false; return; } // 保險：提醒區塊不見了（例如換了下一次抽選）就不要再跑
+  const remain = Math.max(0, Math.round((wheelResultTimerEndAt - Date.now())/1000));
+  if(remain<=0){
+    clearInterval(wheelResultTimerInterval);
+    wheelResultTimerRunning = false;
+    el.textContent = '⏰ 時間到，換下一位同學抽選囉！';
+    playCorrectionTimerAlarm(); // 跟「任務倒數計時」共用同一組響鈴音效
+    return;
+  }
+  el.textContent = `⏱ 限時 ${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}，時間到換下一位同學抽選囉`;
+}
 function startWheelResultTimer(){
   clearInterval(wheelResultTimerInterval);
-  let sec = 60;
   const el = document.getElementById('wheelResultTimer');
   if(!el) return;
-  const render = ()=>{ el.textContent = `⏱ 限時 ${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}，時間到換下一位同學抽選囉`; };
-  render();
-  wheelResultTimerInterval = setInterval(()=>{
-    sec--;
-    if(sec<=0){
-      clearInterval(wheelResultTimerInterval);
-      const liveEl = document.getElementById('wheelResultTimer');
-      if(liveEl) liveEl.textContent = '⏰ 時間到，換下一位同學抽選囉！';
-      playCorrectionTimerAlarm(); // 跟「任務倒數計時」共用同一組響鈴音效
-      return;
-    }
-    render();
-  }, 1000);
+  wheelResultTimerEndAt = Date.now() + 60*1000;
+  wheelResultTimerRunning = true;
+  tickWheelResultTimer();
+  wheelResultTimerInterval = setInterval(tickWheelResultTimer, 1000);
 }
 function spinWheel(){
   if(spinning) return;
@@ -8089,7 +8122,7 @@ function spinWheel(){
   document.getElementById('spinBtn').disabled=true;
   document.getElementById('wheelResult').style.display='none';
   document.getElementById('undoSpinBtn').style.display='none';
-  clearInterval(wheelResultTimerInterval); // 上一位同學的限時提醒還沒跑完就先清掉，避免跟這次搞混
+  clearInterval(wheelResultTimerInterval); wheelResultTimerRunning = false; // 上一位同學的限時提醒還沒跑完就先清掉，避免跟這次搞混
   ensureCorrectionTimerAudioCtx(); // 學生點「開始轉」本身就是使用者互動，先借這個機會喚醒音效，等限時倒數結束才能順利響鈴
   const extra=Math.PI*2*(8+Math.random()*8);
   const target=wheelAngle+extra;
@@ -8303,7 +8336,7 @@ function undoLastWheelSpin(){
   });
 
   save(); renderStudents(); updateStats(); populateWheelSelect();
-  clearInterval(wheelResultTimerInterval);
+  clearInterval(wheelResultTimerInterval); wheelResultTimerRunning = false;
   document.getElementById('wheelResult').style.display = 'none';
   document.getElementById('undoSpinBtn').style.display = 'none';
   toast(`↩️ 已撤銷「${lastSpinRecord.studentName}」的這次抽選`);
