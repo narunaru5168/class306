@@ -4390,6 +4390,7 @@ let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助�
 let mutualAidAssignTarget = null; // 目前正在加人到哪個互助小組
 let groupMonthlySnapshot = {}; // { [groupId]: { period:'YYYY-MM', avg: number } } 每組上次「月結算」時的平均分數，用來算「這個月進步了多少」
 let classOfficers = {}; // { positionId: [studentId, ...] } 班級幹部指派名單
+let officerMonthlyAward = { lastAwardedMonth: null }; // 記錄「幹部／組長月底星星獎勵」最後一次自動發放是哪個月（YYYY-MM），避免同一個月重複發放
 let officerAssignTarget = null; // 目前正在指派哪個幹部職位
 let pendingChallenges = {}; // { pushId: {studentId, studentName, createdAt} } 轉盤抽到「語詞遊戲挑戰」但還沒去玩的待完成紀錄，存在獨立路徑（跟 pendingStarAwards 一樣用 push/remove），伙伴名冊卡片上會顯示按鈕，隨時可以點開繼續玩
 const OFFICER_POSITIONS_DEFAULT = [
@@ -4486,6 +4487,7 @@ async function doSaveAll() {
   await saveField('class306/fortuneSlips', fortuneSlips, 'cls_fortuneSlips');
   await saveField('class306/teamDailyChecks', teamDailyChecks, 'cls_teamDailyChecks');
   await saveField('class306/disciplineKeywords', disciplineKeywords, 'cls_disciplineKeywords');
+  await saveField('class306/officerMonthlyAward', officerMonthlyAward, 'cls_officerMonthlyAward');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -4506,7 +4508,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal, omaVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4533,6 +4535,7 @@ async function loadData() {
     fetchField('class306/fortuneSlips', null),
     fetchField('class306/teamDailyChecks', null),
     fetchField('class306/disciplineKeywords', null),
+    fetchField('class306/officerMonthlyAward', null),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4565,6 +4568,8 @@ async function loadData() {
   if(!teamDailyChecks.starsAwarded || typeof teamDailyChecks.starsAwarded !== 'object') teamDailyChecks.starsAwarded = {};
   disciplineKeywords = dkVal !== null ? dkVal : JSON.parse(localStorage.getItem('cls_disciplineKeywords')||'null');
   if(!Array.isArray(disciplineKeywords)) disciplineKeywords = [...DISCIPLINE_KEYWORDS_DEFAULT];
+  officerMonthlyAward = omaVal !== null ? omaVal : JSON.parse(localStorage.getItem('cls_officerMonthlyAward')||'null');
+  if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
 
   // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
   // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
@@ -6326,15 +6331,26 @@ function renderTeamScoreTable(){
   html += '<th style="padding:8px;">總分</th></tr></thead><tbody>';
   teamScores.forEach((t,ti)=>{
     t.scores = t.scores || {};
+    // 組長下拉選單的選項，直接抓這一組目前在座位表上的組員（跟座位表排別連動，換座位之後選項也會自動跟著變）
+    const roster = getTeamRoster(ti);
+    const leaderOptions = roster.map(s=>
+      `<option value="${s.id}"${t.leaderId==s.id?' selected':''}>${s.seatNo?s.seatNo+'號 ':''}${s.name}</option>`
+    ).join('');
+    const currentLeader = t.leaderId ? roster.find(s=>s.id==t.leaderId) : null;
     html += `<tr style="border-top:1px solid #e2e8f0;"><td style="padding:8px;font-weight:800;white-space:nowrap;">
       <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color};margin-right:6px;"></span>
       <span style="cursor:pointer;" onclick="renameTeam(${t.id})" title="點擊改名">${t.name}</span>
       <span style="cursor:pointer;opacity:.4;font-size:.85em;margin-left:4px;" onclick="removeTeam(${t.id})">✕</span>
+      <div style="margin-top:5px;">
+        <select onchange="setTeamLeader(${t.id},this.value)" style="font-size:.74rem;font-weight:700;padding:3px 8px;border-radius:8px;border:1.5px solid #e2e8f0;max-width:150px;color:${currentLeader?'#92400e':'#94a3b8'};background:${currentLeader?'#fffbeb':'#fff'};" title="這一組的組長，選項是目前座位表上這一排的組員">
+          <option value="">👑 選擇組長</option>
+          ${leaderOptions}
+        </select>
+      </div>
     </td>`;
     teamCategories.forEach(c=>{
       const val = teamCategoryDisplayValue(ti,c);
       const todayCount = teamCategoryTodayCount(ti,c);
-      const roster = getTeamRoster(ti);
       const allDoneToday = roster.length>0 && todayCount===roster.length;
       html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
         <button onclick="openTeamDailyCheckModal(${ti},'${c.replace(/'/g,"\\'")}')" style="border:2px solid ${allDoneToday?'#16a34a':'#cbd5e1'};background:${allDoneToday?'#f0fff4':'#fff'};border-radius:10px;padding:4px 10px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
@@ -6367,6 +6383,21 @@ function renameTeam(id){
   if(name===null || !name.trim()) return;
   t.name = name.trim();
   save(); renderTeamScoreTable();
+}
+// 設定／清除這一組的組長（下拉選單的選項跟座位表排別連動，所以傳進來的 studentId 一定是目前排在這一組的學生）
+function setTeamLeader(id, studentId){
+  const t = teamScores.find(x=>x.id===id);
+  if(!t) return;
+  // 下拉選單的 value 一定是字串，但學生的 id 大多是數字，這裡統一存回學生名冊裡「真正」的 id 型別，
+  // 避免之後要用 === 比對組長身分時，因為型別不一樣而比對失敗
+  const s = studentId ? students.find(x=>x.id==studentId) : null;
+  t.leaderId = s ? s.id : null;
+  save(); renderTeamScoreTable();
+  if(s){
+    toast(`👑 已設定「${t.name}」的組長：${s.name}`);
+  } else {
+    toast(`已清除「${t.name}」的組長`);
+  }
 }
 function addTeamCategory(){
   const name = prompt('新增評分項目名稱？（例如：秩序、合作）');
@@ -7907,6 +7938,60 @@ function removeOfficer(posId, sid){
   save(); renderOfficers();
 }
 
+// ─── 幹部／組長的月底星星獎勵（自動）───
+// 這個網站是純前端的靜態網頁，沒有伺服器可以在「每個月最後一天的半夜」自動執行任何東西，
+// 所以做法是：只要老師在新的一個月第一次打開這個網站，系統就會發現「上次發放的月份」跟「現在的月份」不一樣，
+// 判斷上個月已經結束了，立刻自動補發上個月的獎勵（用當下最新的幹部／組長名單）——不用老師自己點按鈕，
+// 也不用剛好在月底那天打開網站，不管哪一天打開都會補上。
+// 幹部：不分職位，只要在「班級幹部登記表」上掛名任何一個職位，整個月結束都能拿到 10 顆星（一人一次，不會因為兼多個職位而重複累加）。
+// 組長：每一組（跟座位表排別連動）指定的組長，月底能拿到 5 顆星；一位學生只會是一組的組長，所以不會重複。
+function monthKeyOf(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function runOfficerLeaderMonthlyAward(){
+  const officerIds = new Set();
+  Object.values(classOfficers||{}).forEach(arr=>{ (arr||[]).forEach(id=>{ if(id) officerIds.add(id); }); });
+  const leaderIds = new Set();
+  (teamScores||[]).forEach(t=>{ if(t && t.leaderId) leaderIds.add(t.leaderId); });
+  if(officerIds.size===0 && leaderIds.size===0) return false;
+
+  const todayStr = new Date().toLocaleDateString('zh-TW');
+  function awardOne(id, amt, reason){
+    const s = students.find(x=>x.id==id);
+    if(!s) return;
+    // 改走跟手動加星一樣的 grantStars()，這樣月底獎勵也會正確累積「潛能抽選」的進度，不會被跳過
+    grantStars(s, amt);
+    s.log = s.log || [];
+    s.log.push({ id: generateId(), reason, amt, date: todayStr });
+    if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
+    if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
+    if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
+    if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
+  }
+  officerIds.forEach(id=> awardOne(id, 10, '🎗️ 月底幹部獎勵'));
+  leaderIds.forEach(id=> awardOne(id, 5, '👑 月底組長獎勵'));
+  return true;
+}
+function ensureMonthlyOfficerLeaderAward(){
+  if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
+  const nowKey = monthKeyOf(new Date());
+  if(officerMonthlyAward.lastAwardedMonth === nowKey) return; // 這個月已經檢查過／發放過了，不要重複發
+  const isFirstEverRun = !officerMonthlyAward.lastAwardedMonth;
+  officerMonthlyAward.lastAwardedMonth = nowKey;
+  if(isFirstEverRun){
+    // 第一次用這個功能，還不知道「上個月」是什麼情況，不要憑空回溯發放，只先記錄這個月當起點，
+    // 下個月開始才會真的自動發放
+    save();
+    return;
+  }
+  const awarded = runOfficerLeaderMonthlyAward();
+  save();
+  if(awarded){
+    renderStudents(); updateStats();
+    setTimeout(()=>{ toast('🎉 新的一個月開始了，已經自動幫幹部／組長發放上個月的星星獎勵囉！'); }, 800);
+  }
+}
+
 // ─── GRADES ───
 function setGradeType(type,el){
   currentGradeType=type;
@@ -9413,6 +9498,12 @@ async function initApp() {
       { id: generateId(), name: '📋 收發簿本小幫手', dutyIndex: 0 },
       { id: generateId(), name: '🪑 桌椅排列檢查員', dutyIndex: 0 },
     ];
+  }
+
+  // 幹部／組長的月底星星獎勵自動檢查——只有在這次真的有讀到正常資料時才做，
+  // 避免雲端連線不穩、畫面用空白/本機備份頂替的時候，誤判「上個月結束」而發錯獎勵
+  if (!rosterWasAutoSeeded && !cloudSyncHadIssue) {
+    try { ensureMonthlyOfficerLeaderAward(); } catch(e) { console.warn('幹部／組長月底獎勵檢查失敗', e); }
   }
 
   // 恢復已儲存的 Apps Script 網址和成績表格
