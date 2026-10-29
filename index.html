@@ -938,6 +938,7 @@
 <header class="topbar">
   <div class="logo"><span id="siteTitleDisplay">🐾 成長獵人訓練所</span>
     <button onclick="openNavSettingsModal()" title="設定選單名稱" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">⚙️</button>
+    <button onclick="openModal('starRulesModal')" title="星星規則說明" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📖</button>
     <button onclick="openRestoreModal()" title="資料還原（緊急救援用）" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🛟</button>
   </div>
   <div class="nav-row" id="navRow1"></div>
@@ -947,6 +948,42 @@
     <button onclick="location.href='wordgame.html'" style="background:rgba(255,255,255,.32);font-weight:800;">🐍 語詞貪食蛇</button>
   </div>
 </header>
+
+<!-- ─────────────── 星星規則說明 MODAL（老師跟學生都看得懂）─────────────── -->
+<div class="modal-overlay" id="starRulesModal">
+  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto;">
+    <h3>📖 星星規則說明</h3>
+    <div style="font-size:.86rem;line-height:1.9;color:#334155;">
+
+      <div style="background:#eff6ff;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-weight:800;color:#0369a1;margin-bottom:4px;">⭐ 怎麼得到星星？</div>
+        表現好、完成任務、閱讀打卡、小組一起達成目標、抽選轉盤……有很多方式都可以得到星星。星星越多，等級就會往上升！
+      </div>
+
+      <div style="background:#fff7ed;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-weight:800;color:#9a3412;margin-bottom:4px;">🔧 如果因為行為問題被扣星，會怎麼樣？</div>
+        老師會指派一個「修復任務」給你（例如：跟同學道歉）。<br><br>
+        <strong>在修復任務完成之前，不管從哪裡得到的星星，都不會再累加</strong>——不是只有老師手動給的星星，連抽獎、遊戲、小組獎勵……全部都一樣會先暫停。<br><br>
+        只要把修復任務完成（在夥伴名冊卡片上按「🔧 有修復任務待完成」，標記完成），<strong>被扣掉的星星會馬上還回來，而且星星也會立刻解鎖，可以繼續累加</strong>。如果同時有好幾個修復任務，要全部都完成才會解鎖喔。
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-weight:800;color:#15803d;margin-bottom:4px;">🔥 連續保持天數</div>
+        這個<strong>不會被修復任務鎖住</strong>，就算星星暫時不能加，這個數字還是會一直往上跳！<br><br>
+        只要沒有新的行為扣分，天數就會一直累積，到了 3 天、7 天、14 天、30 天的時候會有慶祝動畫。如果一直都沒有被扣過行為分數，會顯示「保持得很好」，不會因此而變成 0 天。
+      </div>
+
+      <div style="background:#f5f3ff;border-radius:12px;padding:12px 14px;margin-bottom:4px;">
+        <div style="font-weight:800;color:#6d28d9;margin-bottom:4px;">💪 努力值</div>
+        這是另外一條<strong>完全獨立、永遠不會被鎖住</strong>的路線。不管星星有沒有被修復任務卡住，老師隨時都可以肯定你的努力（認真嘗試、主動改善、沒有放棄……），點一下就能加。累積到 5、10、20、40 點，也會有徽章跟慶祝動畫。
+      </div>
+
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="closeModal('starRulesModal')">我知道了！</button>
+    </div>
+  </div>
+</div>
 
 <!-- ─────────────── DATA RESTORE MODAL（緊急救援用）─────────────── -->
 <div class="modal-overlay" id="restoreModal">
