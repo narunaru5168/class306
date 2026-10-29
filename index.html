@@ -2024,6 +2024,8 @@
     對照學校要求的職稱與職掌，指派學生擔任。每個職位下方的「💡 建議候選人」是根據學生目前已經被標記過的<strong>角色、特質徽章</strong>自動抓出的參考名單，僅供參考，最終還是要老師自己判斷最合適的人選。
   </div>
 
+  <div id="officerMonthlyAwardStatusBox" class="card" style="padding:12px 16px;margin-bottom:16px;background:#fefce8;border-left:6px solid #eab308;"></div>
+
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
     <button class="btn" style="background:#fff;border:2px dashed #cbd5e1;color:#94a3b8;font-size:.82rem;padding:8px 16px;" onclick="addOfficerPosition()">＋ 新增職位</button>
     <button class="btn" style="background:#fff;border:1px solid #cbd5e1;color:#555;font-size:.82rem;padding:8px 16px;" onclick="resetOfficerPositions()">↺ 還原預設職位</button>
@@ -8185,6 +8187,51 @@ function renderOfficers(){
         </div>` : ''}
     </div>`;
   }).join('');
+  renderOfficerMonthlyAwardStatusBox();
+}
+// 在「班級幹部登記表」頁面上顯示月底星星獎勵目前的發放狀態，並提供手動補發的按鈕，
+// 這樣老師自己就能檢查「為什麼沒有自動發」，不用猜雲端資料目前存的是什麼。
+function renderOfficerMonthlyAwardStatusBox(){
+  const box = document.getElementById('officerMonthlyAwardStatusBox');
+  if(!box) return;
+  if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
+  const now = new Date();
+  const nowKey = monthKeyOf(now);
+  const daysLeft = daysLeftInMonth(now);
+  const already = officerMonthlyAward.lastAwardedMonth === nowKey;
+  let statusLine;
+  if(!officerMonthlyAward.lastAwardedMonth){
+    statusLine = '📌 目前還沒有任何發放記錄（這台裝置從沒自動發放過）。';
+  } else if(already){
+    statusLine = `✅ 這個月（${nowKey}）已經發放過了（記錄：${officerMonthlyAward.lastAwardedMonth}），所以不會再自動發一次。`;
+  } else {
+    statusLine = `⏳ 上次發放記錄是「${officerMonthlyAward.lastAwardedMonth}」，現在是「${nowKey}」，距離這個月底還有 ${daysLeft} 天（剩2天內會自動發放這個月的獎勵）。`;
+  }
+  box.innerHTML = `
+    <div style="font-size:.8rem;color:#854d0e;line-height:1.7;">🎗️👑 <strong>月底星星獎勵狀態</strong><br>${statusLine}</div>
+    <button class="btn" style="background:#fff;border:1px solid #eab308;color:#854d0e;font-size:.78rem;padding:6px 14px;margin-top:8px;" onclick="manualForceMonthlyAward()">🎁 手動立即發放這個月的獎勵</button>
+  `;
+}
+// 手動補發：不管自動條件有沒有符合，老師自己確認後就立刻發放一次（例如已經被自動機制判定「這個月發過了」，
+// 但老師確定這個月其實還沒真的拿到星星時，可以用這個按鈕強制補發）。
+function manualForceMonthlyAward(){
+  if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
+  const nowKey = monthKeyOf(new Date());
+  const already = officerMonthlyAward.lastAwardedMonth === nowKey;
+  const msg = already
+    ? '這個月已經有發放記錄了，再按一次會讓幹部再拿10顆星、組長再拿5顆星（等於重複發放一次）。確定要再發一次嗎？'
+    : '確定要現在手動發放這個月的幹部／組長星星獎勵嗎？（幹部＋10顆星，組長＋5顆星，每人只會算一次）';
+  if(!confirm(msg)) return;
+  const awarded = runOfficerLeaderMonthlyAward();
+  officerMonthlyAward.lastAwardedMonth = nowKey;
+  save();
+  renderOfficerMonthlyAwardStatusBox();
+  if(awarded){
+    renderStudents(); updateStats();
+    toast('🎉 已經手動發放這個月的星星獎勵囉！');
+  } else {
+    toast('⚠️ 目前沒有設定任何幹部或組長，沒有人可以發放星星');
+  }
 }
 function addOfficerPosition(){
   const title = prompt('新增幹部職稱？（例如：圖書股長）\n\n之後可以再點職掌內容補上詳細說明');
