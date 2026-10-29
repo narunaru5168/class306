@@ -8266,13 +8266,25 @@ function removeOfficer(posId, sid){
 
 // ─── 幹部／組長的月底星星獎勵（自動）───
 // 這個網站是純前端的靜態網頁，沒有伺服器可以在「每個月最後一天的半夜」自動執行任何東西，
-// 所以做法是：只要老師在新的一個月第一次打開這個網站，系統就會發現「上次發放的月份」跟「現在的月份」不一樣，
-// 判斷上個月已經結束了，立刻自動補發上個月的獎勵（用當下最新的幹部／組長名單）——不用老師自己點按鈕，
-// 也不用剛好在月底那天打開網站，不管哪一天打開都會補上。
+// 所以做法是：只要老師打開這個網站時「現在離這個月月底只剩2天以內」，系統就會提前自動發放這個月的獎勵
+// （用當下最新的幹部／組長名單），不用等到下個月才補發、也不用剛好在月底那天打開網站。
+// 如果老師太久沒打開網站、連續好幾個月都錯過了「月底前2天」這個時間點，系統還是有安全網：
+// 只要發現已經整整多過一個月沒發放了（代表至少有一整個月已經確定結束），一打開網站就會立刻補發一次，
+// 不會漏掉、也不會因為補發而重複計算。
 // 幹部：不分職位，只要在「班級幹部登記表」上掛名任何一個職位，整個月結束都能拿到 10 顆星（一人一次，不會因為兼多個職位而重複累加）。
 // 組長：每一組（跟座位表排別連動）指定的組長，月底能拿到 5 顆星；一位學生只會是一組的組長，所以不會重複。
 function monthKeyOf(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+// 這個月還剩幾天就結束了（今天也算在「剩下」的天數裡面，所以月底最後一天這個值會是 0）
+function daysLeftInMonth(d){
+  const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  return lastDay - d.getDate();
+}
+// 傳入"YYYY-MM"格式的月份字串，回傳「下一個月」的月份字串
+function nextMonthKey(key){
+  const [y, m] = key.split('-').map(Number);
+  return monthKeyOf(new Date(y, m, 1)); // m是1~12，剛好等於JS Date「下個月」的0-indexed月份
 }
 function runOfficerLeaderMonthlyAward(){
   const officerIds = new Set();
@@ -8300,21 +8312,33 @@ function runOfficerLeaderMonthlyAward(){
 }
 function ensureMonthlyOfficerLeaderAward(){
   if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
-  const nowKey = monthKeyOf(new Date());
-  if(officerMonthlyAward.lastAwardedMonth === nowKey) return; // 這個月已經檢查過／發放過了，不要重複發
+  const now = new Date();
+  const nowKey = monthKeyOf(now);
+  if(officerMonthlyAward.lastAwardedMonth === nowKey) return; // 這個月已經發放過了，不要重複發
+
   const isFirstEverRun = !officerMonthlyAward.lastAwardedMonth;
-  officerMonthlyAward.lastAwardedMonth = nowKey;
   if(isFirstEverRun){
-    // 第一次用這個功能，還不知道「上個月」是什麼情況，不要憑空回溯發放，只先記錄這個月當起點，
-    // 下個月開始才會真的自動發放
+    // 第一次用這個功能，還不知道之前的狀況，不要憑空回溯發放，只先記錄這個月當起點，
+    // 之後才會真的自動發放
+    officerMonthlyAward.lastAwardedMonth = nowKey;
     save();
     return;
   }
+
+  // 如果現在還在「上次發放的月份」的下一個月、而且還沒到月底最後2天 → 時間還沒到，先不發放，繼續等
+  const stillWithinExpectedNextMonth = nowKey === nextMonthKey(officerMonthlyAward.lastAwardedMonth);
+  const nearMonthEnd = daysLeftInMonth(now) <= 2;
+  if(stillWithinExpectedNextMonth && !nearMonthEnd){
+    return;
+  }
+
+  // 否則：要麼是「現在月底了，提前發放這個月的獎勵」，要麼是「錯過好幾個月底、現在補發一次」
   const awarded = runOfficerLeaderMonthlyAward();
+  officerMonthlyAward.lastAwardedMonth = nowKey;
   save();
   if(awarded){
     renderStudents(); updateStats();
-    setTimeout(()=>{ toast('🎉 新的一個月開始了，已經自動幫幹部／組長發放上個月的星星獎勵囉！'); }, 800);
+    setTimeout(()=>{ toast('🎉 已經自動幫幹部／組長發放這個月的星星獎勵囉！'); }, 800);
   }
 }
 
