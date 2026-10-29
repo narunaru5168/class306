@@ -1787,7 +1787,7 @@
     <div style="display:flex;align-items:center;margin-bottom:16px;">
       <span class="section-title" style="margin-bottom:0;">🪑 座位表</span>
     </div>
-    <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;">點座位可以指派學生；選一位已經坐在別的位子的學生，會自動跟原位子的人互換</div>
+    <div style="font-size:.85rem;color:#94a3b8;margin-bottom:14px;">點座位可以指派學生；選一位已經坐在別的位子的學生，會自動跟原位子的人互換。也可以直接「拖曳」學生到別的座位：拖到空位或別排最下面的「+ 拖曳到這裡」會直接搬過去，原本那排自動少一個、新那排自動多一個，不會留下空格；拖到已經有人的位子會跟對方互換；拖到最下面「尚未安排座位」名單則是把他移出座位表。</div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       <button class="btn btn-primary" style="font-size:.82rem;padding:8px 16px;" onclick="shuffleSeating()">🎲 完全隨機排座位</button>
@@ -1814,8 +1814,8 @@
   <div id="seatingBoardLabelBottom" style="display:none;background:#1e293b;color:#fff;text-align:center;font-weight:800;border-radius:10px;padding:8px;margin-top:-8px;margin-bottom:20px;font-size:.85rem;">🧑‍🏫 老師視角（站在講台看全班）</div>
 
   <div id="seatingNormalFooter">
-    <div class="section-title" style="font-size:1rem;">🙋 尚未安排座位</div>
-    <div id="seatingUnplacedList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+    <div class="section-title" style="font-size:1rem;">🙋 尚未安排座位<span style="font-weight:400;font-size:.72rem;color:#94a3b8;">（可以把座位上的學生拖到這裡，移出座位表）</span></div>
+    <div id="seatingUnplacedList" ondragover="handleSeatDragOver(event)" ondrop="handleUnplacedDrop(event)" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:30px;"></div>
   </div>
 </div>
 
@@ -1832,6 +1832,11 @@
         <input type="checkbox" id="seatAssignFixed" style="width:16px;height:16px;">
         📌 這個學生座位固定不動（例如健康因素），「每月輪動」不會移動他
       </label>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>🏆 小組競賽算哪一組</label>
+      <select id="seatAssignTeamOverride"></select>
+      <div style="font-size:.74rem;color:#94a3b8;margin-top:4px;">預設「跟著座位走」：小組競賽自動用他坐在哪一排來算組別。如果因為管理需要（例如愛講話）把他調到別排，但小組計分還是要算原本那一組，就在這裡指定。</div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-success" onclick="confirmSeatAssign()">確認</button>
@@ -4384,6 +4389,7 @@ let seatingChartUndo = null; // 上一次調整座位前的完整快照，給「
 let seatAssignTarget = null; // 目前正在編輯哪個座位（"row-col"）
 let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=黑板視角（老師站講台看全班，左右相反）
 let seatingProjectorMode = false; // 投影模式：隱藏操作按鈕，座位格子放到接近全螢幕
+let seatDragSource = null; // 目前正在拖曳的來源：座位 key（"c-r"）或 "student-學生id"（從「尚未排位」名單拖出來的）
 let cleaningZones = []; // { id, name, targetCount, studentIds:[] } 打掃區域分配
 let cleaningAssignTarget = null; // 目前正在加人到哪個打掃區域
 let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助小組（組長會輪替）
@@ -6154,14 +6160,30 @@ function todayKey(){
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-// 小組競賽的第 i 組，組員就是座位表第 i 排（跟 GROUP_COLORS 用同一種對應方式）
+// 小組競賽的第 i 組，組員預設是座位表第 i 排（跟 GROUP_COLORS 用同一種對應方式）。
+// 但如果某個學生被老師手動指定「分組跟座位脫鉤」（例如愛講話被調到別排，但計分還是算原本那一組），
+// 就用 s.teamOverride（存的是 teamScores 裡那個組的 id，不是座位排別，這樣以後組別順序變動也不會跑掉）來決定他實際算哪一組，
+// 不再直接看他現在坐在哪一排。
 function getTeamRoster(teamIdx){
+  const team = teamScores[teamIdx];
+  const teamId = team ? team.id : null;
   const colSizes = (seatingChart && seatingChart.colSizes) || [];
   const count = colSizes[teamIdx] || 0;
+  const idsSet = new Set();
   const ids = [];
   for(let r=0;r<count;r++){
     const sid = (seatingChart.seats||{})[seatKey(teamIdx,r)];
-    if(sid!=null) ids.push(sid);
+    if(sid==null) continue;
+    const stu = students.find(s=>s.id===sid);
+    // 這個人座位雖然在這一排，但有被手動指定算「別組」，這一排就不算他
+    if(stu && stu.teamOverride!=null && stu.teamOverride!=teamId) continue;
+    if(!idsSet.has(sid)){ idsSet.add(sid); ids.push(sid); }
+  }
+  // 把「手動指定算這一組」、但座位不在這一排（坐別排、或甚至還沒排位）的學生也加進來
+  if(teamId!=null){
+    students.forEach(s=>{
+      if(s.teamOverride!=null && s.teamOverride==teamId && !idsSet.has(s.id)){ idsSet.add(s.id); ids.push(s.id); }
+    });
   }
   return ids.map(id=>students.find(s=>s.id===id)).filter(Boolean);
 }
@@ -6761,16 +6783,39 @@ function renderSeatingChart(){
       const key = seatKey(c,r);
       const sid = seatingChart.seats[key];
       const stu = sid!=null ? students.find(s=>s.id===sid) : null;
-      html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"
+      // 這個人小組競賽有沒有被手動指定成「跟座位不同組」——如果跟這一排對應的組別不一樣，就顯示小標籤提醒
+      let teamBadge = '';
+      if(stu && stu.teamOverride!=null){
+        const colTeam = teamScores[c];
+        if(!colTeam || stu.teamOverride!=colTeam.id){
+          const ovTeam = teamScores.find(t=>t.id==stu.teamOverride);
+          teamBadge = `<div style="position:absolute;bottom:1px;left:2px;right:2px;font-size:.6rem;font-weight:800;color:#fff;background:${ovTeam?ovTeam.color:'#94a3b8'};border-radius:5px;padding:0 2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="小組競賽計分算：${ovTeam?ovTeam.name:'（原本的組已被刪除）'}（跟現在坐的排別不同）">🏆${ovTeam?ovTeam.name:'？'}</div>`;
+        }
+      }
+      // 拖曳相關屬性：有人坐才能被拖走（draggable）；任何格子（不管有沒有人）都可以當「放下」的目標，
+      // 這樣才能把人拖進空位，或拖到別排跟別人交換。投影模式是純展示用，不開放拖曳跟點擊。
+      const dragAttrs = (!seatingProjectorMode && stu) ? ` draggable="true" ondragstart="handleSeatDragStart(event,'${key}')" ondragend="seatDragSource=null;"` : '';
+      const dropAttrs = !seatingProjectorMode ? ` ondragover="handleSeatDragOver(event)" ondrop="handleSeatDrop(event,'${key}')"` : '';
+      html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"${dragAttrs}${dropAttrs}
         style="position:relative;height:${cellHeight}px;border-radius:8px;border:2px solid ${stu?(stu.seatFixed?'#eab308':'#5BB8F5'):'#e2e8f0'};background:${stu?(stu.seatFixed?'#fefce8':'#eff6ff'):'#f8fafc'};
-        display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':'pointer'};padding:2px 1px;text-align:center;overflow:hidden;">
+        display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':(stu?'grab':'pointer')};padding:2px 1px;text-align:center;overflow:hidden;">
         ${stu && stu.seatFixed ? `<div style="position:absolute;top:1px;right:3px;font-size:.7rem;" title="座位固定，每月輪動不會移動">📌</div>` : ''}
+        ${teamBadge}
         ${stu
           ? `<div style="font-weight:900;font-size:${nameFontSize};line-height:1.1;color:#0369a1;">${stu.seatNo||''}${stu.name}</div>`
           : `<div style="font-size:.68rem;color:#cbd5e1;">空位</div>`}
       </div>`;
     });
-    html += `</div></div>`;
+    html += `</div>`;
+    // 每一排下面都放一個「拖到這裡可以加到最後面」的格子——把學生拖進來，這一排人數會自動多一個，
+    // 這樣老師不用先手動開「調整座位表大小」加格子，直接拖過來就會自動長出新的位子（最多到 10 人就不能再加了）。
+    if(!seatingProjectorMode){
+      const atMax = count >= 10;
+      html += `<div ondragover="handleSeatDragOver(event)" ondrop="handleColumnAppendDrop(event,${c})"
+        style="margin-top:4px;height:16px;flex-shrink:0;border:1.5px dashed ${atMax?'#fecaca':'#cbd5e1'};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:${atMax?'#fca5a5':'#cbd5e1'};"
+        title="${atMax?'這一排已經到上限 10 人了':'把學生拖到這裡，加到這一排最後面'}">${atMax?'已達上限':'+ 拖曳到這裡'}</div>`;
+    }
+    html += `</div>`;
   });
   grid.innerHTML = html;
   renderSeatingUnplaced();
@@ -6781,9 +6826,158 @@ function renderSeatingUnplaced(){
   const placedIds = new Set(Object.values(seatingChart.seats));
   const unplaced = seatSortedStudents().filter(s=>!placedIds.has(s.id));
   wrap.innerHTML = unplaced.length
-    ? unplaced.map(s=>`<span style="background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
+    ? unplaced.map(s=>`<span draggable="true" ondragstart="handleUnplacedDragStart(event,${s.id})" ondragend="seatDragSource=null;" style="cursor:grab;background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
     : `<div style="font-size:.8rem;color:#94a3b8;">🎉 全班都已經安排座位了</div>`;
 }
+
+// ─── 座位拖曳搬動 ───
+// 核心想法：每一排用「目前實際坐著的人，依序排好」的陣列來看待，而不是死板地照 colSizes 的格子數。
+// 把人從某一排抽走，陣列變短、人數自動少一個；插進另一排，陣列變長、人數自動多一個——
+// 這樣搬完之後兩邊都不會留下中間空格，就是老師畫的那種效果（原本那排自動補齊、新那排自動加長）。
+function getColumnOccupants(col){
+  const colSizes = seatingChart.colSizes || [];
+  const count = colSizes[col] || 0;
+  const arr = [];
+  for(let r=0;r<count;r++){
+    const sid = seatingChart.seats[seatKey(col,r)];
+    if(sid!=null) arr.push(sid);
+  }
+  return arr;
+}
+function setColumnOccupants(col, arr){
+  if(!seatingChart.colSizes) seatingChart.colSizes = [];
+  const oldCount = seatingChart.colSizes[col] || 0;
+  for(let r=0;r<oldCount;r++) delete seatingChart.seats[seatKey(col,r)];
+  arr.forEach((sid,r)=>{ seatingChart.seats[seatKey(col,r)] = sid; });
+  seatingChart.colSizes[col] = arr.length;
+}
+// 把 col 排第 row 個位子的人抽掉，後面的人自動往前補一位、這一排人數也跟著少一個
+function removeStudentFromColumnCompact(col, row){
+  const sid = seatingChart.seats[seatKey(col,row)];
+  const arr = getColumnOccupants(col);
+  const idx = sid!=null ? arr.indexOf(sid) : -1;
+  if(idx===-1) return;
+  arr.splice(idx,1);
+  setColumnOccupants(col, arr);
+}
+// 把一個學生插進 col 排的第 row 個位置（0 代表最前面，陣列長度代表最後面），
+// 從那裡開始原本的人都往後推一位、這一排人數多一個
+function insertStudentIntoColumn(col, row, sid){
+  const arr = getColumnOccupants(col);
+  const insertAt = Math.max(0, Math.min(row, arr.length));
+  arr.splice(insertAt, 0, sid);
+  setColumnOccupants(col, arr);
+}
+function handleSeatDragStart(e, key){
+  seatDragSource = key;
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', key); }catch(err){} }
+}
+function handleUnplacedDragStart(e, studentId){
+  seatDragSource = 'student-' + studentId;
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', seatDragSource); }catch(err){} }
+}
+function handleSeatDragOver(e){
+  e.preventDefault();
+  if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+}
+function dropUnplacedStudentOnSeat(sid, targetKey){
+  if(seatingChart.seats[targetKey]!=null){
+    toast('⚠️ 這個位子已經有人了，請先把他拖到空位或名單上');
+    return;
+  }
+  snapshotSeatingForUndo();
+  seatingChart.seats[targetKey] = sid;
+  save(); renderSeatingChart();
+  toast('🪑 已排入座位！');
+}
+// 把一個已經坐著的人，搬到另一個位子（可能是空位，也可能已經有人坐）
+function moveSeatStudent(sourceKey, targetKey){
+  const sid = seatingChart.seats[sourceKey];
+  if(sid==null) return;
+  const [sc, sr] = sourceKey.split('-').map(Number);
+  const [tc, tr] = targetKey.split('-').map(Number);
+  const targetOccupant = seatingChart.seats[targetKey];
+  if(targetOccupant!=null){
+    // 目標已經有人——直接互換兩個人的位子，兩排人數都不變
+    snapshotSeatingForUndo();
+    seatingChart.seats[sourceKey] = targetOccupant;
+    seatingChart.seats[targetKey] = sid;
+    save(); renderSeatingChart();
+    toast('🔄 已互換兩個人的位子！');
+    return;
+  }
+  if(sc === tc){
+    // 同一排內搬到空位：單純換格子，人數不變
+    snapshotSeatingForUndo();
+    delete seatingChart.seats[sourceKey];
+    seatingChart.seats[targetKey] = sid;
+    save(); renderSeatingChart();
+    toast('🪑 已更新座位！');
+    return;
+  }
+  // 跨排搬到空位：原本那排自動補位（少一個），新那排從指定位置插入（多一個）
+  const colSizes = seatingChart.colSizes || [];
+  if((colSizes[tc]||0) >= 10){ toast('⚠️ 目標那一排已經到上限 10 人了，沒辦法再加'); return; }
+  snapshotSeatingForUndo();
+  removeStudentFromColumnCompact(sc, sr);
+  insertStudentIntoColumn(tc, tr, sid);
+  save(); renderSeatingChart();
+  toast('🪑 已搬到新的位子，原本那排自動補位了！');
+}
+function handleSeatDrop(e, targetKey){
+  e.preventDefault();
+  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  seatDragSource = null;
+  if(!source || source===targetKey) return;
+  if(source.indexOf('student-')===0){
+    const sid = parseInt(source.slice('student-'.length));
+    dropUnplacedStudentOnSeat(sid, targetKey);
+  } else {
+    moveSeatStudent(source, targetKey);
+  }
+}
+// 拖到某一排最下面那個「+ 拖曳到這裡」格子：不管原本在哪裡，都會被加到這一排的最後面
+function handleColumnAppendDrop(e, col){
+  e.preventDefault();
+  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  seatDragSource = null;
+  if(!source) return;
+  const colSizes = seatingChart.colSizes || [];
+  if((colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
+  if(source.indexOf('student-')===0){
+    const sid = parseInt(source.slice('student-'.length));
+    snapshotSeatingForUndo();
+    insertStudentIntoColumn(col, (seatingChart.colSizes[col]||0), sid);
+    save(); renderSeatingChart();
+    toast('🪑 已加到這一排的最後面！');
+    return;
+  }
+  const sid = seatingChart.seats[source];
+  if(sid==null) return;
+  const [sc, sr] = source.split('-').map(Number);
+  snapshotSeatingForUndo();
+  removeStudentFromColumnCompact(sc, sr);
+  const newCount = (seatingChart.colSizes||[])[col] || 0;
+  insertStudentIntoColumn(col, newCount, sid);
+  save(); renderSeatingChart();
+  toast('🪑 已搬到這一排的最後面！');
+}
+// 把坐著的人拖到「尚未安排座位」名單上：移出座位表，原本那排自動補位
+function handleUnplacedDrop(e){
+  e.preventDefault();
+  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  seatDragSource = null;
+  if(!source || source.indexOf('student-')===0) return;
+  const sid = seatingChart.seats[source];
+  if(sid==null) return;
+  const [sc, sr] = source.split('-').map(Number);
+  snapshotSeatingForUndo();
+  removeStudentFromColumnCompact(sc, sr);
+  save(); renderSeatingChart();
+  const stu = students.find(s=>s.id===sid);
+  toast(`已把${stu?stu.name:'這位同學'}移出座位表`);
+}
+
 function openSeatAssignModal(key){
   seatAssignTarget = key;
   const sel = document.getElementById('seatAssignSelect');
@@ -6796,9 +6990,14 @@ function openSeatAssignModal(key){
   }).join('');
   sel.innerHTML = `<option value="">-- 空位（不指派）--</option>${options}`;
   const fixedCb = document.getElementById('seatAssignFixed');
+  const teamSel = document.getElementById('seatAssignTeamOverride');
+  ensureTeamDefaults();
+  const teamOptions = teamScores.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   function syncFixedCheckbox(){
     const stu = students.find(s=>s.id==sel.value);
     fixedCb.checked = !!(stu && stu.seatFixed);
+    teamSel.innerHTML = `<option value="">🔗 跟著座位走（預設）</option>${teamOptions}`;
+    teamSel.value = (stu && stu.teamOverride!=null) ? String(stu.teamOverride) : '';
   }
   sel.onchange = syncFixedCheckbox;
   syncFixedCheckbox();
@@ -6822,6 +7021,7 @@ function confirmSeatAssign(){
   const key = seatAssignTarget;
   snapshotSeatingForUndo();
   const fixedCb = document.getElementById('seatAssignFixed');
+  const teamSel = document.getElementById('seatAssignTeamOverride');
   if(!sel.value){
     delete seatingChart.seats[key];
   } else {
@@ -6837,7 +7037,13 @@ function confirmSeatAssign(){
     }
     seatingChart.seats[key] = newSid;
     const stu = students.find(s=>s.id===newSid);
-    if(stu) stu.seatFixed = !!(fixedCb && fixedCb.checked);
+    if(stu){
+      stu.seatFixed = !!(fixedCb && fixedCb.checked);
+      // teamSel.value 是從 <select> 讀出來的字串，跟 teamScores 裡 t.id（數字）型別不同，
+      // 要找到真正的那個組別物件、存它本來的 id，型別才會一致，不然比對會抓不到人
+      const ov = (teamSel && teamSel.value) ? teamScores.find(t=>t.id==teamSel.value) : null;
+      stu.teamOverride = ov ? ov.id : null;
+    }
   }
   save(); renderSeatingChart();
   closeModal('seatAssignModal');
