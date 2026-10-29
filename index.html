@@ -1815,7 +1815,7 @@
 
   <div id="seatingNormalFooter">
     <div class="section-title" style="font-size:1rem;">🙋 尚未安排座位<span style="font-weight:400;font-size:.72rem;color:#94a3b8;">（可以把座位上的學生拖到這裡，移出座位表）</span></div>
-    <div id="seatingUnplacedList" ondragover="handleSeatDragOver(event)" ondrop="handleUnplacedDrop(event)" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:30px;"></div>
+    <div id="seatingUnplacedList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:30px;"></div>
   </div>
 </div>
 
@@ -4389,7 +4389,6 @@ let seatingChartUndo = null; // 上一次調整座位前的完整快照，給「
 let seatAssignTarget = null; // 目前正在編輯哪個座位（"row-col"）
 let seatingViewFromBoard = false; // false=學生視角（面對黑板）, true=黑板視角（老師站講台看全班，左右相反）
 let seatingProjectorMode = false; // 投影模式：隱藏操作按鈕，座位格子放到接近全螢幕
-let seatDragSource = null; // 目前正在拖曳的來源：座位 key（"c-r"）或 "student-學生id"（從「尚未排位」名單拖出來的）
 let cleaningZones = []; // { id, name, targetCount, studentIds:[] } 打掃區域分配
 let cleaningAssignTarget = null; // 目前正在加人到哪個打掃區域
 let mutualAidGroups = []; // { id, name, studentIds:[], leaderIndex:0 } 互助小組（組長會輪替）
@@ -6792,13 +6791,14 @@ function renderSeatingChart(){
           teamBadge = `<div style="position:absolute;bottom:1px;left:2px;right:2px;font-size:.6rem;font-weight:800;color:#fff;background:${ovTeam?ovTeam.color:'#94a3b8'};border-radius:5px;padding:0 2px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="小組競賽計分算：${ovTeam?ovTeam.name:'（原本的組已被刪除）'}（跟現在坐的排別不同）">🏆${ovTeam?ovTeam.name:'？'}</div>`;
         }
       }
-      // 拖曳相關屬性：有人坐才能被拖走（draggable）；任何格子（不管有沒有人）都可以當「放下」的目標，
-      // 這樣才能把人拖進空位，或拖到別排跟別人交換。投影模式是純展示用，不開放拖曳跟點擊。
-      const dragAttrs = (!seatingProjectorMode && stu) ? ` draggable="true" ondragstart="handleSeatDragStart(event,'${key}')" ondragend="seatDragSource=null;"` : '';
-      const dropAttrs = !seatingProjectorMode ? ` ondragover="handleSeatDragOver(event)" ondrop="handleSeatDrop(event,'${key}')"` : '';
-      html += `<div onclick="${seatingProjectorMode?'':`openSeatAssignModal('${key}')`}"${dragAttrs}${dropAttrs}
+      // 拖曳相關屬性：有人坐才能當拖曳的來源（onpointerdown）；任何格子（不管有沒有人）都可以當「放下」的目標
+      // （data-seat-key，給 elementFromPoint 認）。投影模式是純展示用，不開放拖曳跟點擊。
+      // 用 Pointer Events 自己手刻拖曳手勢，滑鼠、觸控（平板／手機）都共用同一套，不依賴瀏覽器原生拖放
+      // （原生 HTML5 拖放在觸控裝置上常常根本不會啟動，很多老師是用平板排座位）。
+      const pointerAttrs = (!seatingProjectorMode && stu) ? ` onpointerdown="handleSeatPointerDown(event,'${key}')"` : '';
+      html += `<div data-seat-key="${key}" onclick="${seatingProjectorMode?'':`if(!window.__seatJustDragged){openSeatAssignModal('${key}')}`}"${pointerAttrs}
         style="position:relative;height:${cellHeight}px;border-radius:8px;border:2px solid ${stu?(stu.seatFixed?'#eab308':'#5BB8F5'):'#e2e8f0'};background:${stu?(stu.seatFixed?'#fefce8':'#eff6ff'):'#f8fafc'};
-        display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':(stu?'grab':'pointer')};padding:2px 1px;text-align:center;overflow:hidden;">
+        display:flex;align-items:center;justify-content:center;cursor:${seatingProjectorMode?'default':(stu?'grab':'pointer')};padding:2px 1px;text-align:center;overflow:hidden;touch-action:none;">
         ${stu && stu.seatFixed ? `<div style="position:absolute;top:1px;right:3px;font-size:.7rem;" title="座位固定，每月輪動不會移動">📌</div>` : ''}
         ${teamBadge}
         ${stu
@@ -6811,7 +6811,7 @@ function renderSeatingChart(){
     // 這樣老師不用先手動開「調整座位表大小」加格子，直接拖過來就會自動長出新的位子（最多到 10 人就不能再加了）。
     if(!seatingProjectorMode){
       const atMax = count >= 10;
-      html += `<div ondragover="handleSeatDragOver(event)" ondrop="handleColumnAppendDrop(event,${c})"
+      html += `<div data-append-col="${c}"
         style="margin-top:4px;height:16px;flex-shrink:0;border:1.5px dashed ${atMax?'#fecaca':'#cbd5e1'};border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:${atMax?'#fca5a5':'#cbd5e1'};"
         title="${atMax?'這一排已經到上限 10 人了':'把學生拖到這裡，加到這一排最後面'}">${atMax?'已達上限':'+ 拖曳到這裡'}</div>`;
     }
@@ -6826,7 +6826,7 @@ function renderSeatingUnplaced(){
   const placedIds = new Set(Object.values(seatingChart.seats));
   const unplaced = seatSortedStudents().filter(s=>!placedIds.has(s.id));
   wrap.innerHTML = unplaced.length
-    ? unplaced.map(s=>`<span draggable="true" ondragstart="handleUnplacedDragStart(event,${s.id})" ondragend="seatDragSource=null;" style="cursor:grab;background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
+    ? unplaced.map(s=>`<span onpointerdown="handleUnplacedPointerDown(event,${s.id})" style="cursor:grab;touch-action:none;background:#fef2f2;color:#dc2626;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
     : `<div style="font-size:.8rem;color:#94a3b8;">🎉 全班都已經安排座位了</div>`;
 }
 
@@ -6867,18 +6867,6 @@ function insertStudentIntoColumn(col, row, sid){
   const insertAt = Math.max(0, Math.min(row, arr.length));
   arr.splice(insertAt, 0, sid);
   setColumnOccupants(col, arr);
-}
-function handleSeatDragStart(e, key){
-  seatDragSource = key;
-  if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', key); }catch(err){} }
-}
-function handleUnplacedDragStart(e, studentId){
-  seatDragSource = 'student-' + studentId;
-  if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', seatDragSource); }catch(err){} }
-}
-function handleSeatDragOver(e){
-  e.preventDefault();
-  if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 }
 function dropUnplacedStudentOnSeat(sid, targetKey){
   if(seatingChart.seats[targetKey]!=null){
@@ -6924,37 +6912,13 @@ function moveSeatStudent(sourceKey, targetKey){
   save(); renderSeatingChart();
   toast('🪑 已搬到新的位子，原本那排自動補位了！');
 }
-function handleSeatDrop(e, targetKey){
-  e.preventDefault();
-  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-  seatDragSource = null;
-  if(!source || source===targetKey) return;
-  if(source.indexOf('student-')===0){
-    const sid = parseInt(source.slice('student-'.length));
-    dropUnplacedStudentOnSeat(sid, targetKey);
-  } else {
-    moveSeatStudent(source, targetKey);
-  }
-}
 // 拖到某一排最下面那個「+ 拖曳到這裡」格子：不管原本在哪裡，都會被加到這一排的最後面
-function handleColumnAppendDrop(e, col){
-  e.preventDefault();
-  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-  seatDragSource = null;
-  if(!source) return;
-  const colSizes = seatingChart.colSizes || [];
-  if((colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
-  if(source.indexOf('student-')===0){
-    const sid = parseInt(source.slice('student-'.length));
-    snapshotSeatingForUndo();
-    insertStudentIntoColumn(col, (seatingChart.colSizes[col]||0), sid);
-    save(); renderSeatingChart();
-    toast('🪑 已加到這一排的最後面！');
-    return;
-  }
-  const sid = seatingChart.seats[source];
+function appendSeatedStudentToColumn(sourceKey, col){
+  const sid = seatingChart.seats[sourceKey];
   if(sid==null) return;
-  const [sc, sr] = source.split('-').map(Number);
+  const [sc, sr] = sourceKey.split('-').map(Number);
+  const colSizes = seatingChart.colSizes || [];
+  if(sc!==col && (colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
   snapshotSeatingForUndo();
   removeStudentFromColumnCompact(sc, sr);
   const newCount = (seatingChart.colSizes||[])[col] || 0;
@@ -6962,21 +6926,150 @@ function handleColumnAppendDrop(e, col){
   save(); renderSeatingChart();
   toast('🪑 已搬到這一排的最後面！');
 }
-// 把坐著的人拖到「尚未安排座位」名單上：移出座位表，原本那排自動補位
-function handleUnplacedDrop(e){
-  e.preventDefault();
-  const source = seatDragSource || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-  seatDragSource = null;
-  if(!source || source.indexOf('student-')===0) return;
-  const sid = seatingChart.seats[source];
+function appendUnplacedStudentToColumn(studentId, col){
+  const colSizes = seatingChart.colSizes || [];
+  if((colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
+  snapshotSeatingForUndo();
+  insertStudentIntoColumn(col, (seatingChart.colSizes[col]||0), studentId);
+  save(); renderSeatingChart();
+  toast('🪑 已加到這一排的最後面！');
+}
+// 把坐著的人移出座位表：原本那排自動補位
+function unplaceSeatedStudent(sourceKey){
+  const sid = seatingChart.seats[sourceKey];
   if(sid==null) return;
-  const [sc, sr] = source.split('-').map(Number);
+  const [sc, sr] = sourceKey.split('-').map(Number);
   snapshotSeatingForUndo();
   removeStudentFromColumnCompact(sc, sr);
   save(); renderSeatingChart();
   const stu = students.find(s=>s.id===sid);
   toast(`已把${stu?stu.name:'這位同學'}移出座位表`);
 }
+
+// ─── 座位拖曳的手勢處理（用 Pointer Events，滑鼠／觸控／觸控筆都通用，不依賴瀏覽器原生的 HTML5 拖放，
+//     因為原生拖放在手機、平板這類觸控裝置上常常根本不會啟動，很多老師是用平板在排座位，這樣比較保險）───
+let seatPointerDrag = null; // { sourceKind:'seat'|'unplaced', sourceKey, studentId, startX, startY, dragging }
+let seatDragGhostEl = null;
+let seatDragHoverEl = null;
+function handleSeatPointerDown(e, key){
+  if(seatingProjectorMode) return;
+  if(e.pointerType==='mouse' && e.button!==0) return; // 滑鼠只認左鍵
+  const sid = seatingChart.seats[key];
+  if(sid==null) return; // 空位沒有人可以拖
+  seatPointerDrag = { sourceKind:'seat', sourceKey:key, studentId:sid, startX:e.clientX, startY:e.clientY, dragging:false };
+}
+function handleUnplacedPointerDown(e, studentId){
+  if(e.pointerType==='mouse' && e.button!==0) return;
+  seatPointerDrag = { sourceKind:'unplaced', sourceKey:null, studentId, startX:e.clientX, startY:e.clientY, dragging:false };
+}
+function showSeatDragGhost(drag){
+  const stu = students.find(s=>s.id===drag.studentId);
+  const el = document.createElement('div');
+  el.id = 'seatDragGhostEl';
+  el.textContent = stu ? ((stu.seatNo||'')+stu.name) : '';
+  el.style.cssText = 'position:fixed;z-index:99999;pointer-events:none;background:#0369a1;color:#fff;font-weight:900;font-size:.95rem;padding:6px 14px;border-radius:12px;box-shadow:0 6px 16px rgba(0,0,0,.3);transform:translate(-50%,-120%);white-space:nowrap;';
+  document.body.appendChild(el);
+  seatDragGhostEl = el;
+}
+function moveSeatDragGhost(x,y){
+  if(seatDragGhostEl){ seatDragGhostEl.style.left = x+'px'; seatDragGhostEl.style.top = y+'px'; }
+}
+function removeSeatDragGhost(){
+  if(seatDragGhostEl){ seatDragGhostEl.remove(); seatDragGhostEl = null; }
+}
+function findSeatDropTargetAt(x,y){
+  // 先暫時把浮動標籤藏起來，不然 elementFromPoint 會抓到標籤自己，而不是底下真正的格子
+  if(seatDragGhostEl) seatDragGhostEl.style.display = 'none';
+  const el = document.elementFromPoint(x,y);
+  if(seatDragGhostEl) seatDragGhostEl.style.display = '';
+  if(!el) return null;
+  return el.closest('[data-seat-key]') || el.closest('[data-append-col]') || el.closest('#seatingUnplacedList');
+}
+function updateSeatDropHighlight(x,y){
+  const target = findSeatDropTargetAt(x,y);
+  if(target === seatDragHoverEl) return;
+  if(seatDragHoverEl) seatDragHoverEl.style.outline = '';
+  if(target) target.style.outline = '3px solid #16a34a';
+  seatDragHoverEl = target;
+}
+function clearSeatDropHighlight(){
+  if(seatDragHoverEl){ seatDragHoverEl.style.outline = ''; seatDragHoverEl = null; }
+}
+function resolveSeatDrop(target, drag){
+  if(!target) return;
+  if(target.matches('[data-seat-key]')){
+    const targetKey = target.getAttribute('data-seat-key');
+    if(drag.sourceKind==='seat'){
+      if(targetKey!==drag.sourceKey) moveSeatStudent(drag.sourceKey, targetKey);
+    } else {
+      dropUnplacedStudentOnSeat(drag.studentId, targetKey);
+    }
+  } else if(target.matches('[data-append-col]')){
+    const col = parseInt(target.getAttribute('data-append-col'));
+    if(drag.sourceKind==='seat') appendSeatedStudentToColumn(drag.sourceKey, col);
+    else appendUnplacedStudentToColumn(drag.studentId, col);
+  } else if(target.id==='seatingUnplacedList'){
+    if(drag.sourceKind==='seat') unplaceSeatedStudent(drag.sourceKey);
+  }
+}
+// 拖曳的時候如果手指／滑鼠靠近畫面上緣或下緣，自動幫忙捲動頁面——座位表排數、人數多的時候
+// 整張表常常比螢幕（尤其是手機、平板直放）還長，要搬到的目標那一排可能根本還沒捲到看得見，
+// 不然就會變成「明明拖了卻搬不過去」。
+let seatAutoScrollDir = 0;
+let seatAutoScrollTimer = null;
+function startAutoScrollLoopIfNeeded(){
+  if(seatAutoScrollTimer) return;
+  seatAutoScrollTimer = setInterval(()=>{ if(seatAutoScrollDir!==0) window.scrollBy(0, seatAutoScrollDir*18); }, 16);
+}
+function stopAutoScroll(){
+  if(seatAutoScrollTimer){ clearInterval(seatAutoScrollTimer); seatAutoScrollTimer=null; }
+  seatAutoScrollDir = 0;
+}
+function updateAutoScroll(clientY){
+  const threshold = 70;
+  const vh = window.innerHeight;
+  if(clientY < threshold) seatAutoScrollDir = -1;
+  else if(clientY > vh - threshold) seatAutoScrollDir = 1;
+  else seatAutoScrollDir = 0;
+  if(seatAutoScrollDir!==0) startAutoScrollLoopIfNeeded();
+}
+document.addEventListener('pointermove', function(e){
+  if(!seatPointerDrag) return;
+  const dx = e.clientX - seatPointerDrag.startX;
+  const dy = e.clientY - seatPointerDrag.startY;
+  if(!seatPointerDrag.dragging && Math.hypot(dx,dy) > 8){
+    seatPointerDrag.dragging = true;
+    showSeatDragGhost(seatPointerDrag);
+  }
+  if(seatPointerDrag.dragging){
+    e.preventDefault();
+    moveSeatDragGhost(e.clientX, e.clientY);
+    updateSeatDropHighlight(e.clientX, e.clientY);
+    updateAutoScroll(e.clientY);
+  }
+}, { passive:false });
+document.addEventListener('pointerup', function(e){
+  if(!seatPointerDrag) return;
+  const drag = seatPointerDrag;
+  seatPointerDrag = null;
+  clearSeatDropHighlight();
+  removeSeatDragGhost();
+  stopAutoScroll();
+  if(!drag.dragging) return; // 沒有真的拖動，就當作一般點擊，讓原本的 onclick 開啟指派視窗
+  // 擋掉拖放結束後可能緊接著觸發的那次 click，避免又多開一次視窗——
+  // 用時間到了自動解除，而不是「等下一次 click 來重設」，因為來源跟放開的格子不是同一格時，
+  // 瀏覽器常常根本不會補發 click，這個旗標會一直卡著 true，誤擋到之後真正的點擊。
+  window.__seatJustDragged = true;
+  setTimeout(()=>{ window.__seatJustDragged = false; }, 300);
+  const target = findSeatDropTargetAt(e.clientX, e.clientY);
+  resolveSeatDrop(target, drag);
+});
+document.addEventListener('pointercancel', function(){
+  seatPointerDrag = null;
+  clearSeatDropHighlight();
+  removeSeatDragGhost();
+  stopAutoScroll();
+});
 
 function openSeatAssignModal(key){
   seatAssignTarget = key;
