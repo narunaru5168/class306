@@ -766,6 +766,18 @@
   </div>
 </div>
 
+<!-- ── 💪 努力值 Modal（不受修復任務限制，隨時可以肯定學生） ── -->
+<div class="modal-overlay" id="effortModal">
+  <div class="modal" style="max-width:420px;">
+    <h3>💪 肯定努力：<span id="effortModalName"></span></h3>
+    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:10px;">不管星星有沒有被鎖住，努力值永遠都加得到——點一下常見情境，或自己輸入。</div>
+    <div id="effortQuickList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('effortModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 行為觀察紀錄 Modal ── -->
 <div class="modal-overlay" id="behaviorLogModal">
   <div class="modal" style="max-width:460px;">
@@ -4863,9 +4875,11 @@ function confirmBatchStar(){
   const amt = Math.max(1, parseInt(document.getElementById('batchStarAmt').value)||1);
   const reason = document.getElementById('batchStarReason').value || (batchStarType==='add' ? '批次加星' : '批次扣星');
   const targets = students.filter(s=>batchSelected.has(s.id));
+  const skipped = [];
   targets.forEach(s=>{
     s.log = s.log||[];
     if(batchStarType==='add'){
+      if(hasPendingRepair(s)){ skipped.push(s.name); return; }
       grantStars(s, amt);
       s.log.push({id:generateId(), reason, amt, date:new Date().toLocaleDateString('zh-TW')});
       if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
@@ -4880,8 +4894,10 @@ function confirmBatchStar(){
   });
   save(); renderStudents(); updateStats();
   closeModal('batchStarModal');
+  const awardedCount = targets.length - skipped.length;
+  const skipNote = skipped.length ? `（⚠️ ${skipped.join('、')} 還有修復任務未完成，自動跳過沒有加）` : '';
   toast(batchStarType==='add'
-    ? `⭐ ${targets.length} 位學生各獲得 ${amt} 顆星！（${reason}）`
+    ? `⭐ ${awardedCount} 位學生各獲得 ${amt} 顆星！（${reason}）${skipNote}`
     : `－ ${targets.length} 位學生各扣除 ${amt} 顆星（${reason}）`);
   toggleBatchMode();
 }
@@ -4907,6 +4923,11 @@ function renderStudents(){
     const lv=levelInfo(s.stars);
     const pct=Math.min(lv.pct,100).toFixed(0);
     const pendingList=pendingChallengesFor(s.id);
+    // 不受「未修復擋星星」影響的鼓勵軌道：連續保持天數 + 努力值，學生自己也看得到
+    const streakDays = behaviorStreakDays(s);
+    const streakText = streakDays==null ? '👍 保持得很好，繼續加油！' : `🔥 連續 ${streakDays} 天保持得很好`;
+    const effortPoints = s.effortPoints||0;
+    const effortBadgesHtml = (s.effortBadges||[]).slice(-3).map(b=>`<span class="badge" style="background:#f5f3ff;color:#6d28d9;">${b}</span>`).join('');
     const div=document.createElement('div');
     div.className='student-card'+(batchMode&&batchSelected.has(s.id)?' batch-selected':'');
     div.style.borderTopColor=lv.color;
@@ -4926,7 +4947,8 @@ function renderStudents(){
       <div class="name" ${batchMode?'':`onclick="renameStudent(${s.id})" style="cursor:pointer;" title="點擊修改姓名"`}>${s.name} ${batchMode?'':'<span style="font-size:.7em;opacity:.5;">✏️</span>'}</div>
       <div class="sid">學號 ${s.sid}</div>
       <div class="trait-badge-row">${(s.traitBadges||[]).slice(-5).map(b=>`<span title="${b.label}">${b.emoji}</span>`).join('')}</div>
-      <div class="badge-row">${(s.badges||[]).slice(-3).map(b=>`<span class="badge">${b}</span>`).join('')}</div>
+      <div class="badge-row">${(s.badges||[]).slice(-3).map(b=>`<span class="badge">${b}</span>`).join('')}${effortBadgesHtml}</div>
+      <div style="font-size:.68rem;font-weight:800;color:#16a34a;margin-bottom:2px;" title="這個不會被修復任務鎖住，只要沒有新的行為扣分就會一直累積">${streakText}</div>
       ${(s.repairTasks||[]).filter(t=>!t.done).length>0?`<div class="repair-indicator" onclick="openRepairTasksModal(${s.id})" style="cursor:pointer;" title="點擊查看並標記完成">🔧 有修復任務待完成</div>`:''}
       ${pendingList.length>0 ? `<div style="margin:2px 0 4px;display:flex;gap:4px;">
           <button class="btn" style="flex:1;background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:5px 8px;font-size:.7rem;font-weight:800;" onclick="startGameChallenge(${s.id},'${pendingList[0][0]}')" title="轉盤抽到但還沒去玩的語詞遊戲挑戰，點一下就開始">🎮 待完成挑戰${pendingList.length>1?` ×${pendingList.length}`:''}（點我開始）</button>
@@ -4935,6 +4957,7 @@ function renderStudents(){
       <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
       <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
+      <div style="font-size:.68rem;font-weight:800;color:#6d28d9;margin-bottom:2px;" title="努力值不受修復任務限制，隨時都加得到">💪 努力值 ${effortPoints}</div>
       <div style="font-size:.62rem;font-weight:800;color:#0ea5a4;margin-bottom:2px;">📚已讀${readingCountFor(s.id)}本</div>
       <div style="font-size:.62rem;font-weight:800;color:${isWastingChance(s)?'#dc2626':(chancesLeft(s)>0?'#16a34a':'#94a3b8')};margin-bottom:3px;">
         ${isWastingChance(s) ? `⚠️ 已達上限，快提醒他來抽選！` : (chancesLeft(s)>0 ? `🎟️ 可抽選 ${chancesLeft(s)} 次` : `🎟️ ${chanceProgressText(s)}`)}
@@ -4948,6 +4971,7 @@ function renderStudents(){
         <button class="ebtn ebtn-role"  title="角色" onclick="openRoleModal(${s.id})">👑</button>
         <button class="ebtn ebtn-note"  title="${s.note && s.note.trim() ? '已有備忘紀錄，點擊查看' : '備忘'}" style="position:relative;" onclick="toggleNote(${s.id})">📝${s.note && s.note.trim() ? '<span style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#ef4444;border-radius:50%;border:1.5px solid #fff;"></span>' : ''}</button>
         <button class="ebtn ebtn-star"  title="認可" onclick="openRecognitionModal(${s.id})">🌟</button>
+        <button class="ebtn" style="background:#f5f3ff;color:#6d28d9;" title="肯定努力（不受修復任務限制）" onclick="openEffortModal(${s.id})">💪</button>
         <button class="ebtn" style="background:#e0f2fe;color:#0369a1;" title="成長圖" onclick="openGrowthChart(${s.id})">📈</button>
         <button class="ebtn" style="background:#fef2f2;color:#dc2626;position:relative;" title="${(s.behaviorLog&&s.behaviorLog.length>0) ? '已有觀察紀錄，點擊查看' : '行為觀察紀錄'}" onclick="openBehaviorLogModal(${s.id})">🔍${(s.behaviorLog&&s.behaviorLog.length>0) ? '<span style="position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#dc2626;border-radius:50%;border:1.5px solid #fff;"></span>' : ''}</button>
       </div>
@@ -5451,6 +5475,11 @@ function confirmSubStar(){
     reasonText += `：${selectedRepair}`;
     toast(`🔧 ${s.name} 扣 ${actualAmt} 星，指派修復任務：${selectedRepair}`);
   } else { toast(`－ ${s.name} 扣除 ${actualAmt} 顆星`); }
+  if(subType==='behavior'){
+    // 行為問題重新計一次「連續保持天數」的起點，讓這個鼓勵指標能忠實反映最近的狀況
+    s.lastBehaviorIncidentAt = Date.now();
+    s.streakMilestonesHit = [];
+  }
   s.log.push({id:generateId(), reason:reasonText, amt:-actualAmt, date:new Date().toLocaleDateString('zh-TW')});
   save(); renderStudents(); updateStats(); closeModal('subStarModal');
 }
@@ -5651,7 +5680,96 @@ const CHANCE_THRESHOLD = 8;   // 每累積 8 顆星解鎖 1 次（原本 5 顆�
 const MAX_STORED_CHANCES = 2; // 最多囤 2 次，鼓勵儘快使用，避免少數孩子壟斷抽選、造成不公平觀感
 const SURPRISE_BONUS_RATE = 0.12; // 12% 機率額外「驚喜加碼」一次，維持不可預期的新鮮感
 
+// 檢查這位學生還有沒有「未完成的修復任務」——只要還有任何一筆沒標記完成，
+// 在修復之前，不管從哪裡來的星星都不能再累積（老師的要求：慣性扣星又不修復的話要先擋住）。
+function hasPendingRepair(s){
+  return (s.repairTasks||[]).some(t=>!t.done);
+}
+function pendingRepairSummary(s){
+  return (s.repairTasks||[]).filter(t=>!t.done).map(t=>t.task).join('、');
+}
+
+// ─── 不受「未修復擋星星」影響的鼓勵軌道 ───
+// 給容易因為行為問題被扣星、又常常卡在修復任務裡的孩子，另外留一條「只會往上、不會被鎖住」的進步感：
+// ①「連續保持天數」：自動算的，不用老師手動記，只要沒有新的行為扣分，天數就一直累積，到了裡程碑會慶祝；
+// ② 獨立的「努力值」：老師可以隨時肯定學生的努力或態度，完全不受修復任務卡住，想加就能加。
+const STREAK_MILESTONES = [3, 7, 14, 30];
+const EFFORT_MILESTONES = [5, 10, 20, 40];
+
+// 算出這位學生最近一次「行為扣分」是什麼時候（毫秒時間戳）。
+// 新資料會直接存在 lastBehaviorIncidentAt；舊資料沒有這個欄位的話，退而求其次從星星紀錄裡找最近一筆「行為扣分」反推，
+// 這樣舊學生資料也能馬上開始計算，不用老師重新設定。真的完全沒有行為扣分紀錄的話，回傳 null（代表「從有紀錄以來都很好」）。
+function lastBehaviorIncidentAt(s){
+  if(s.lastBehaviorIncidentAt) return s.lastBehaviorIncidentAt;
+  const logs = (s.log||[]).filter(l=>l.reason && l.reason.indexOf('行為扣分')===0);
+  if(!logs.length) return null;
+  const times = logs.map(l=>new Date(l.date).getTime()).filter(t=>!isNaN(t));
+  if(!times.length) return null;
+  return Math.max(...times);
+}
+// 回傳連續保持的天數；null 代表還沒有任何行為扣分紀錄（還沒開始計算，但顯示上可以當作「保持得很好」）
+function behaviorStreakDays(s){
+  const at = lastBehaviorIncidentAt(s);
+  if(at==null) return null;
+  const days = Math.floor((Date.now() - at) / 86400000);
+  return Math.max(0, days);
+}
+// 檢查每位學生的連續天數有沒有達到新的里程碑，第一次達到時慶祝一下（只慶祝「這次新達到的最高一階」，避免一次跳好幾階洗版）。
+// 這個檢查是「衍生計算」而不是被動觸發的，所以用跟月底獎勵一樣的做法：開啟網站時統一檢查一次就好。
+function checkStreakMilestones(){
+  let anyHit = false;
+  students.forEach(s=>{
+    const days = behaviorStreakDays(s);
+    if(days==null) return;
+    s.streakMilestonesHit = s.streakMilestonesHit || [];
+    const newTiers = STREAK_MILESTONES.filter(t=>days>=t && !s.streakMilestonesHit.includes(t));
+    if(newTiers.length){
+      const highest = Math.max(...newTiers);
+      s.streakMilestonesHit.push(...newTiers);
+      anyHit = true;
+      setTimeout(()=>{
+        toast(`🔥 ${s.name} 已經連續 ${highest} 天保持得很好，繼續加油！`);
+        confetti();
+      }, 400);
+    }
+  });
+  if(anyHit){ save(); renderStudents(); }
+}
+// 老師肯定學生的努力／態度，永遠不會被修復任務擋住——這條路線是故意設計成「只要有心就加得到」。
+function addEffortPoint(id, reason){
+  const s = students.find(x=>x.id===id);
+  if(!s) return;
+  const finalReason = reason || '持續努力';
+  s.effortPoints = (s.effortPoints||0) + 1;
+  s.effortLog = s.effortLog || [];
+  s.effortLog.push({ id: generateId(), reason: finalReason, date: new Date().toLocaleDateString('zh-TW') });
+  s.effortBadges = s.effortBadges || [];
+  let newBadgeTier = null;
+  EFFORT_MILESTONES.forEach(t=>{
+    if(s.effortPoints>=t && !s.effortBadges.includes('💪×'+t)){ s.effortBadges.push('💪×'+t); newBadgeTier = t; }
+  });
+  save(); renderStudents(); closeModal('effortModal');
+  toast(`💪 ${s.name} 獲得 1 點努力值！（${finalReason}）`);
+  if(newBadgeTier){
+    setTimeout(()=>{ toast(`🌈 ${s.name} 累積 ${newBadgeTier} 點努力值，達成新里程碑！`); confetti(); }, 600);
+  }
+}
+let effortModalTarget = null;
+const EFFORT_QUICK_REASONS = ['認真嘗試', '主動改善', '比昨天更好', '願意道歉／和好', '沒有放棄'];
+function openEffortModal(id){
+  effortModalTarget = id;
+  const s = students.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('effortModalName').textContent = s.name;
+  const list = document.getElementById('effortQuickList');
+  list.innerHTML = EFFORT_QUICK_REASONS.map(r=>
+    `<button type="button" class="btn" style="background:#f5f3ff;color:#6d28d9;font-size:.8rem;padding:8px 12px;text-align:left;" onclick="addEffortPoint(${id}, '${r}')">✓ ${r}</button>`
+  ).join('') + `<button type="button" class="btn" style="background:#fff;border:1px dashed #cbd5e1;color:#94a3b8;font-size:.8rem;padding:8px 12px;text-align:left;" onclick="const t=prompt('自己輸入肯定的原因？'); if(t&&t.trim()) addEffortPoint(${id}, t.trim());">✏️ 自己輸入</button>`;
+  openModal('effortModal');
+}
+// 回傳 true＝有成功加到星星，false＝因為還有未完成的修復任務被擋下來（完全不會加）
 function grantStars(s, amt){
+  if(hasPendingRepair(s)) return false;
   const beforeLevel = levelInfo(s.stars).label;
   s.stars += amt;
   const afterLevel = levelInfo(s.stars).label;
@@ -5681,6 +5799,7 @@ function grantStars(s, amt){
   if(unlocked > 0){
     setTimeout(()=>toast(`🎟️ ${s.name} 解鎖了 ${unlocked} 次潛能抽選機會！`), 400);
   }
+  return true;
 }
 function chancesLeft(s){ return s.spinChances||0; }
 function isWastingChance(s){ return (s.spinChances||0) >= MAX_STORED_CHANCES && (s.chanceProgress||0) > 0; }
@@ -5696,6 +5815,11 @@ function confirmAddStar(){
   const reason=document.getElementById('addStarReason').value;
   const note=document.getElementById('addStarNote').value.trim();
   const fullReason = note ? `${reason} — ${note}` : reason;
+  if(hasPendingRepair(s)){
+    toast(`⚠️ ${s.name} 還有未完成的修復任務（${pendingRepairSummary(s)}），要先完成才能再加星星`);
+    closeModal('addStarModal');
+    return;
+  }
   grantStars(s, amt);
   s.log=s.log||[];
   s.log.push({id:generateId(), reason:fullReason,amt,date:new Date().toLocaleDateString('zh-TW')});
@@ -6103,11 +6227,14 @@ function settleCorrectionTracker(id){
   const warnAgain = t.settled ? '\n\n⚠️ 這份追蹤表已經結算過一次，再結算一次會重複加扣星星！' : '';
   if(!confirm(`確定要結算「${t.name}」嗎？\n\n✅ 已完成 ${doneStudents.length} 位，每人 +${reward} 顆星\n⭕ 未完成 ${undoneStudents.length} 位，每人 -${penalty} 顆星${warnAgain}`)) return;
 
+  const settleSkipped = [];
   doneStudents.forEach(s=>{
-    if(reward>0) grantStars(s, reward);
     s.log = s.log||[];
+    if(reward>0 && hasPendingRepair(s)){ settleSkipped.push(s.name); return; }
+    if(reward>0) grantStars(s, reward);
     s.log.push({id:generateId(), reason:`📝 ${t.name}（已完成）`, amt:reward, date:new Date().toLocaleDateString('zh-TW')});
   });
+  if(settleSkipped.length) setTimeout(()=>toast(`⚠️ ${settleSkipped.join('、')} 還有修復任務未完成，這次先跳過沒有加星`), 600);
   undoneStudents.forEach(s=>{
     const actual = Math.min(penalty, s.stars);
     s.stars = Math.max(0, s.stars - penalty);
@@ -6277,7 +6404,9 @@ function toggleTeamDailyCheck(teamIdx, studentId, cat){
       teamDailyChecks.starsAwarded[t.id][cat] = true;
       // 改走跟手動加星一樣的 grantStars()，這樣小組競賽發的星星也會正確累積「潛能抽選」的進度，
       // 並且寫進學生的星星紀錄 log 裡（方便之後查、也可以用「復原」收回）。
+      const teamDailySkipped = [];
       roster.forEach(s=>{
+        if(hasPendingRepair(s)){ teamDailySkipped.push(s.name); return; }
         grantStars(s, 1);
         s.log = s.log || [];
         s.log.push({ id: generateId(), reason: `🏆 小組競賽：${t.name}「${cat}」全組達成`, amt: 1, date: new Date().toLocaleDateString('zh-TW') });
@@ -6286,7 +6415,7 @@ function toggleTeamDailyCheck(teamIdx, studentId, cat){
         if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
         if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
       });
-      toast(`⭐ ${t.name}「${cat}」今天全組都完成了，每人 +1 顆星星！`);
+      toast(`⭐ ${t.name}「${cat}」今天全組都完成了，每人 +1 顆星星！${teamDailySkipped.length?`（⚠️ ${teamDailySkipped.join('、')} 修復任務未完成，沒有加）`:''}`);
       confetti();
       renderStudents(); updateStats();
     }
@@ -6601,18 +6730,25 @@ function confirmReadingLog(){
   if(!book){ toast('⚠️ 請輸入書名'); return; }
   const s = students.find(x=>x.id==sid);
   readingLog.push({id:generateId(), studentId:sid, studentName:s?s.name:'', book, mood:readingLogMoodSelected, note, date:new Date().toLocaleDateString('zh-TW')});
+  let readingBlocked = false;
   if(s){
-    grantStars(s, 3);
-    s.log=s.log||[];
-    s.log.push({id:generateId(), reason:`📚 閱讀打卡（${book}）`, amt:3, date:new Date().toLocaleDateString('zh-TW')});
-    if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
-    if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
-    if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
-    if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
+    if(hasPendingRepair(s)){
+      readingBlocked = true;
+    } else {
+      grantStars(s, 3);
+      s.log=s.log||[];
+      s.log.push({id:generateId(), reason:`📚 閱讀打卡（${book}）`, amt:3, date:new Date().toLocaleDateString('zh-TW')});
+      if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
+      if(s.stars>=120 && !s.badges.includes('🌊浪人')) s.badges.push('🌊浪人');
+      if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
+      if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
+    }
   }
   save(); renderReadingLogList(); renderStudents(); updateStats();
   closeModal('readingLogModal');
-  toast(`📚 已記錄 ${s?s.name:''} 的閱讀打卡！並獲得 3 顆星⭐`);
+  toast(readingBlocked
+    ? `📚 已記錄 ${s?s.name:''} 的閱讀打卡，但還有未完成的修復任務，這次沒有加星`
+    : `📚 已記錄 ${s?s.name:''} 的閱讀打卡！並獲得 3 顆星⭐`);
 }
 function renderReadingLogList(){
   const wrap = document.getElementById('readingLogList');
@@ -7747,18 +7883,23 @@ function applyMonthlySettlement(){
   if(!monthlySettleData) return;
   const { period, rows } = monthlySettleData;
   let totalStarGroups = 0;
+  const settlementSkipped = [];
   rows.forEach(r=>{
     if(r.currentAvg===null) return; // 這組沒成績資料，不建立基準、不加星
     if(r.stars>0){
       const members = (r.group.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
-      members.forEach(s=>{ s.stars = (s.stars||0) + r.stars; });
+      members.forEach(s=>{
+        if(hasPendingRepair(s)){ settlementSkipped.push(s.name); return; }
+        s.stars = (s.stars||0) + r.stars;
+      });
       totalStarGroups++;
     }
     groupMonthlySnapshot[r.group.id] = { period, avg: r.currentAvg };
   });
   save(); renderStudents(); updateStats(); renderMutualAidGroups();
   closeModal('monthlySettleModal');
-  toast(totalStarGroups>0 ? `🏆 已套用本月進步星星，共有 ${totalStarGroups} 組進步、記錄新基準！` : '📌 已記錄本月基準（這次還沒有組達到進步標準）');
+  const skipNote = settlementSkipped.length ? `（⚠️ ${settlementSkipped.join('、')} 修復任務未完成，沒有加）` : '';
+  toast(totalStarGroups>0 ? `🏆 已套用本月進步星星，共有 ${totalStarGroups} 組進步、記錄新基準！${skipNote}` : '📌 已記錄本月基準（這次還沒有組達到進步標準）');
 }
 
 // ─── 個別學生的「小考走勢」：用本學期各單元小考分數（已經是時間順序）畫走勢圖 ───
@@ -7932,6 +8073,7 @@ function suggestStarFromTrend(studentId, btnEl, label, sheetName, n){
   if(!s) return;
   label = label || '進步中';
   if(hasTrendStarAlready(s, sheetName, label, n)){ toast('這一筆之前已經加過星星了'); return; }
+  if(hasPendingRepair(s)){ toast(`⚠️ ${s.name} 還有未完成的修復任務（${pendingRepairSummary(s)}），要先完成才能再加星星`); return; }
   if(!confirm(`要幫 ${s.name} 加 1 顆星嗎？（因為小考走勢顯示${label}）`)) return;
   grantStars(s, 1);
   s.log = s.log || [];
@@ -8114,14 +8256,19 @@ function quickAddMutualAidNote(text){
   if(hitMilestone){
     g.celebratedTiers.push(hitMilestone.count);
     const members = (g.studentIds||[]).map(id=>students.find(s=>s.id===id)).filter(Boolean);
+    let mutualAidSkipped = [];
     if(hitMilestone.stars > 0){
-      members.forEach(s=>{ s.stars += hitMilestone.stars; });
+      members.forEach(s=>{
+        if(hasPendingRepair(s)){ mutualAidSkipped.push(s.name); return; }
+        s.stars += hitMilestone.stars;
+      });
       renderStudents(); updateStats();
     }
     save();
     setTimeout(()=>{
       confetti();
-      toast(`🎉 ${g.name} 一起達成「${hitMilestone.label}」！${hitMilestone.stars>0 ? `全組每人 +${hitMilestone.stars} 顆星！` : '繼續加油！'}`);
+      const skipNote = mutualAidSkipped.length ? `（⚠️ ${mutualAidSkipped.join('、')} 修復任務未完成，沒有加）` : '';
+      toast(`🎉 ${g.name} 一起達成「${hitMilestone.label}」！${hitMilestone.stars>0 ? `全組每人 +${hitMilestone.stars} 顆星！${skipNote}` : '繼續加油！'}`);
     }, 300);
   } else {
     toast('📝 已記錄一筆互助！');
@@ -8222,13 +8369,16 @@ function manualForceMonthlyAward(){
     ? '這個月已經有發放記錄了，再按一次會讓幹部再拿10顆星、組長再拿5顆星（等於重複發放一次）。確定要再發一次嗎？'
     : '確定要現在手動發放這個月的幹部／組長星星獎勵嗎？（幹部＋10顆星，組長＋5顆星，每人只會算一次）';
   if(!confirm(msg)) return;
-  const awarded = runOfficerLeaderMonthlyAward();
+  const { awarded, skipped } = runOfficerLeaderMonthlyAward();
   officerMonthlyAward.lastAwardedMonth = nowKey;
   save();
   renderOfficerMonthlyAwardStatusBox();
+  const skipNote = skipped.length ? `（⚠️ ${skipped.join('、')} 還有修復任務未完成，沒有加）` : '';
   if(awarded){
     renderStudents(); updateStats();
-    toast('🎉 已經手動發放這個月的星星獎勵囉！');
+    toast(`🎉 已經手動發放這個月的星星獎勵囉！${skipNote}`);
+  } else if(skipped.length){
+    toast(`⚠️ 這個月的幹部／組長都還有未完成的修復任務，沒有發放星星：${skipped.join('、')}`);
   } else {
     toast('⚠️ 目前沒有設定任何幹部或組長，沒有人可以發放星星');
   }
@@ -8333,19 +8483,24 @@ function nextMonthKey(key){
   const [y, m] = key.split('-').map(Number);
   return monthKeyOf(new Date(y, m, 1)); // m是1~12，剛好等於JS Date「下個月」的0-indexed月份
 }
+// 回傳 { awarded, skipped }：awarded＝有沒有人真的拿到星星，skipped＝因為還有未完成的修復任務被擋下來的名字清單
 function runOfficerLeaderMonthlyAward(){
   const officerIds = new Set();
   Object.values(classOfficers||{}).forEach(arr=>{ (arr||[]).forEach(id=>{ if(id) officerIds.add(id); }); });
   const leaderIds = new Set();
   (teamScores||[]).forEach(t=>{ if(t && t.leaderId) leaderIds.add(t.leaderId); });
-  if(officerIds.size===0 && leaderIds.size===0) return false;
+  if(officerIds.size===0 && leaderIds.size===0) return { awarded:false, skipped:[] };
 
   const todayStr = new Date().toLocaleDateString('zh-TW');
+  let awarded = false;
+  const skipped = [];
   function awardOne(id, amt, reason){
     const s = students.find(x=>x.id==id);
     if(!s) return;
+    if(hasPendingRepair(s)){ if(!skipped.includes(s.name)) skipped.push(s.name); return; }
     // 改走跟手動加星一樣的 grantStars()，這樣月底獎勵也會正確累積「潛能抽選」的進度，不會被跳過
     grantStars(s, amt);
+    awarded = true;
     s.log = s.log || [];
     s.log.push({ id: generateId(), reason, amt, date: todayStr });
     if(s.stars>=40 && !s.badges.includes('🌱新芽')) s.badges.push('🌱新芽');
@@ -8355,7 +8510,7 @@ function runOfficerLeaderMonthlyAward(){
   }
   officerIds.forEach(id=> awardOne(id, 10, '🎗️ 月底幹部獎勵'));
   leaderIds.forEach(id=> awardOne(id, 5, '👑 月底組長獎勵'));
-  return true;
+  return { awarded, skipped };
 }
 function ensureMonthlyOfficerLeaderAward(){
   if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
@@ -8380,12 +8535,15 @@ function ensureMonthlyOfficerLeaderAward(){
   }
 
   // 否則：要麼是「現在月底了，提前發放這個月的獎勵」，要麼是「錯過好幾個月底、現在補發一次」
-  const awarded = runOfficerLeaderMonthlyAward();
+  const { awarded, skipped } = runOfficerLeaderMonthlyAward();
   officerMonthlyAward.lastAwardedMonth = nowKey;
   save();
   if(awarded){
     renderStudents(); updateStats();
-    setTimeout(()=>{ toast('🎉 已經自動幫幹部／組長發放這個月的星星獎勵囉！'); }, 800);
+    const skipNote = skipped.length ? `（⚠️ ${skipped.join('、')} 還有修復任務未完成，先跳過沒有加）` : '';
+    setTimeout(()=>{ toast(`🎉 已經自動幫幹部／組長發放這個月的星星獎勵囉！${skipNote}`); }, 800);
+  } else if(skipped.length){
+    setTimeout(()=>{ toast(`⚠️ 這個月的幹部／組長都還有未完成的修復任務（${skipped.join('、')}），沒有發放星星`); }, 800);
   }
 }
 
@@ -8412,7 +8570,9 @@ function addGrade(){
   const s=students.find(x=>x.id==sid);
   grades.push({studentId:sid,studentName:s.name,studentSid:s.sid,subject:currentGradeType,name,score,date:new Date().toLocaleDateString()});
   // bonus stars for good score
-  if(score>=90){ grantStars(s,3); toast(`🎉 ${s.name} 成績優秀，自動獲得 3 顆星！`); confetti(); }
+  if(score>=70 && hasPendingRepair(s)){
+    toast(`📝 成績已登記！（${s.name}還有未完成的修復任務，這次先沒有加星）`);
+  } else if(score>=90){ grantStars(s,3); toast(`🎉 ${s.name} 成績優秀，自動獲得 3 顆星！`); confetti(); }
   else if(score>=80){ grantStars(s,2); toast(`✨ ${s.name} 成績良好，自動獲得 2 顆星！`); }
   else if(score>=70){ grantStars(s,1); toast(`👍 ${s.name} 成績不錯，自動獲得 1 顆星！`); }
   else { toast(`📝 成績已登記！繼續加油！`); }
@@ -8643,12 +8803,23 @@ function spinWheel(){
     // if stars reward
     if(result.label.includes('加3顆星')){
       const s=students.find(x=>x.id==sid);
-      if(s){ s.stars+=3; addStarDelta(s.id, 3); save(); renderStudents(); updateStats(); }
+      if(s){
+        if(hasPendingRepair(s)){
+          setTimeout(()=>toast(`⚠️ ${s.name} 還有未完成的修復任務，這次抽到的星星沒有加`), 600);
+        } else {
+          s.stars+=3; addStarDelta(s.id, 3); save(); renderStudents(); updateStats();
+        }
+      }
     }
     // 特殊獎勵：全班加一顆星
     if(result.label.includes('全班加一顆星')){
-      students.forEach(st=>{ st.stars+=1; addStarDelta(st.id, 1); });
+      const wheelSkipped = [];
+      students.forEach(st=>{
+        if(hasPendingRepair(st)){ wheelSkipped.push(st.name); return; }
+        st.stars+=1; addStarDelta(st.id, 1);
+      });
       save(); renderStudents(); updateStats();
+      if(wheelSkipped.length) setTimeout(()=>toast(`⚠️ ${wheelSkipped.join('、')} 還有修復任務未完成，這次沒有加`), 600);
     }
     // 特殊獎勵：榮譽公告 → 直接跳出認可輸入框，不用再跑去夥伴名冊找人
     if(result.label.includes('榮譽公告')){
@@ -8886,10 +9057,14 @@ function setupPendingStarAwardsListener(){
       if(!award){ snap.ref.remove().catch(()=>{}); return; }
       const s = students.find(x=>x.id==award.studentId);
       if(s){
-        grantStars(s, award.amount||0);
+        const gotIt = grantStars(s, award.amount||0);
         save(); renderStudents(); updateStats(); populateWheelSelect();
-        toast(`🎮 ${s.name} 完成了語詞遊戲挑戰，獲得 ${award.amount||0} 顆星！`);
-        confetti();
+        if(gotIt){
+          toast(`🎮 ${s.name} 完成了語詞遊戲挑戰，獲得 ${award.amount||0} 顆星！`);
+          confetti();
+        } else {
+          toast(`🎮 ${s.name} 完成了語詞遊戲挑戰，但還有未完成的修復任務，這次沒有加星`);
+        }
       }
       snap.ref.remove().catch(()=>{});
     });
@@ -9030,10 +9205,14 @@ document.addEventListener('DOMContentLoaded',()=>{
       // apply star reward
       const starsToAdd=dartScoreTotal>=10?5:dartScoreTotal>=7?3:dartScoreTotal>=4?1:1;
       const s=students.find(x=>x.id==sid);
-      if(s){ s.stars+=starsToAdd; save(); renderStudents(); updateStats(); }
-      toast(`🎯 ${s?s.name:''} 射飛鏢得 ${dartScoreTotal} 分！`);
+      const dartBlocked = s && hasPendingRepair(s);
+      const actualStarsAdded = dartBlocked ? 0 : starsToAdd;
+      if(s && !dartBlocked){ s.stars+=starsToAdd; save(); renderStudents(); updateStats(); }
+      toast(dartBlocked
+        ? `🎯 ${s?s.name:''} 射飛鏢得 ${dartScoreTotal} 分！但還有未完成的修復任務，這次沒有加星`
+        : `🎯 ${s?s.name:''} 射飛鏢得 ${dartScoreTotal} 分！`);
       confetti();
-      lastDartRecord = { studentId: sid, studentName: s?s.name:'', starsAdded: starsToAdd, spinChanceDelta };
+      lastDartRecord = { studentId: sid, studentName: s?s.name:'', starsAdded: actualStarsAdded, spinChanceDelta };
       document.getElementById('undoDartBtn').style.display = 'inline-block';
     }
   });
@@ -9665,16 +9844,21 @@ function confirmMissionApply(){
   if(missionApplySelected.size===0){ toast('⚠️ 請先勾選至少一位學生！'); return; }
   const m=missions[missionApplyIndex];
   const targets = students.filter(s=>missionApplySelected.has(s.id));
+  const missionSkipped = [];
   targets.forEach(s=>{
+    if(hasPendingRepair(s)){ missionSkipped.push(s.name); return; }
     grantStars(s, m.pts);
     s.log = s.log||[];
     s.log.push({id:generateId(), reason:`${m.icon} ${m.title}`, amt:m.pts, date:new Date().toLocaleDateString('zh-TW')});
   });
   save(); renderStudents(); updateStats();
   closeModal('missionApplyModal');
-  const names = targets.map(s=>s.name).join('、');
-  toast(`🎉 ${names} 完成「${m.title}」任務，各獲得 ${m.pts} 顆星！`);
-  if(m.pts>=2) confetti();
+  const awardedNames = targets.filter(s=>!missionSkipped.includes(s.name)).map(s=>s.name).join('、');
+  const skipNote = missionSkipped.length ? `（⚠️ ${missionSkipped.join('、')} 修復任務未完成，自動跳過沒有加）` : '';
+  toast(awardedNames
+    ? `🎉 ${awardedNames} 完成「${m.title}」任務，各獲得 ${m.pts} 顆星！${skipNote}`
+    : `⚠️ 勾選的學生都還有未完成的修復任務，沒有發放星星：${missionSkipped.join('、')}`);
+  if(m.pts>=2 && awardedNames) confetti();
 }
 
 // ─── 課堂音樂播放器 ───
@@ -9901,6 +10085,7 @@ async function initApp() {
   // 避免雲端連線不穩、畫面用空白/本機備份頂替的時候，誤判「上個月結束」而發錯獎勵
   if (!rosterWasAutoSeeded && !cloudSyncHadIssue) {
     try { ensureMonthlyOfficerLeaderAward(); } catch(e) { console.warn('幹部／組長月底獎勵檢查失敗', e); }
+    try { checkStreakMilestones(); } catch(e) { console.warn('連續保持天數里程碑檢查失敗', e); }
   }
 
   // 恢復已儲存的 Apps Script 網址和成績表格
