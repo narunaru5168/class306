@@ -6919,6 +6919,33 @@ function appendSeatedStudentToColumn(sourceKey, col){
   const [sc, sr] = sourceKey.split('-').map(Number);
   const colSizes = seatingChart.colSizes || [];
   if(sc!==col && (colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
+  // 拖到「自己原本那一排」的最後面，人數條件其實是曖昧的：這一排本來就只有這幾個人，
+  // 單純拖到最後面只是重新排序（他會變成目前這幾人中的最後一個），不會真的多出一個新位子；
+  // 但老師也可能是想要「幫這一排多開一個新位子」，讓他變成真正新增的那一位、原本的位子留空。
+  // 這兩種意思沒辦法用拖曳動作本身分辨，所以主動問一下，問完照她的回答做。
+  if(sc===col){
+    const stu = students.find(s=>s.id===sid);
+    const name = stu ? stu.name : '這位同學';
+    const newLastPos = (colSizes[col]||0); // 單純重新排序的話，他會排到第幾位（從1算）
+    const expandPos = newLastPos + 1; // 如果改成多開新位子，他會變成第幾位
+    const wantsExpand = confirm(
+      `${name}已經在這一排了，拖到這裡預設只是把他排到最後面（變成第${newLastPos}位，跟其他人重新排序，不會多出新位子）。\n\n` +
+      `要不要改成「幫這一排多加一個新位子」？這樣他會變成真正的第${expandPos}位，原本他坐的位子會留空（不會自動被後面的人補上）。\n\n` +
+      `按「確定」＝多加新位子／按「取消」＝只是排到最後面`
+    );
+    if(wantsExpand){
+      if((colSizes[col]||0) >= 10){ toast('⚠️ 這一排已經到上限 10 人了，沒辦法再加'); return; }
+      snapshotSeatingForUndo();
+      delete seatingChart.seats[sourceKey]; // 原本的位子刻意留空，不自動補位
+      const newRow = colSizes[col] || 0;
+      colSizes[col] = newRow + 1;
+      seatingChart.seats[seatKey(col, newRow)] = sid;
+      save(); renderSeatingChart();
+      toast(`🪑 已經幫這一排多開一個位子，${name}變成第${newRow+1}位了！`);
+      return;
+    }
+    // 選「取消」就照原本的方式，繼續往下走普通的重新排序
+  }
   snapshotSeatingForUndo();
   removeStudentFromColumnCompact(sc, sr);
   const newCount = (seatingChart.colSizes||[])[col] || 0;
