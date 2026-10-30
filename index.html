@@ -4652,21 +4652,20 @@ const AVATARS_GIRL = ['🌸','🦋','🌺','🌈','🦩','🐝','🌙','⭐','�
 let cloudSyncHadIssue = false;
 let rosterWasAutoSeeded = false; // 這次載入時，學生名單是空的、用預設名單頂替顯示（沒有存回雲端）
 async function saveField(path, value, localKey){
-  let ok = false;
+  // 永遠先把最新資料存進 localStorage，確保重新整理後資料不會消失
+  if (localKey) localStorage.setItem(localKey, typeof value==='string' ? value : JSON.stringify(value));
   if (useCloud && db) {
     try {
       await Promise.race([
         db.ref(path).set(value),
         new Promise((_,r)=>setTimeout(()=>r('timeout'),10000))
       ]);
-      ok = true;
     } catch(e) {
-      console.warn('雲端儲存失敗（改用本地備份）：' + path, e);
+      console.warn('雲端儲存失敗（已用本地備份）：' + path, e);
       cloudSyncHadIssue = true;
       toast('⚠️ 網路不穩，這筆修改暫時只存在這台裝置，建議稍後重新整理頁面再確認一次');
     }
   }
-  if (!ok) localStorage.setItem(localKey, typeof value==='string' ? value : JSON.stringify(value));
 }
 let saveChain = Promise.resolve();
 function save() {
@@ -10430,11 +10429,20 @@ async function autoGradeFromPhoto(input) {
               { type: 'text', text: `你是一位國小三年級專業作文指導老師。請仔細閱讀照片中學生的手寫作文，只回傳以下JSON格式，不要其他任何文字或說明：
 {"title":"此處填學生手寫的作文題目","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"highlights":[],"comment":"40到50字，先肯定最突出優點→指出最需改進之處→鼓勵結語。例如：段落清楚、語意流暢，敘述有條理。若能多加入成語和比喻句，文章會更生動有力。繼續加油，你的進步大家都看得見！","starsAwarded":3}
 
-【題目識別規則——非常重要】
-作文紙上有兩個區域，請分清楚：
-❌ 勾選框區（不是題目）：紙的一側有很多□勾選格，旁邊印有「詞句通順流暢」「標點運用正確」等評語選項，這是老師評分欄，完全忽略。
-✅ 題目框（這才是題目）：另有一個小方框或空格，旁邊標示「題目」二字，學生在裡面手寫自己的作文題目，請讀取這裡的手寫文字。
-→ 直式作文紙的題目框通常在紙的右上角。若真的看不清楚，title填空字串。
+【題目識別規則——絕對不能錯】
+這張作文紙有三個區塊，請依照以下步驟找題目：
+
+步驟1：先找到紙張最右側的那一欄（直式作文，最右欄是第一欄）
+步驟2：在那一欄的最頂端，會有「題目：」兩個印刷字，旁邊緊接著學生的手寫題目
+步驟3：讀取那裡的手寫文字，那就是 title
+
+❌ 絕對不是題目的地方：
+- 紙的左側印有「優點勾選」「老師建議」的勾選框區 → 完全忽略
+- 「詞句通順流暢」「標點運用正確」等印刷評語旁的框 → 完全忽略
+- 「分數」框 → 完全忽略
+- 作文正文的任何段落 → 完全忽略
+
+⚠️ 如果照片角度不好、看不清楚題目，請回傳 title:""（空字串），絕對不能自己猜測或從正文裡抄一句話當題目。
 
 【佳言美句規定——絕對禁止造句】
 highlights只能放從學生作文正文中逐字抄錄的原句/詞語，一字不改。若文中沒有出色詞句，就回傳空陣列[]。禁止自行創作或改寫任何句子。
@@ -10447,7 +10455,9 @@ highlights只能放從學生作文正文中逐字抄錄的原句/詞語，一字
 ■修辭詞句(1-5)：1=詞彙貧乏幾無修辭；2=詞彙單調鮮少成語；3=偶有美句詞彙達年級水準；4=有成語或修辭技巧詞句較優美；5=多處成語/排比/擬人等佳言美句出色
 優點只能從這10項中選數個：詞句通順流暢、標點運用正確、字體書寫工整、主旨符合明確、段落清楚分明、內容豐富充實、文章創意十足、引證客觀明確、結構紮實嚴謹、結尾呼應有力
 老師建議只能從這10項中選數個：語意要通順流暢、標點要運用妥當、字體要端正寫好、主旨要事先掌握、事先審題再下筆、內容要加深加廣、修辭要適時加入、創意要發揮加入、結尾要前後呼應、優美詞句多閱讀
-starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=良好(約85-90)；5=優秀(約95+)` }
+starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=良好(約85-90)；5=優秀(約95+)
+
+【評分校準——非常重要】三年級小學生作文，評分以鼓勵為主：✅ 3分（預設）＝文章完整、主旨清楚、符合三年級一般水準，大多數學生應得3分。⚠️ 2分＝明顯低於年級水準，有具體缺失（文不對題、段落混亂、標點嚴重錯誤）。❌ 1分＝僅限完全無法達標。請勿因為不夠文學性就扣分，三年級是學習階段，各項預設3分，有優點才加，有明顯問題才扣。` }
             ]
           }]
         })
@@ -10523,7 +10533,7 @@ function renderEssayList() {
   container.innerHTML = sorted2.map(r=>{
     const st = students.find(s=>s.id==r.studentId);
     const rawSum = r.dimScores ? Object.values(r.dimScores).reduce((a,v)=>a+v,0) : 15;
-    const total = Math.round((rawSum - 5) / 20 * 40 + 60);
+    const total = Math.max(80, Math.round((rawSum - 5) / 20 * 40 + 60));
     const stars = '⭐'.repeat(r.starsAwarded||0);
     return `<div class="card" style="margin-bottom:12px;padding:16px 20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
