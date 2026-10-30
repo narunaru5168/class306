@@ -4405,6 +4405,12 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
       <textarea id="essayContent" rows="2" placeholder="可貼上或記錄作文中的精彩段落或錯誤句子，方便日後查閱" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:9px 12px;font-size:.88rem;font-family:'Nunito',sans-serif;resize:vertical;"></textarea>
     </div>
 
+    <!-- 佳言美句摘錄 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#b45309;">✨ 佳言美句摘錄</div>
+      <textarea id="essayHighlights" rows="2" placeholder="AI 自動摘錄文中成語、修辭、優美句子，例如：「如魚得水」、「陽光灑在地上，像金子一樣閃閃發光」" style="width:100%;border-radius:10px;border:2px solid #fde68a;padding:9px 12px;font-size:.88rem;font-family:'Nunito',sans-serif;resize:vertical;background:#fffbeb;"></textarea>
+    </div>
+
     <!-- 總評 -->
     <div style="margin-bottom:14px;">
       <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#475569;">🎯 總評留言</div>
@@ -10421,8 +10427,8 @@ async function autoGradeFromPhoto(input) {
             role: 'user',
             content: [
               { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-              { type: 'text', text: `你是一位國小三年級專業作文指導老師。請仔細閱讀照片中學生的手寫作文（特別注意照片上方標題處），只回傳以下JSON格式，不要其他任何文字或說明：
-{"title":"仔細看照片標題處，有寫就填入，否則留空","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"comment":"40到50字整體評語：先肯定最突出優點→指出最需改進之處→以鼓勵結語，並簡短說明給分依據。例如：語意流暢、句式自然，段落清楚。修辭詞句較少，建議多練習成語和比喻。繼續努力，文采一定會進步！","starsAwarded":3}
+              { type: 'text', text: `你是一位國小三年級專業作文指導老師。請仔細閱讀照片中學生的手寫作文，只回傳以下JSON格式，不要其他任何文字或說明：
+{"title":"【題目提取規則】作文題目通常寫在作文紙最上方置中位置，字體可能比內文稍大，或有底線/外框，或前面標有「題目：」字樣。請仔細識別後填入，例如「分數的秘密」；確實看不到題目才留空字串","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"highlights":["摘錄文中1到4個值得稱讚的佳句、成語或修辭，原文照錄，例如：「如魚得水」、「陽光像金子一樣灑落」"],"comment":"40到50字整體評語：先肯定最突出優點→指出最需改進之處→以鼓勵結語，並簡短說明給分依據。例如：語意流暢、句式自然，段落清楚。修辭詞句較少，建議多練習成語和比喻。繼續努力，文采一定會進步！","starsAwarded":3}
 
 【評分規準——3分為達標基準，對應整體約80分】
 ■內容主題(1-5)：1=主旨不明、內容空洞；2=主旨尚可、內容單薄；3=主旨清楚、內容符合年級水準；4=主旨明確、內容豐富有條理；5=主旨深刻、創意獨特令人印象深刻
@@ -10461,6 +10467,7 @@ starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=
         const el = document.getElementById('essaySug_' + s);
         if (el) el.checked = !!(result.suggestions && result.suggestions.includes(s));
       });
+      if (result.highlights && result.highlights.length) document.getElementById('essayHighlights').value = result.highlights.join('、');
       if (result.comment) document.getElementById('essayComment').value = result.comment;
       if (result.starsAwarded != null) {
         document.getElementById('essayStars').value = result.starsAwarded;
@@ -10523,7 +10530,8 @@ function renderEssayList() {
           <button class="btn" style="background:#fee2e2;color:#dc2626;padding:5px 12px;font-size:.8rem;" onclick="deleteEssayRecord('${r.id}')">🗑️</button>
         </div>
       </div>
-      ${r.comment?`<div style="margin-top:8px;padding:8px 12px;background:#f0f9ff;border-radius:8px;border-left:3px solid #5BB8F5;font-size:.88rem;color:#0c4a6e;">"${r.comment}"</div>`:''}
+      ${r.highlights?`<div style="margin-top:6px;padding:6px 12px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b;font-size:.84rem;color:#92400e;">✨ ${r.highlights}</div>`:''}
+      ${r.comment?`<div style="margin-top:6px;padding:8px 12px;background:#f0f9ff;border-radius:8px;border-left:3px solid #5BB8F5;font-size:.88rem;color:#0c4a6e;">"${r.comment}"</div>`:''}
     </div>`;
   }).join('');
 }
@@ -10533,6 +10541,7 @@ function openEssayNew() {
   // 清空表單
   document.getElementById('essayTitle').value = '';
   document.getElementById('essayContent').value = '';
+  document.getElementById('essayHighlights').value = '';
   document.getElementById('essayComment').value = '';
   document.getElementById('essayStars').value = '3';
   document.getElementById('essayStarsVal').textContent = '3';
@@ -10550,6 +10559,7 @@ function openEssayEdit(id) {
   document.getElementById('essayStudentList').value = r.studentId;
   document.getElementById('essayTitle').value = r.title||'';
   document.getElementById('essayContent').value = r.content||'';
+  document.getElementById('essayHighlights').value = r.highlights||'';
   document.getElementById('essayComment').value = r.comment||'';
   const sw = r.starsAwarded||3;
   document.getElementById('essayStars').value = sw;
@@ -10581,6 +10591,7 @@ function saveEssayRecord() {
     dimScores,
     strengths,
     suggestions,
+    highlights: document.getElementById('essayHighlights').value.trim(),
     comment: document.getElementById('essayComment').value.trim(),
     starsAwarded
   };
