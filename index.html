@@ -4356,11 +4356,11 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
           <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
         <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">結構段落</div><select id="essayDim_結構段落" style="width:100%;border-radius:8px;border:2px solid #bfdbfe;padding:6px;text-align:center;font-weight:700;">
           <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
-        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">語句通順</div><select id="essayDim_語句通順" style="width:100%;border-radius:8px;border:2px solid #bbf7d0;padding:6px;text-align:center;font-weight:700;">
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">語意流暢</div><select id="essayDim_語意流暢" style="width:100%;border-radius:8px;border:2px solid #bbf7d0;padding:6px;text-align:center;font-weight:700;">
           <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
         <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">標點符號</div><select id="essayDim_標點符號" style="width:100%;border-radius:8px;border:2px solid #e9d5ff;padding:6px;text-align:center;font-weight:700;">
           <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
-        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">書寫</div><select id="essayDim_書寫" style="width:100%;border-radius:8px;border:2px solid #fce7f3;padding:6px;text-align:center;font-weight:700;">
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">修辭詞句</div><select id="essayDim_修辭詞句" style="width:100%;border-radius:8px;border:2px solid #fce7f3;padding:6px;text-align:center;font-weight:700;">
           <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
       </div>
     </div>
@@ -10416,16 +10416,23 @@ async function autoGradeFromPhoto(input) {
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5',
-          max_tokens: 900,
+          max_tokens: 1200,
           messages: [{
             role: 'user',
             content: [
               { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-              { type: 'text', text: `你是一位國小三年級的作文老師。請仔細閱讀照片中學生的手寫作文，只回傳以下JSON格式，不要其他任何文字或說明：
-{"title":"作文題目(請仔細看照片上方或標題處，有寫題目就填入，沒有才留空)","dimScores":{"內容主題":4,"結構段落":3,"語句通順":4,"標點符號":3,"書寫":4},"strengths":["詞句通順流暢"],"suggestions":["標點要運用妥當"],"comment":"40到50字的整體評語，格式為：先肯定優點→指出需改進之處→再以鼓勵結尾，例如：字體工整、用心書寫，文章結構清楚。標點符號需更留意，內容若能加入更多細節描寫會更生動。繼續加油，寫作能力一定會進步！","starsAwarded":4}
+              { type: 'text', text: `你是一位國小三年級專業作文指導老師。請仔細閱讀照片中學生的手寫作文（特別注意照片上方標題處），只回傳以下JSON格式，不要其他任何文字或說明：
+{"title":"仔細看照片標題處，有寫就填入，否則留空","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"comment":"40到50字整體評語：先肯定最突出優點→指出最需改進之處→以鼓勵結語，並簡短說明給分依據。例如：語意流暢、句式自然，段落清楚。修辭詞句較少，建議多練習成語和比喻。繼續努力，文采一定會進步！","starsAwarded":3}
+
+【評分規準——3分為達標基準，對應整體約80分】
+■內容主題(1-5)：1=主旨不明、內容空洞；2=主旨尚可、內容單薄；3=主旨清楚、內容符合年級水準；4=主旨明確、內容豐富有條理；5=主旨深刻、創意獨特令人印象深刻
+■結構段落(1-5)：1=段落混亂無層次；2=段落不清；3=段落分明、首尾尚能對應；4=結構嚴謹、首尾呼應；5=佈局精彩、層次豐富分明
+■語意流暢(1-5)：1=語句不通、難以理解；2=有些語句不順；3=語句通順、表達清楚；4=語意流暢、表達生動自然；5=文筆流暢優美、措辭精準
+■標點符號(1-5)：1=幾乎不用或嚴重誤用；2=偶爾誤用；3=大致正確使用；4=正確且得當運用；5=靈活運用各種符號、增強語氣節奏
+■修辭詞句(1-5)：1=詞彙貧乏幾無修辭；2=詞彙單調鮮少成語；3=偶有美句詞彙達年級水準；4=有成語或修辭技巧詞句較優美；5=多處成語/排比/擬人等佳言美句出色
 優點只能從這10項中選數個：詞句通順流暢、標點運用正確、字體書寫工整、主旨符合明確、段落清楚分明、內容豐富充實、文章創意十足、引證客觀明確、結構紮實嚴謹、結尾呼應有力
 老師建議只能從這10項中選數個：語意要通順流暢、標點要運用妥當、字體要端正寫好、主旨要事先掌握、事先審題再下筆、內容要加深加廣、修辭要適時加入、創意要發揮加入、結尾要前後呼應、優美詞句多閱讀
-各項評分1到5，starsAwarded 0到5。` }
+starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=良好(約85-90)；5=優秀(約95+)` }
             ]
           }]
         })
@@ -10479,14 +10486,14 @@ const ESSAY_SUGGESTIONS = [
   '語意要通順流暢','標點要運用妥當','字體要端正寫好','主旨要事先掌握','事先審題再下筆',
   '內容要加深加廣','修辭要適時加入','創意要發揮加入','結尾要前後呼應','優美詞句多閱讀'
 ];
-const ESSAY_DIMS = ['內容主題','結構段落','語句通順','標點符號','書寫'];
+const ESSAY_DIMS = ['內容主題','結構段落','語意流暢','標點符號','修辭詞句'];
 let essayEditId = null; // 目前編輯中的批改 id（null = 新增）
 
 function renderEssayList() {
   const sorted = [...students].sort((a,b)=>parseInt(a.seatNo||99)-parseInt(b.seatNo||99));
   const listEl = document.getElementById('essayStudentList');
   if(listEl) listEl.innerHTML = sorted.map(s=>{
-    const recs = essayRecords.filter(r=>r.studentId===s.id);
+    const recs = essayRecords.filter(r=>r.studentId==s.id);
     return `<option value="${s.id}">${s.seatNo||'?'} ${s.name}（${recs.length}篇）</option>`;
   }).join('');
 
@@ -10498,8 +10505,9 @@ function renderEssayList() {
   }
   const sorted2 = [...essayRecords].sort((a,b)=>b.date.localeCompare(a.date));
   container.innerHTML = sorted2.map(r=>{
-    const st = students.find(s=>s.id===r.studentId);
-    const total = r.dimScores ? Object.values(r.dimScores).reduce((a,v)=>a+v,0)*4 : 0;
+    const st = students.find(s=>s.id==r.studentId);
+    const rawSum = r.dimScores ? Object.values(r.dimScores).reduce((a,v)=>a+v,0) : 15;
+    const total = Math.round((rawSum - 5) / 20 * 40 + 60);
     const stars = '⭐'.repeat(r.starsAwarded||0);
     return `<div class="card" style="margin-bottom:12px;padding:16px 20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -10536,7 +10544,7 @@ function openEssayNew() {
 }
 
 function openEssayEdit(id) {
-  const r = essayRecords.find(x=>x.id===id);
+  const r = essayRecords.find(x=>x.id==id);
   if(!r) return;
   essayEditId = id;
   document.getElementById('essayStudentList').value = r.studentId;
@@ -10577,7 +10585,7 @@ function saveEssayRecord() {
     starsAwarded
   };
   if(essayEditId) {
-    const idx = essayRecords.findIndex(r=>r.id===essayEditId);
+    const idx = essayRecords.findIndex(r=>r.id==essayEditId);
     if(idx>=0) essayRecords[idx] = rec;
   } else {
     essayRecords.unshift(rec);
@@ -10596,7 +10604,7 @@ function saveEssayRecord() {
 
 function deleteEssayRecord(id) {
   if(!confirm('確定要刪除這筆批改紀錄嗎？')) return;
-  essayRecords = essayRecords.filter(r=>r.id!==id);
+  essayRecords = essayRecords.filter(r=>r.id!=id);
   save();
   renderEssayList();
   toast('🗑️ 已刪除');
