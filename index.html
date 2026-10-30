@@ -4312,6 +4312,113 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
   <div style="background:#e0f2fe;border-radius:14px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:#0369a1;line-height:1.7;">
     📸 <strong>使用方式：</strong>設定 API 金鑰後 → 點「＋ 新增批改」→ 上傳作文照片 → AI 自動批改並填好表單 → 確認後儲存！
   </div>
+
+  <!-- 評分標準說明（可折疊） -->
+  <div style="margin-bottom:16px;">
+    <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('.rubric-arrow').style.transform=this.nextElementSibling.style.display==='none'?'rotate(0deg)':'rotate(180deg)';"
+      style="width:100%;background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:.92rem;color:#92400e;">
+      <span>📋 作文評分標準（點我展開，可向學生說明）</span>
+      <span class="rubric-arrow" style="font-size:1.1rem;transition:transform .3s;">▼</span>
+    </button>
+    <div style="display:none;background:#fffbeb;border:2px solid #f59e0b;border-top:none;border-radius:0 0 14px 14px;padding:16px;">
+
+      <!-- 評分換算說明 -->
+      <div style="background:#fff;border-radius:10px;padding:12px 14px;margin-bottom:14px;border-left:4px solid #f59e0b;">
+        <div style="font-weight:800;color:#92400e;margin-bottom:8px;font-size:.9rem;">📊 分數怎麼算？</div>
+        <div style="font-size:.85rem;color:#44403c;line-height:1.8;">
+          共 <strong>5 個面向</strong>，每項 <strong>1～5 分</strong>，加總後換算成百分制：
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px;">
+          <div style="background:#fef9c3;border-radius:8px;padding:8px;text-align:center;font-size:.82rem;">
+            <div style="font-weight:800;color:#854d0e;">各項都 3 分</div>
+            <div style="font-size:1.3rem;font-weight:900;color:#d97706;">80 分</div>
+            <div style="color:#78716c;">一般達標水準</div>
+          </div>
+          <div style="background:#dcfce7;border-radius:8px;padding:8px;text-align:center;font-size:.82rem;">
+            <div style="font-weight:800;color:#166534;">各項都 4 分</div>
+            <div style="font-size:1.3rem;font-weight:900;color:#16a34a;">90 分</div>
+            <div style="color:#78716c;">良好</div>
+          </div>
+          <div style="background:#dbeafe;border-radius:8px;padding:8px;text-align:center;font-size:.82rem;">
+            <div style="font-weight:800;color:#1e3a8a;">各項都 5 分</div>
+            <div style="font-size:1.3rem;font-weight:900;color:#2563eb;">100 分</div>
+            <div style="color:#78716c;">優秀</div>
+          </div>
+          <div style="background:#f3f4f6;border-radius:8px;padding:8px;text-align:center;font-size:.82rem;">
+            <div style="font-weight:800;color:#374151;">最低保底</div>
+            <div style="font-size:1.3rem;font-weight:900;color:#6b7280;">80 分</div>
+            <div style="color:#78716c;">以鼓勵為主</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 個評分面向 -->
+      <div style="font-weight:800;color:#92400e;margin-bottom:10px;font-size:.9rem;">🔍 五個評分面向</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+
+        <div style="background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #f97316;">
+          <div style="font-weight:800;color:#ea580c;margin-bottom:6px;">① 內容主題</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:.75rem;text-align:center;">
+            <div style="background:#fee2e2;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#dc2626;">1分</div><div style="color:#7f1d1d;">主旨不明、內容空洞</div></div>
+            <div style="background:#fef3c7;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#d97706;">2分</div><div style="color:#78350f;">主旨尚可、內容單薄</div></div>
+            <div style="background:#dcfce7;border-radius:6px;padding:4px;border:2px solid #16a34a;"><div style="font-weight:800;color:#16a34a;">3分 ★</div><div style="color:#14532d;">主旨清楚、符合年級</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#2563eb;">4分</div><div style="color:#1e3a8a;">主旨明確、豐富有條理</div></div>
+            <div style="background:#ede9fe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#7c3aed;">5分</div><div style="color:#4c1d95;">主旨深刻、創意獨特</div></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #8b5cf6;">
+          <div style="font-weight:800;color:#7c3aed;margin-bottom:6px;">② 結構段落</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:.75rem;text-align:center;">
+            <div style="background:#fee2e2;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#dc2626;">1分</div><div style="color:#7f1d1d;">段落混亂無層次</div></div>
+            <div style="background:#fef3c7;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#d97706;">2分</div><div style="color:#78350f;">段落不清</div></div>
+            <div style="background:#dcfce7;border-radius:6px;padding:4px;border:2px solid #16a34a;"><div style="font-weight:800;color:#16a34a;">3分 ★</div><div style="color:#14532d;">段落分明、首尾對應</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#2563eb;">4分</div><div style="color:#1e3a8a;">結構嚴謹、首尾呼應</div></div>
+            <div style="background:#ede9fe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#7c3aed;">5分</div><div style="color:#4c1d95;">佈局精彩、層次豐富</div></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #06b6d4;">
+          <div style="font-weight:800;color:#0891b2;margin-bottom:6px;">③ 語意流暢</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:.75rem;text-align:center;">
+            <div style="background:#fee2e2;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#dc2626;">1分</div><div style="color:#7f1d1d;">語句不通、難理解</div></div>
+            <div style="background:#fef3c7;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#d97706;">2分</div><div style="color:#78350f;">有些語句不順</div></div>
+            <div style="background:#dcfce7;border-radius:6px;padding:4px;border:2px solid #16a34a;"><div style="font-weight:800;color:#16a34a;">3分 ★</div><div style="color:#14532d;">語句通順、表達清楚</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#2563eb;">4分</div><div style="color:#1e3a8a;">流暢、表達生動自然</div></div>
+            <div style="background:#ede9fe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#7c3aed;">5分</div><div style="color:#4c1d95;">文筆優美、措辭精準</div></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #10b981;">
+          <div style="font-weight:800;color:#059669;margin-bottom:6px;">④ 標點符號</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:.75rem;text-align:center;">
+            <div style="background:#fee2e2;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#dc2626;">1分</div><div style="color:#7f1d1d;">幾乎不用或嚴重誤用</div></div>
+            <div style="background:#fef3c7;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#d97706;">2分</div><div style="color:#78350f;">偶爾誤用</div></div>
+            <div style="background:#dcfce7;border-radius:6px;padding:4px;border:2px solid #16a34a;"><div style="font-weight:800;color:#16a34a;">3分 ★</div><div style="color:#14532d;">大致正確使用</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#2563eb;">4分</div><div style="color:#1e3a8a;">正確且得當運用</div></div>
+            <div style="background:#ede9fe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#7c3aed;">5分</div><div style="color:#4c1d95;">靈活運用、增強節奏</div></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #ec4899;">
+          <div style="font-weight:800;color:#db2777;margin-bottom:6px;">⑤ 修辭詞句</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-size:.75rem;text-align:center;">
+            <div style="background:#fee2e2;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#dc2626;">1分</div><div style="color:#7f1d1d;">詞彙貧乏、幾無修辭</div></div>
+            <div style="background:#fef3c7;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#d97706;">2分</div><div style="color:#78350f;">詞彙單調、鮮少成語</div></div>
+            <div style="background:#dcfce7;border-radius:6px;padding:4px;border:2px solid #16a34a;"><div style="font-weight:800;color:#16a34a;">3分 ★</div><div style="color:#14532d;">偶有美句、達年級水準</div></div>
+            <div style="background:#dbeafe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#2563eb;">4分</div><div style="color:#1e3a8a;">有成語或修辭、詞句優美</div></div>
+            <div style="background:#ede9fe;border-radius:6px;padding:4px;"><div style="font-weight:800;color:#7c3aed;">5分</div><div style="color:#4c1d95;">多處成語、排比、擬人</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;margin-top:12px;font-size:.82rem;color:#166534;border-left:4px solid #22c55e;">
+        ★ <strong>3 分 = 三年級達標基準</strong>，對應整體 80 分。只要文章完整、主旨清楚，就是達標！
+      </div>
+    </div>
+  </div>
+
   <div id="essayRecordsList"></div>
 </div>
 
@@ -10420,7 +10527,7 @@ async function autoGradeFromPhoto(input) {
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5',
+          model: 'claude-sonnet-4-5',
           max_tokens: 1200,
           messages: [{
             role: 'user',
