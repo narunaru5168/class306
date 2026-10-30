@@ -10561,7 +10561,7 @@ async function autoGradeFromPhoto(input) {
       // 如果有設定 Proxy，使用高品質 Sonnet 模型；否則直連使用 Haiku
       const useProxy = !!claudeProxyUrl;
       const apiEndpoint = useProxy ? claudeProxyUrl : 'https://api.anthropic.com/v1/messages';
-      const selectedModel = useProxy ? 'claude-sonnet-4-5' : 'claude-haiku-4-5';
+      const selectedModel = useProxy ? 'claude-sonnet-4-6' : 'claude-haiku-4-5';
       const fetchHeaders = useProxy
         ? { 'x-api-key': claudeApiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }
         : { 'x-api-key': claudeApiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' };
