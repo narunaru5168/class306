@@ -4286,6 +4286,145 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════ -->
+<!-- ✍️ 作文批改 PAGE -->
+<!-- ══════════════════════════════════════════ -->
+<div id="page-essay" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <span class="section-title" style="margin-bottom:0;">✍️ 作文批改</span>
+    <button class="btn" style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:10px 22px;font-size:.95rem;" onclick="openEssayNew()">＋ 新增批改</button>
+  </div>
+  <!-- API Key 設定 -->
+  <div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-weight:800;font-size:.9rem;color:#166534;">🔑 Claude API 金鑰</span>
+      <span style="background:#dcfce7;color:#166534;border-radius:20px;padding:2px 10px;font-size:.75rem;font-weight:700;">🤖 最專業</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input type="password" id="essayApiKeyInput" placeholder="sk-ant-..." style="flex:1;min-width:200px;border-radius:10px;border:2px solid #d1fae5;padding:8px 12px;font-size:.88rem;font-family:monospace;">
+      <button class="btn" onclick="saveEssayApiKey()" style="background:#22c55e;color:#fff;padding:8px 18px;">儲存</button>
+      <span id="essayApiKeyStatus" style="font-size:.83rem;"></span>
+    </div>
+    <div style="font-size:.78rem;color:#4b7c59;margin-top:6px;">
+      取得金鑰：<a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#059669;font-weight:700;">console.anthropic.com</a>（登入 → Settings → API Keys → Create Key → 複製貼上）・金鑰只儲存在本機瀏覽器
+    </div>
+  </div>
+  <div style="background:#e0f2fe;border-radius:14px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:#0369a1;line-height:1.7;">
+    📸 <strong>使用方式：</strong>設定 API 金鑰後 → 點「＋ 新增批改」→ 上傳作文照片 → AI 自動批改並填好表單 → 確認後儲存！
+  </div>
+  <div id="essayRecordsList"></div>
+</div>
+
+<!-- 作文批改 Modal -->
+<div id="essayModal" class="modal-overlay">
+  <div class="modal" style="max-width:680px;width:96vw;max-height:90vh;overflow-y:auto;padding:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <span id="essayModalTitle" style="font-family:'Baloo 2',cursive;font-size:1.2rem;font-weight:800;">＋ 新增作文批改</span>
+      <button class="btn" style="background:#f1f5f9;color:#64748b;padding:6px 14px;" onclick="closeModal('essayModal')">✕</button>
+    </div>
+
+    <!-- AI 自動批改區 -->
+    <div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid #86efac;border-radius:14px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-weight:800;font-size:.92rem;color:#166534;margin-bottom:10px;">🤖 AI 自動批改</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <input type="file" id="essayPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="autoGradeFromPhoto(this)">
+        <button class="btn" onclick="document.getElementById('essayPhotoInput').click()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:10px 20px;font-size:.92rem;">
+          📷 上傳作文照片，AI 自動批改
+        </button>
+        <span id="autoGradeStatus" style="font-size:.85rem;color:#64748b;"></span>
+      </div>
+      <div style="font-size:.76rem;color:#4b7c59;margin-top:6px;">需先在「✍️ 作文批改」頁面設定 API 金鑰</div>
+    </div>
+
+    <!-- 學生 + 標題 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>學生</label>
+        <select id="essayStudentList" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:8px 12px;font-size:.9rem;font-family:'Nunito',sans-serif;"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>作文題目（選填）</label>
+        <input id="essayTitle" type="text" placeholder="例如：我的奶奶" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:8px 12px;font-size:.9rem;font-family:'Nunito',sans-serif;">
+      </div>
+    </div>
+
+    <!-- 五項評分 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;color:#475569;">📊 各項評分（1–5星）</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="essayDimsGrid">
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">內容主題</div><select id="essayDim_內容主題" style="width:100%;border-radius:8px;border:2px solid #fde68a;padding:6px;text-align:center;font-weight:700;">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">結構段落</div><select id="essayDim_結構段落" style="width:100%;border-radius:8px;border:2px solid #bfdbfe;padding:6px;text-align:center;font-weight:700;">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">語句通順</div><select id="essayDim_語句通順" style="width:100%;border-radius:8px;border:2px solid #bbf7d0;padding:6px;text-align:center;font-weight:700;">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">標點符號</div><select id="essayDim_標點符號" style="width:100%;border-radius:8px;border:2px solid #e9d5ff;padding:6px;text-align:center;font-weight:700;">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+        <div style="text-align:center;"><div style="font-size:.78rem;color:#64748b;margin-bottom:4px;">書寫</div><select id="essayDim_書寫" style="width:100%;border-radius:8px;border:2px solid #fce7f3;padding:6px;text-align:center;font-weight:700;">
+          <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></div>
+      </div>
+    </div>
+
+    <!-- 優點勾選 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;color:#475569;">✅ 優點勾選</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_詞句通順流暢" style="width:16px;height:16px;accent-color:#22c55e;"> 詞句通順流暢</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_標點運用正確" style="width:16px;height:16px;accent-color:#22c55e;"> 標點運用正確</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_字體書寫工整" style="width:16px;height:16px;accent-color:#22c55e;"> 字體書寫工整</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_主旨符合明確" style="width:16px;height:16px;accent-color:#22c55e;"> 主旨符合明確</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_段落清楚分明" style="width:16px;height:16px;accent-color:#22c55e;"> 段落清楚分明</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_內容豐富充實" style="width:16px;height:16px;accent-color:#22c55e;"> 內容豐富充實</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_文章創意十足" style="width:16px;height:16px;accent-color:#22c55e;"> 文章創意十足</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_引證客觀明確" style="width:16px;height:16px;accent-color:#22c55e;"> 引證客觀明確</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_結構紮實嚴謹" style="width:16px;height:16px;accent-color:#22c55e;"> 結構紮實嚴謹</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essayStr_結尾呼應有力" style="width:16px;height:16px;accent-color:#22c55e;"> 結尾呼應有力</label>
+      </div>
+    </div>
+
+    <!-- 老師建議 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;color:#475569;">💬 老師建議</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_語意要通順流暢" style="width:16px;height:16px;accent-color:#f59e0b;"> 語意要通順流暢</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_標點要運用妥當" style="width:16px;height:16px;accent-color:#f59e0b;"> 標點要運用妥當</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_字體要端正寫好" style="width:16px;height:16px;accent-color:#f59e0b;"> 字體要端正寫好</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_主旨要事先掌握" style="width:16px;height:16px;accent-color:#f59e0b;"> 主旨要事先掌握</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_事先審題再下筆" style="width:16px;height:16px;accent-color:#f59e0b;"> 事先審題再下筆</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_內容要加深加廣" style="width:16px;height:16px;accent-color:#f59e0b;"> 內容要加深加廣</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_修辭要適時加入" style="width:16px;height:16px;accent-color:#f59e0b;"> 修辭要適時加入</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_創意要發揮加入" style="width:16px;height:16px;accent-color:#f59e0b;"> 創意要發揮加入</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_結尾要前後呼應" style="width:16px;height:16px;accent-color:#f59e0b;"> 結尾要前後呼應</label>
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:#fffbeb;cursor:pointer;font-size:.88rem;"><input type="checkbox" id="essaySug_優美詞句多閱讀" style="width:16px;height:16px;accent-color:#f59e0b;"> 優美詞句多閱讀</label>
+      </div>
+    </div>
+
+    <!-- 作文摘要 (選填) -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#475569;">📄 作文重點摘錄（選填）</div>
+      <textarea id="essayContent" rows="2" placeholder="可貼上或記錄作文中的精彩段落或錯誤句子，方便日後查閱" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:9px 12px;font-size:.88rem;font-family:'Nunito',sans-serif;resize:vertical;"></textarea>
+    </div>
+
+    <!-- 總評 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:6px;color:#475569;">🎯 總評留言</div>
+      <textarea id="essayComment" rows="2" placeholder="20–40字的整體評語，例如：「你的故事選材很有溫度，讓人讀了心裡暖暖的！下次標點符號再留意一下就更完美了！」" style="width:100%;border-radius:10px;border:2px solid #e2e8f0;padding:9px 12px;font-size:.88rem;font-family:'Nunito',sans-serif;resize:vertical;"></textarea>
+    </div>
+
+    <!-- 加星 -->
+    <div style="margin-bottom:20px;display:flex;align-items:center;gap:12px;background:#fef9c3;border-radius:12px;padding:12px 16px;">
+      <span style="font-weight:800;font-size:.9rem;">⭐ 這篇加幾顆星：</span>
+      <input type="range" id="essayStars" min="0" max="5" value="3" style="flex:1;" oninput="document.getElementById('essayStarsVal').textContent=this.value">
+      <span id="essayStarsVal" style="font-size:1.2rem;font-weight:900;color:#92400e;min-width:20px;">3</span>
+      <span style="font-size:.82rem;color:#78350f;">顆星</span>
+    </div>
+
+    <button class="btn" onclick="saveEssayRecord()" style="width:100%;background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:12px;font-size:1rem;border-radius:14px;">
+      💾 儲存批改紀錄
+    </button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   /* ── 成長圖 Modal ── */
@@ -4432,6 +4571,7 @@ const FORTUNE_SLIPS_DEFAULT = [
 ];
 let fortuneSlips = [];    // { grade, text } 幸運詩籤內容，預設帶一組，之後可在「管理詩籤內容」裡新增/編輯/刪除
 let readingLog = [];      // { id, studentId, studentName, book, mood, note, date } 閱讀打卡
+let essayRecords = [];    // { id, studentId, studentName, date, title, content, dimScores:{...}, strengths:[], suggestions:[], comment, starsAwarded } 作文批改紀錄
 const WEEKDAYS = ['週一','週二','週三','週四','週五'];
 const PRIORITY_COLORS = {高:'#ef4444', 中:'#f59e0b', 低:'#22c55e'};
 const READING_MOODS = ['😊','🤩','🤔','😢','😮'];
@@ -4439,11 +4579,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支', essay:'✍️ 作文批改'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -4557,6 +4697,7 @@ async function doSaveAll() {
   await saveField('class306/teamDailyChecks', teamDailyChecks, 'cls_teamDailyChecks');
   await saveField('class306/disciplineKeywords', disciplineKeywords, 'cls_disciplineKeywords');
   await saveField('class306/officerMonthlyAward', officerMonthlyAward, 'cls_officerMonthlyAward');
+  await saveField('class306/essayRecords', essayRecords, 'cls_essayRecords');
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -4577,7 +4718,7 @@ async function fetchField(path, defaultVal){
 async function loadData() {
   const [
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
-    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal, omaVal
+    wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal, omaVal, erVal
   ] = await Promise.all([
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
@@ -4605,6 +4746,7 @@ async function loadData() {
     fetchField('class306/teamDailyChecks', null),
     fetchField('class306/disciplineKeywords', null),
     fetchField('class306/officerMonthlyAward', null),
+    fetchField('class306/essayRecords', []),
   ]);
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
@@ -4639,6 +4781,8 @@ async function loadData() {
   if(!Array.isArray(disciplineKeywords)) disciplineKeywords = [...DISCIPLINE_KEYWORDS_DEFAULT];
   officerMonthlyAward = omaVal !== null ? omaVal : JSON.parse(localStorage.getItem('cls_officerMonthlyAward')||'null');
   if(!officerMonthlyAward || typeof officerMonthlyAward !== 'object') officerMonthlyAward = { lastAwardedMonth: null };
+  essayRecords = erVal !== null ? erVal : JSON.parse(localStorage.getItem('cls_essayRecords')||'[]');
+  if(!Array.isArray(essayRecords)) essayRecords = [];
 
   // 雲端資料庫（Firebase）不會儲存「空陣列」或「空物件」欄位——一旦某個子欄位被清空，
   // 那個 key 會直接從雲端消失，導致讀回來的物件「缺一角」而不是恢復成空陣列/空物件。
@@ -4789,6 +4933,7 @@ function showPage(name) {
   if(name==='cleaning') renderCleaningZones();
   if(name==='mutualaid') renderMutualAidGroups();
   if(name==='officers') renderOfficers();
+  if(name==='essay') { renderEssayList(); setTimeout(updateEssayApiKeyStatus, 50); }
 }
 function confetti() {
   const colors = ['#FFD93D','#FF6B6B','#6BCB77','#5BB8F5','#A855F7','#FFB347','#4DD9AC'];
@@ -10214,6 +10359,248 @@ async function initApp() {
 initApp().catch(() => {
   document.getElementById('loadingOverlay').style.display = 'none';
 });
+
+// ══════════════════════════════════════════
+// ✍️ 作文批改系統
+// ══════════════════════════════════════════
+
+// ── Claude API Key 管理 ──
+let claudeApiKey = localStorage.getItem('cls_claudeApiKey') || '';
+
+function saveEssayApiKey() {
+  const key = (document.getElementById('essayApiKeyInput').value || '').trim();
+  if (!key.startsWith('sk-ant-')) { toast('⚠️ 請輸入正確的 Claude API 金鑰（以 sk-ant- 開頭）'); return; }
+  claudeApiKey = key;
+  localStorage.setItem('cls_claudeApiKey', key);
+  updateEssayApiKeyStatus();
+  toast('✅ Claude API 金鑰已儲存！');
+}
+
+function updateEssayApiKeyStatus() {
+  const el = document.getElementById('essayApiKeyStatus');
+  const inp = document.getElementById('essayApiKeyInput');
+  if (!el) return;
+  if (claudeApiKey) {
+    el.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ 已設定</span>';
+    if (inp) inp.placeholder = '已儲存（如需更新請重新輸入）';
+  } else {
+    el.innerHTML = '<span style="color:#ef4444;">❌ 尚未設定</span>';
+  }
+}
+
+// ── AI 自動批改：上傳照片 → 呼叫 Claude API ──
+async function autoGradeFromPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  if (!claudeApiKey) {
+    toast('⚠️ 請先在作文批改頁面設定 Claude API 金鑰');
+    document.getElementById('autoGradeStatus').innerHTML = '<span style="color:#ef4444;">❌ 未設定金鑰，請至上方設定</span>';
+    return;
+  }
+  const statusEl = document.getElementById('autoGradeStatus');
+  statusEl.innerHTML = '⏳ 正在讀取照片...';
+
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    const mimeType = file.type || 'image/jpeg';
+    statusEl.innerHTML = '🤖 Claude AI 正在批改中，請稍候（約 5-10 秒）...';
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': claudeApiKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 900,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+              { type: 'text', text: `你是一位國小三年級的作文老師。請仔細閱讀照片中學生的手寫作文，只回傳以下JSON格式，不要其他任何文字或說明：
+{"title":"作文題目(有則填入否則留空)","dimScores":{"內容主題":4,"結構段落":3,"語句通順":4,"標點符號":3,"書寫":4},"strengths":["詞句通順流暢"],"suggestions":["標點要運用妥當"],"comment":"20到40字的整體評語","starsAwarded":4}
+優點只能從這10項中選數個：詞句通順流暢、標點運用正確、字體書寫工整、主旨符合明確、段落清楚分明、內容豐富充實、文章創意十足、引證客觀明確、結構紮實嚴謹、結尾呼應有力
+老師建議只能從這10項中選數個：語意要通順流暢、標點要運用妥當、字體要端正寫好、主旨要事先掌握、事先審題再下筆、內容要加深加廣、修辭要適時加入、創意要發揮加入、結尾要前後呼應、優美詞句多閱讀
+各項評分1到5，starsAwarded 0到5。` }
+            ]
+          }]
+        })
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error?.message || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      const raw = (data.content[0]?.text || '').trim()
+        .replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
+      if (!raw) throw new Error('AI 未回傳結果，請重試');
+      const result = JSON.parse(raw);
+
+      // ── 自動填入表單 ──
+      if (result.title) document.getElementById('essayTitle').value = result.title;
+      if (result.dimScores) ESSAY_DIMS.forEach(d => {
+        const el = document.getElementById('essayDim_' + d);
+        if (el && result.dimScores[d]) el.value = result.dimScores[d];
+      });
+      ESSAY_STRENGTHS.forEach(s => {
+        const el = document.getElementById('essayStr_' + s);
+        if (el) el.checked = !!(result.strengths && result.strengths.includes(s));
+      });
+      ESSAY_SUGGESTIONS.forEach(s => {
+        const el = document.getElementById('essaySug_' + s);
+        if (el) el.checked = !!(result.suggestions && result.suggestions.includes(s));
+      });
+      if (result.comment) document.getElementById('essayComment').value = result.comment;
+      if (result.starsAwarded != null) {
+        document.getElementById('essayStars').value = result.starsAwarded;
+        document.getElementById('essayStarsVal').textContent = result.starsAwarded;
+      }
+      statusEl.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ AI 批改完成！請確認後按儲存</span>';
+      input.value = '';
+    } catch (err) {
+      let hint = err.message.includes('invalid x-api-key') ? '金鑰無效，請重新設定' :
+                 err.message.includes('credit') || err.message.includes('balance') ? '帳戶額度不足，請至 console.anthropic.com 儲值' : err.message;
+      statusEl.innerHTML = `<span style="color:#ef4444;">❌ ${hint}</span>`;
+      console.error('autoGrade error', err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+const ESSAY_STRENGTHS = [
+  '詞句通順流暢','標點運用正確','字體書寫工整','主旨符合明確','段落清楚分明',
+  '內容豐富充實','文章創意十足','引證客觀明確','結構紮實嚴謹','結尾呼應有力'
+];
+const ESSAY_SUGGESTIONS = [
+  '語意要通順流暢','標點要運用妥當','字體要端正寫好','主旨要事先掌握','事先審題再下筆',
+  '內容要加深加廣','修辭要適時加入','創意要發揮加入','結尾要前後呼應','優美詞句多閱讀'
+];
+const ESSAY_DIMS = ['內容主題','結構段落','語句通順','標點符號','書寫'];
+let essayEditId = null; // 目前編輯中的批改 id（null = 新增）
+
+function renderEssayList() {
+  const sorted = [...students].sort((a,b)=>parseInt(a.seatNo||99)-parseInt(b.seatNo||99));
+  const listEl = document.getElementById('essayStudentList');
+  if(listEl) listEl.innerHTML = sorted.map(s=>{
+    const recs = essayRecords.filter(r=>r.studentId===s.id);
+    return `<option value="${s.id}">${s.seatNo||'?'} ${s.name}（${recs.length}篇）</option>`;
+  }).join('');
+
+  const container = document.getElementById('essayRecordsList');
+  if(!container) return;
+  if(essayRecords.length===0){
+    container.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:32px;">還沒有批改紀錄，點「＋ 新增批改」開始！</div>';
+    return;
+  }
+  const sorted2 = [...essayRecords].sort((a,b)=>b.date.localeCompare(a.date));
+  container.innerHTML = sorted2.map(r=>{
+    const st = students.find(s=>s.id===r.studentId);
+    const total = r.dimScores ? Object.values(r.dimScores).reduce((a,v)=>a+v,0)*4 : 0;
+    const stars = '⭐'.repeat(r.starsAwarded||0);
+    return `<div class="card" style="margin-bottom:12px;padding:16px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-weight:800;font-size:1rem;">${st?st.seatNo+' '+st.name:'(已刪除)'}</span>
+          <span style="margin-left:10px;color:#94a3b8;font-size:.82rem;">${r.date}</span>
+          ${r.title?`<span style="margin-left:8px;background:#e0f2fe;color:#0369a1;border-radius:8px;padding:2px 8px;font-size:.8rem;">《${r.title}》</span>`:''}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:.9rem;font-weight:800;color:#7c3aed;">${total}分</span>
+          <span style="font-size:.85rem;">${stars}</span>
+          <button class="btn" style="background:linear-gradient(135deg,#5BB8F5,#A855F7);color:#fff;padding:5px 14px;font-size:.8rem;" onclick="openEssayEdit('${r.id}')">✏️ 編輯</button>
+          <button class="btn" style="background:#fee2e2;color:#dc2626;padding:5px 12px;font-size:.8rem;" onclick="deleteEssayRecord('${r.id}')">🗑️</button>
+        </div>
+      </div>
+      ${r.comment?`<div style="margin-top:8px;padding:8px 12px;background:#f0f9ff;border-radius:8px;border-left:3px solid #5BB8F5;font-size:.88rem;color:#0c4a6e;">"${r.comment}"</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openEssayNew() {
+  essayEditId = null;
+  // 清空表單
+  document.getElementById('essayTitle').value = '';
+  document.getElementById('essayContent').value = '';
+  document.getElementById('essayComment').value = '';
+  document.getElementById('essayStars').value = '3';
+  document.getElementById('essayStarsVal').textContent = '3';
+  ESSAY_DIMS.forEach(d=>{ const el=document.getElementById('essayDim_'+d); if(el) el.value='3'; });
+  ESSAY_STRENGTHS.forEach(s=>{ const el=document.getElementById('essayStr_'+s.replace(/[，。]/g,'')); if(el) el.checked=false; });
+  ESSAY_SUGGESTIONS.forEach(s=>{ const el=document.getElementById('essaySug_'+s.replace(/[，。]/g,'')); if(el) el.checked=false; });
+  document.getElementById('essayModalTitle').textContent = '＋ 新增作文批改';
+  openModal('essayModal');
+}
+
+function openEssayEdit(id) {
+  const r = essayRecords.find(x=>x.id===id);
+  if(!r) return;
+  essayEditId = id;
+  document.getElementById('essayStudentList').value = r.studentId;
+  document.getElementById('essayTitle').value = r.title||'';
+  document.getElementById('essayContent').value = r.content||'';
+  document.getElementById('essayComment').value = r.comment||'';
+  const sw = r.starsAwarded||3;
+  document.getElementById('essayStars').value = sw;
+  document.getElementById('essayStarsVal').textContent = sw;
+  ESSAY_DIMS.forEach(d=>{ const el=document.getElementById('essayDim_'+d); if(el) el.value=(r.dimScores&&r.dimScores[d])||3; });
+  ESSAY_STRENGTHS.forEach(s=>{ const key=s.replace(/[，。]/g,''); const el=document.getElementById('essayStr_'+key); if(el) el.checked=!!(r.strengths&&r.strengths.includes(s)); });
+  ESSAY_SUGGESTIONS.forEach(s=>{ const key=s.replace(/[，。]/g,''); const el=document.getElementById('essaySug_'+key); if(el) el.checked=!!(r.suggestions&&r.suggestions.includes(s)); });
+  document.getElementById('essayModalTitle').textContent = '✏️ 編輯批改';
+  openModal('essayModal');
+}
+
+function saveEssayRecord() {
+  const studentId = document.getElementById('essayStudentList').value;
+  if(!studentId){ toast('⚠️ 請選擇學生'); return; }
+  const st = students.find(s=>s.id===studentId);
+  const dimScores = {};
+  ESSAY_DIMS.forEach(d=>{ const el=document.getElementById('essayDim_'+d); dimScores[d]=el?parseInt(el.value)||3:3; });
+  const strengths = ESSAY_STRENGTHS.filter(s=>{ const el=document.getElementById('essayStr_'+s.replace(/[，。]/g,'')); return el&&el.checked; });
+  const suggestions = ESSAY_SUGGESTIONS.filter(s=>{ const el=document.getElementById('essaySug_'+s.replace(/[，。]/g,'')); return el&&el.checked; });
+  const starsAwarded = parseInt(document.getElementById('essayStars').value)||0;
+  const today = new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');
+  const rec = {
+    id: essayEditId || generateId(),
+    studentId,
+    studentName: st?st.name:'',
+    date: today,
+    title: document.getElementById('essayTitle').value.trim(),
+    content: document.getElementById('essayContent').value.trim(),
+    dimScores,
+    strengths,
+    suggestions,
+    comment: document.getElementById('essayComment').value.trim(),
+    starsAwarded
+  };
+  if(essayEditId) {
+    const idx = essayRecords.findIndex(r=>r.id===essayEditId);
+    if(idx>=0) essayRecords[idx] = rec;
+  } else {
+    essayRecords.unshift(rec);
+    // 加星
+    if(starsAwarded>0 && st){
+      st.stars = (st.stars||0) + starsAwarded;
+      st.log = st.log||[];
+      st.log.push({date:today, delta:starsAwarded, reason:`作文批改加星 +${starsAwarded}`});
+    }
+  }
+  save();
+  closeModal('essayModal');
+  renderEssayList();
+  toast(`✅ 已儲存批改紀錄${starsAwarded>0&&!essayEditId?'，並加了 '+starsAwarded+' 顆星！':'！'}`);
+}
+
+function deleteEssayRecord(id) {
+  if(!confirm('確定要刪除這筆批改紀錄嗎？')) return;
+  essayRecords = essayRecords.filter(r=>r.id!==id);
+  save();
+  renderEssayList();
+  toast('🗑️ 已刪除');
+}
 </script>
 </body>
 </html>
