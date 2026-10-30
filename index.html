@@ -4456,6 +4456,12 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
         <span id="autoGradeStatus" style="font-size:.85rem;color:#64748b;"></span>
       </div>
       <div style="font-size:.76rem;color:#4b7c59;margin-top:6px;">需先在「✍️ 作文批改」頁面設定 API 金鑰</div>
+      <!-- AI 原文摘錄確認欄 -->
+      <div id="aiExcerptBox" style="display:none;margin-top:10px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:10px 12px;">
+        <div style="font-size:.78rem;font-weight:700;color:#92400e;margin-bottom:4px;">🔍 AI 讀到的原文開頭（請核對是否正確）</div>
+        <div id="aiExcerptText" style="font-size:.85rem;color:#451a03;line-height:1.7;white-space:pre-wrap;"></div>
+        <div style="font-size:.72rem;color:#b45309;margin-top:4px;">⚠️ 若與學生作文不符，請手動修改下方評分</div>
+      </div>
     </div>
 
     <!-- 學生 + 標題 -->
@@ -10558,6 +10564,8 @@ async function autoGradeFromPhoto(input) {
     const mimeType = file.type || 'image/jpeg';
     statusEl.innerHTML = '🤖 Claude AI 正在批改中，請稍候（約 5-10 秒）...';
     try {
+      // 取得老師已填寫的題目（若有，則傳給 AI 作為確認依據）
+      const prefilledTitle = (document.getElementById('essayTitle')?.value || '').trim();
       // 如果有設定 Proxy，使用高品質 Sonnet 模型；否則直連使用 Haiku
       const useProxy = !!claudeProxyUrl;
       const apiEndpoint = useProxy ? claudeProxyUrl : 'https://api.anthropic.com/v1/messages';
@@ -10576,38 +10584,39 @@ async function autoGradeFromPhoto(input) {
             role: 'user',
             content: [
               { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
-              { type: 'text', text: `你是一位國小三年級專業作文指導老師。請仔細閱讀照片中學生的手寫作文，只回傳以下JSON格式，不要其他任何文字或說明：
-{"title":"此處填學生手寫的作文題目","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"highlights":[],"comment":"40到50字，先肯定最突出優點→指出最需改進之處→鼓勵結語。例如：段落清楚、語意流暢，敘述有條理。若能多加入成語和比喻句，文章會更生動有力。繼續加油，你的進步大家都看得見！","starsAwarded":3}
+              { type: 'text', text: `你是國小三年級作文批改老師。請閱讀照片中學生的手寫作文，只輸出JSON，不加任何說明文字。
 
-【題目識別規則——絕對不能錯】
-這張作文紙有三個區塊，請依照以下步驟找題目：
+${prefilledTitle
+  ? `⭐【題目已鎖定】老師確認題目為「${prefilledTitle}」，title欄位必須填「${prefilledTitle}」，禁止更改。`
+  : `【題目辨識——只看唯一正確位置】
+這是直式作文紙（由上到下、由右至左書寫）：
+✅ 題目位置：紙張【最右側第一欄】的【最頂端】，印刷字「題目：」後面緊跟的學生手寫文字
+❌ 以下全部忽略，絕對不是題目：
+  - 左側勾選框區任何文字（詞句通順流暢、標點運用正確、字體書寫工整等）
+  - 分數欄、姓名欄
+  - 作文正文的任何句子（正文在中間大欄位，不是題目）
+⚠️ 若題目看不清楚：title填""，絕不從正文猜題`}
 
-步驟1：先找到紙張最右側的那一欄（直式作文，最右欄是第一欄）
-步驟2：在那一欄的最頂端，會有「題目：」兩個印刷字，旁邊緊接著學生的手寫題目
-步驟3：讀取那裡的手寫文字，那就是 title
+【excerpt欄位——必填不能省略】
+從作文正文（中間大欄位）逐字抄錄開頭1至2句，一字不改，不潤飾不補充。
+讓老師核對AI是否真的讀到正確內容。不能空白，不能自創。
 
-❌ 絕對不是題目的地方：
-- 紙的左側印有「優點勾選」「老師建議」的勾選框區 → 完全忽略
-- 「詞句通順流暢」「標點運用正確」等印刷評語旁的框 → 完全忽略
-- 「分數」框 → 完全忽略
-- 作文正文的任何段落 → 完全忽略
+輸出格式（只輸出這個JSON，其他什麼都不要說）：
+{"title":"${prefilledTitle || '題目欄的手寫文字'}","excerpt":"正文開頭1到2句原文逐字照抄","dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},"strengths":["詞句通順流暢"],"suggestions":["修辭要適時加入"],"highlights":[],"comment":"40到50字：肯定最突出優點→指出最需改進之處→鼓勵結語","starsAwarded":3}
 
-⚠️ 如果照片角度不好、看不清楚題目，請回傳 title:""（空字串），絕對不能自己猜測或從正文裡抄一句話當題目。
+【highlights】只能逐字抄錄正文原句詞語，若無出色詞句填[]，禁止創作改寫。
 
-【佳言美句規定——絕對禁止造句】
-highlights只能放從學生作文正文中逐字抄錄的原句/詞語，一字不改。若文中沒有出色詞句，就回傳空陣列[]。禁止自行創作或改寫任何句子。
+【評分（3分=達標≈80分）】
+■內容主題：1空洞 2單薄 3清楚符合年級 4豐富有條理 5創意深刻
+■結構段落：1混亂 2不清 3段落分明 4嚴謹首尾呼應 5佈局精彩
+■語意流暢：1難懂 2不順 3通順清楚 4生動自然 5優美精準
+■標點符號：1幾乎不用 2偶爾誤用 3大致正確 4正確得當 5靈活增強語氣
+■修辭詞句：1貧乏 2單調 3偶有美句 4有成語修辭 5多處佳言美句
+優點只能選：詞句通順流暢、標點運用正確、字體書寫工整、主旨符合明確、段落清楚分明、內容豐富充實、文章創意十足、引證客觀明確、結構紮實嚴謹、結尾呼應有力
+建議只能選：語意要通順流暢、標點要運用妥當、字體要端正寫好、主旨要事先掌握、事先審題再下筆、內容要加深加廣、修辭要適時加入、創意要發揮加入、結尾要前後呼應、優美詞句多閱讀
+starsAwarded：0未批 1需大幅加強 2需加強 3達標約80 4良好約85-90 5優秀約95+
 
-【評分規準——3分為達標基準，對應整體約80分】
-■內容主題(1-5)：1=主旨不明、內容空洞；2=主旨尚可、內容單薄；3=主旨清楚、內容符合年級水準；4=主旨明確、內容豐富有條理；5=主旨深刻、創意獨特令人印象深刻
-■結構段落(1-5)：1=段落混亂無層次；2=段落不清；3=段落分明、首尾尚能對應；4=結構嚴謹、首尾呼應；5=佈局精彩、層次豐富分明
-■語意流暢(1-5)：1=語句不通、難以理解；2=有些語句不順；3=語句通順、表達清楚；4=語意流暢、表達生動自然；5=文筆流暢優美、措辭精準
-■標點符號(1-5)：1=幾乎不用或嚴重誤用；2=偶爾誤用；3=大致正確使用；4=正確且得當運用；5=靈活運用各種符號、增強語氣節奏
-■修辭詞句(1-5)：1=詞彙貧乏幾無修辭；2=詞彙單調鮮少成語；3=偶有美句詞彙達年級水準；4=有成語或修辭技巧詞句較優美；5=多處成語/排比/擬人等佳言美句出色
-優點只能從這10項中選數個：詞句通順流暢、標點運用正確、字體書寫工整、主旨符合明確、段落清楚分明、內容豐富充實、文章創意十足、引證客觀明確、結構紮實嚴謹、結尾呼應有力
-老師建議只能從這10項中選數個：語意要通順流暢、標點要運用妥當、字體要端正寫好、主旨要事先掌握、事先審題再下筆、內容要加深加廣、修辭要適時加入、創意要發揮加入、結尾要前後呼應、優美詞句多閱讀
-starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=良好(約85-90)；5=優秀(約95+)
-
-【評分校準——非常重要】三年級小學生作文，評分以鼓勵為主：✅ 3分（預設）＝文章完整、主旨清楚、符合三年級一般水準，大多數學生應得3分。⚠️ 2分＝明顯低於年級水準，有具體缺失（文不對題、段落混亂、標點嚴重錯誤）。❌ 1分＝僅限完全無法達標。請勿因為不夠文學性就扣分，三年級是學習階段，各項預設3分，有優點才加，有明顯問題才扣。` }
+【校準】三年級以鼓勵為主，預設3分。有明確優點才+1，有明顯缺失才-1。` }
             ]
           }]
         })
@@ -10617,13 +10626,16 @@ starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=
         throw new Error(err.error?.message || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
-      const raw = (data.content[0]?.text || '').trim()
-        .replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
-      if (!raw) throw new Error('AI 未回傳結果，請重試');
-      const result = JSON.parse(raw);
+      const rawText = (data.content[0]?.text || '').trim();
+      // 先移除 markdown 代碼塊，再從中找出 JSON 物件
+      const stripped = rawText.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'');
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('AI 未回傳有效結果，請重試');
+      const result = JSON.parse(jsonMatch[0]);
 
       // ── 自動填入表單 ──
-      if (result.title) document.getElementById('essayTitle').value = result.title;
+      // 老師已填題目則保留，否則用 AI 辨識的題目
+      if (result.title && !prefilledTitle) document.getElementById('essayTitle').value = result.title;
       if (result.dimScores) ESSAY_DIMS.forEach(d => {
         const el = document.getElementById('essayDim_' + d);
         if (el && result.dimScores[d]) el.value = result.dimScores[d];
@@ -10642,7 +10654,17 @@ starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=
         document.getElementById('essayStars').value = result.starsAwarded;
         document.getElementById('essayStarsVal').textContent = result.starsAwarded;
       }
-      statusEl.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ AI 批改完成！請確認後按儲存</span>';
+      // 顯示 AI 抄錄的原文（供老師核對）
+      const excerptBox = document.getElementById('aiExcerptBox');
+      if (excerptBox) {
+        if (result.excerpt) {
+          excerptBox.style.display = 'block';
+          document.getElementById('aiExcerptText').textContent = result.excerpt;
+        } else {
+          excerptBox.style.display = 'none';
+        }
+      }
+      statusEl.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ AI 批改完成！請核對下方原文摘錄後按儲存</span>';
       input.value = '';
     } catch (err) {
       let hint = err.message.includes('invalid x-api-key') ? '金鑰無效，請重新設定' :
