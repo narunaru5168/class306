@@ -4449,10 +4449,10 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
     <div style="background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid #86efac;border-radius:14px;padding:14px 16px;margin-bottom:16px;">
       <div style="font-weight:800;font-size:.92rem;color:#166534;margin-bottom:10px;">🤖 AI 自動批改</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <input type="file" id="essayPhotoInput" accept="image/*" capture="environment" style="display:none;" onchange="autoGradeFromPhoto(this)">
-        <button class="btn" onclick="document.getElementById('essayPhotoInput').click()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:10px 20px;font-size:.92rem;">
+        <input type="file" id="essayPhotoInput" accept="image/*" style="display:none;" onchange="autoGradeFromPhoto(this)">
+        <label for="essayPhotoInput" class="btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:10px 20px;font-size:.92rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border-radius:8px;user-select:none;">
           📷 上傳作文照片，AI 自動批改
-        </button>
+        </label>
         <span id="autoGradeStatus" style="font-size:.85rem;color:#64748b;"></span>
       </div>
       <div style="font-size:.76rem;color:#4b7c59;margin-top:6px;">需先在「✍️ 作文批改」頁面設定 API 金鑰</div>
