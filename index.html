@@ -4308,6 +4308,21 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
     <div style="font-size:.78rem;color:#4b7c59;margin-top:6px;">
       取得金鑰：<a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#059669;font-weight:700;">console.anthropic.com</a>（登入 → Settings → API Keys → Create Key → 複製貼上）・金鑰只儲存在本機瀏覽器
     </div>
+    <!-- Proxy 設定（進階：使用 Cloudflare Worker 解鎖高品質模型） -->
+    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed #bbf7d0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-weight:700;font-size:.85rem;color:#166534;">🚀 進階：Proxy 網址</span>
+        <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;">設定後使用高品質 Sonnet 模型</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="essayProxyUrlInput" placeholder="https://你的worker名稱.workers.dev" style="flex:1;min-width:200px;border-radius:10px;border:2px solid #bfdbfe;padding:8px 12px;font-size:.85rem;font-family:monospace;">
+        <button class="btn" onclick="saveEssayProxyUrl()" style="background:#3b82f6;color:#fff;padding:8px 18px;">儲存</button>
+        <span id="essayProxyStatus" style="font-size:.83rem;"></span>
+      </div>
+      <div style="font-size:.75rem;color:#4b7c59;margin-top:5px;">
+        未設定 = 基本 Haiku 模型 ／ 設定後 = 高品質 Sonnet 模型（視覺辨識更準確）・<a href="#" onclick="alert('請依照老師提供的設定步驟建立 Cloudflare Worker，取得網址後貼在這裡。')" style="color:#059669;">什麼是 Proxy？</a>
+      </div>
+    </div>
   </div>
   <div style="background:#e0f2fe;border-radius:14px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:#0369a1;line-height:1.7;">
     📸 <strong>使用方式：</strong>設定 API 金鑰後 → 點「＋ 新增批改」→ 上傳作文照片 → AI 自動批改並填好表單 → 確認後儲存！
@@ -10478,6 +10493,7 @@ initApp().catch(() => {
 
 // ── Claude API Key 管理 ──
 let claudeApiKey = localStorage.getItem('cls_claudeApiKey') || '';
+let claudeProxyUrl = localStorage.getItem('cls_claudeProxyUrl') || '';
 
 function saveEssayApiKey() {
   const key = (document.getElementById('essayApiKeyInput').value || '').trim();
@@ -10488,15 +10504,39 @@ function saveEssayApiKey() {
   toast('✅ Claude API 金鑰已儲存！');
 }
 
+function saveEssayProxyUrl() {
+  const url = (document.getElementById('essayProxyUrlInput').value || '').trim();
+  claudeProxyUrl = url;
+  if (url) {
+    localStorage.setItem('cls_claudeProxyUrl', url);
+    updateEssayApiKeyStatus();
+    toast('✅ Proxy 網址已儲存！現在可以使用高品質 Sonnet 模型');
+  } else {
+    localStorage.removeItem('cls_claudeProxyUrl');
+    updateEssayApiKeyStatus();
+    toast('✅ 已清除 Proxy 網址，改用直連模式');
+  }
+}
+
 function updateEssayApiKeyStatus() {
   const el = document.getElementById('essayApiKeyStatus');
   const inp = document.getElementById('essayApiKeyInput');
+  const proxyEl = document.getElementById('essayProxyStatus');
+  const proxyInp = document.getElementById('essayProxyUrlInput');
   if (!el) return;
   if (claudeApiKey) {
     el.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ 已設定</span>';
     if (inp) inp.placeholder = '已儲存（如需更新請重新輸入）';
   } else {
     el.innerHTML = '<span style="color:#ef4444;">❌ 尚未設定</span>';
+  }
+  if (proxyEl) {
+    if (claudeProxyUrl) {
+      proxyEl.innerHTML = '<span style="color:#22c55e;font-weight:700;">✅ 已設定（高品質模式）</span>';
+      if (proxyInp) proxyInp.placeholder = '已儲存（如需更新請重新輸入）';
+    } else {
+      proxyEl.innerHTML = '<span style="color:#f59e0b;font-weight:700;">⚠️ 未設定（使用基本模式）</span>';
+    }
   }
 }
 
@@ -10518,16 +10558,19 @@ async function autoGradeFromPhoto(input) {
     const mimeType = file.type || 'image/jpeg';
     statusEl.innerHTML = '🤖 Claude AI 正在批改中，請稍候（約 5-10 秒）...';
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      // 如果有設定 Proxy，使用高品質 Sonnet 模型；否則直連使用 Haiku
+      const useProxy = !!claudeProxyUrl;
+      const apiEndpoint = useProxy ? claudeProxyUrl : 'https://api.anthropic.com/v1/messages';
+      const selectedModel = useProxy ? 'claude-sonnet-4-5' : 'claude-haiku-4-5';
+      const fetchHeaders = useProxy
+        ? { 'x-api-key': claudeApiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }
+        : { 'x-api-key': claudeApiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' };
+
+      const resp = await fetch(apiEndpoint, {
         method: 'POST',
-        headers: {
-          'x-api-key': claudeApiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        headers: fetchHeaders,
         body: JSON.stringify({
-          model: 'claude-3-5-haiku-20241022',
+          model: selectedModel,
           max_tokens: 1200,
           messages: [{
             role: 'user',
