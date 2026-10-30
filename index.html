@@ -10646,8 +10646,7 @@ starsAwarded：0=未批；1=需大幅加強；2=需加強；3=達標(約80)；4=
       input.value = '';
     } catch (err) {
       let hint = err.message.includes('invalid x-api-key') ? '金鑰無效，請重新設定' :
-                 err.message.includes('credit') || err.message.includes('balance') ? '帳戶額度不足，請至 console.anthropic.com 儲值' :
-                 err.message.includes('does not exist') || err.message.includes('model') ? '模型不支援，請聯絡管理員' : err.message;
+                 err.message.includes('credit') || err.message.includes('balance') ? '帳戶額度不足，請至 console.anthropic.com 儲值' : err.message;
       statusEl.innerHTML = `<span style="color:#ef4444;">❌ ${hint}</span>`;
       console.error('autoGrade error', err);
     }
