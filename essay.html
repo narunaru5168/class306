@@ -471,8 +471,8 @@ function getApiCreds(){
 async function step1Extract(input){
   const file=input.files[0]; if(!file) return;
   const {proxy,key}=getApiCreds();
-  if(!proxy&&!key){
-    document.getElementById('step1Status').innerHTML='<span style="color:#ef4444">❌ 請先設定 API</span>';
+  if(!key){
+    document.getElementById('step1Status').innerHTML='<span style="color:#ef4444">❌ 請先設定 Claude API 金鑰</span>';
     return;
   }
   document.getElementById('step1Status').innerHTML='🔄 AI 正在辨識手寫文字...';
@@ -512,7 +512,7 @@ async function step2Grade(){
   if(!text){ toast('⚠️ 請先辨識作文文字'); return; }
   const title=(document.getElementById('titleInput').value||'').trim();
   const {proxy,key}=getApiCreds();
-  if(!proxy&&!key){ toast('❌ 請設定 API'); return; }
+  if(!key){ toast('❌ 請先設定 Claude API 金鑰'); return; }
 
   // 切換到 step2 畫面
   setStep(2);
@@ -625,9 +625,8 @@ starsAwarded：0未批 1需大幅加強 2需加強 3達標約80 4良好約85-90 
 // ── Claude API call ──
 async function callClaude({prompt,b64,mime,proxy,key,maxTokens=1500}){
   const endpoint=proxy||'https://api.anthropic.com/v1/messages';
-  const headers=proxy
-    ?{'Content-Type':'application/json'}
-    :{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'};
+  const headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
+  if(!proxy) headers['anthropic-dangerous-direct-browser-access']='true';
   const model=proxy?'claude-sonnet-4-6':'claude-haiku-4-5';
 
   const content=[];
