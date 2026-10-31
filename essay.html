@@ -382,10 +382,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadApi();
   updateStar(3);
   if(db){
-    db.ref('/students').on('value',s=>{
+    db.ref('class306/students').on('value',s=>{
       const r=s.val()||{};
       students=Object.values(r).filter(x=>x&&x.name);
-      students.sort((a,b)=>parseInt(a.seatNo||99)-parseInt(b.seatNo||99));
+      students.sort((a,b)=>parseInt(a.sid||99)-parseInt(b.sid||99));
       buildStudents();
     });
     db.ref('/essays').on('value',s=>{
@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 function buildStudents(){
   const sel=document.getElementById('studentSel');
   sel.innerHTML=students.length
-    ? students.map(s=>`<option value="${s.name}">${s.seatNo?s.seatNo+'號 ':''}${s.name}</option>`).join('')
+    ? students.map(s=>`<option value="${s.name}">${s.sid?s.sid+'號 ':''}${s.name}</option>`).join('')
     : '<option value="">（無學生資料）</option>';
 }
 
