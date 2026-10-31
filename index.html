@@ -4961,12 +4961,12 @@ function renderNav(){
   if(titleEl) titleEl.textContent = siteTitle;
   const row1 = document.getElementById('navRow1');
   const row2 = document.getElementById('navRow2');
-  if(row1) row1.innerHTML = NAV_KEYS_ROW1.map(k=>
-    `<button class="${k===currentPageName?'active':''}" onclick="showPage('${k}')">${navLabels[k]}</button>`
-  ).join('');
-  if(row2) row2.innerHTML = NAV_KEYS_ROW2.map(k=>
-    `<button class="${k===currentPageName?'active':''}" onclick="showPage('${k}')">${navLabels[k]}</button>`
-  ).join('');
+  const makeBtn = k => {
+    const action = k==='essay' ? "location.href='essay.html'" : `showPage('${k}')`;
+    return `<button class="${k===currentPageName?'active':''}" onclick="${action}">${navLabels[k]}</button>`;
+  };
+  if(row1) row1.innerHTML = NAV_KEYS_ROW1.map(makeBtn).join('');
+  if(row2) row2.innerHTML = NAV_KEYS_ROW2.map(makeBtn).join('');
 }
 // ─── 🛟 資料還原（緊急救援用）───
 let restoreValidatedData = null;
