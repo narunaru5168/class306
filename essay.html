@@ -615,15 +615,15 @@ ${text}
 【direction】
 給老師的教學建議（針對這篇），2–3點具體可執行的建議，例如「下次可以多練習用比喻句描寫感受」
 
-輸出格式（只輸出JSON）：
+輸出格式（只輸出JSON，paragraphFeedback必須放最前面優先生成）：
 {
+  "paragraphFeedback":[
+    {"paragraph":"原文段落逐字照抄","analysis":"分析15字內","improved":"改善示範","grade":"良"}
+  ],
   "dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},
   "strengths":["詞句通順流暢"],
   "suggestions":["修辭要適時加入"],
   "highlights":["成語或佳句逐字照抄"],
-  "paragraphFeedback":[
-    {"paragraph":"原文段落逐字照抄","analysis":"分析15字內","improved":"改善示範","grade":"良"}
-  ],
   "direction":"1. 建議一\\n2. 建議二",
   "comment":"40–50字整體評語：肯定優點→指出改進→鼓勵結語",
   "starsAwarded":3
@@ -642,7 +642,7 @@ starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82
 【校準】三年級以鼓勵為主，預設3分。使用成語/修辭→修辭詞句至少4分+starsAwarded+1（不超5）。`;
 
   try{
-    const result=await callClaude({prompt,proxy,key,maxTokens:2000});
+    const result=await callClaude({prompt,proxy,key,maxTokens:3500});
     const r=parseJSON(result);
     if(!r) throw new Error('AI 未回傳有效結果，請重試');
 
