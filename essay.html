@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="essay-v20261101-d">
+<meta name="app-version" content="essay-v20261101-f">
 <title>✍️ 306 班作文批改</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -119,6 +119,17 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
 .rec-name{font-size:.88rem;font-weight:700}
 .rec-meta{font-size:.75rem;color:var(--sub);margin-top:2px}
 .btn-del{background:none;border:none;cursor:pointer;color:#ef4444;font-size:1.1rem;padding:4px}
+/* folder */
+.folder-card{border:2px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.folder-hdr{display:flex;align-items:center;gap:10px;padding:13px 16px;background:linear-gradient(90deg,#f0fdf4,#fafafa);cursor:pointer;user-select:none}
+.folder-hdr:hover{background:#e6f4ea}
+.folder-icon{font-size:1.3rem}
+.folder-title{flex:1;font-size:.95rem;font-weight:800;color:#166534}
+.folder-count{font-size:.8rem;background:#dcfce7;color:#166534;border-radius:20px;padding:2px 10px;font-weight:700;white-space:nowrap}
+.folder-arrow{font-size:.85rem;color:#6b7280;transition:transform .2s}
+.folder-body{padding:12px 14px;background:#fff;border-top:1.5px solid var(--border)}
+.folder-progress{height:6px;background:#e5e7eb;border-radius:4px;margin-bottom:10px;overflow:hidden}
+.folder-progress-bar{height:100%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:4px;transition:width .4s}
 
 /* toast */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:10px 22px;border-radius:50px;font-size:.88rem;font-weight:700;transition:transform .3s;z-index:999;pointer-events:none}
@@ -188,6 +199,14 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
         <label>學生</label>
         <select id="studentSel">
           <option value="">載入中...</option>
+        </select>
+      </div>
+      <div class="fg" style="margin-bottom:0;flex:0 0 auto;min-width:140px">
+        <label>篇次</label>
+        <select id="essayNumSel">
+          <option value="1">第一篇：我學會了…</option>
+          <option value="2">第二篇：時間是什麼</option>
+          <option value="3">第三篇：旅遊</option>
         </select>
       </div>
       <div class="fg" style="margin-bottom:0">
@@ -336,7 +355,7 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     <div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap">
       <div class="star-sub" id="starSub">達標</div>
       <div id="scoreDisplay" style="font-size:2rem;font-weight:900;color:#d97706;line-height:1">85分</div>
-      <div id="xinshinLabel" style="display:none;background:#16a34a;color:#fff;border-radius:20px;padding:4px 14px;font-size:.88rem;font-weight:800">🪙 加薪薪！</div>
+      <div id="xinshinLabel" style="display:none;background:#16a34a;color:#fff;border-radius:20px;padding:4px 14px;font-size:.88rem;font-weight:800">⭐ 加星星！</div>
     </div>
   </div>
 
@@ -364,6 +383,11 @@ const STRS    = ['詞句通順流暢','標點運用正確','字體書寫工整',
 const SUGS    = ['語意要通順流暢','標點要運用妥當','字體要端正寫好','主旨要事先掌握','事先審題再下筆','內容要加深加廣','修辭要適時加入','創意要發揮加入','結尾要前後呼應','優美詞句多閱讀'];
 const STAR_LB    = ['未批（重新批改）','加強努力','繼續加油','達標','優良','優秀'];
 const STAR_SCORE = [null, 80, 82, 85, 90, 95];
+const ESSAY_SERIES = [
+  {num:1, label:'第一篇', hint:'我學會了…'},
+  {num:2, label:'第二篇', hint:'時間是什麼（仿寫）'},
+  {num:3, label:'第三篇', hint:'我去…旅遊'},
+];
 
 let db=null, students=[], essays={}, editId=null;
 let extractedFullText='';
@@ -768,6 +792,7 @@ async function saveEssay(){
 
   const rec={
     studentName:student, title,
+    essayNum: parseInt(document.getElementById('essayNumSel').value)||1,
     essayText: document.getElementById('extractedText').value.trim(),
     dimScores, strengths, suggestions,
     highlights: (document.getElementById('essayHL').value||'').trim(),
@@ -787,14 +812,24 @@ async function saveEssay(){
   }catch(e){toast('❌ '+e.message);}
 }
 
-// ── 紀錄列表 ──
+// ── 紀錄列表（資料夾模式）──
 function renderRecs(){
   const el=document.getElementById('recList');
   const list=Object.entries(essays);
   if(!list.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px">尚無批改紀錄</div>';return;}
-  list.sort((a,b)=>(b[1].savedAt||0)-(a[1].savedAt||0));
-  el.innerHTML=list.map(([id,r])=>{
+
+  // 分組
+  const folders={1:[],2:[],3:[],0:[]};
+  list.forEach(([id,r])=>{
+    const n=r.essayNum||0;
+    (folders[n]||folders[0]).push([id,r]);
+  });
+  // 每組依姓名排序
+  Object.values(folders).forEach(arr=>arr.sort((a,b)=>(a[1].studentName||'').localeCompare(b[1].studentName||'')));
+
+  function recRow(id,r){
     const stars=r.starsAwarded||0;
+    const score=STAR_SCORE[stars];
     const ss=stars?'⭐'.repeat(stars):'—';
     const dt=r.savedAt?new Date(r.savedAt).toLocaleDateString('zh-TW'):'';
     return`<div class="rec-item" onclick="loadRec('${id}')">
@@ -802,10 +837,58 @@ function renderRecs(){
         <div class="rec-name">${esc(r.studentName||'')} — ${esc(r.title||'')}</div>
         <div class="rec-meta">${dt}　${STAR_LB[stars]||''}</div>
       </div>
-      <div>${ss}</div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:.85rem">${ss}</div>
+        ${score?`<div style="font-size:.95rem;font-weight:900;color:#d97706">${score}分</div>`:''}
+        ${score&&score>=90?'<div style="font-size:.7rem;background:#16a34a;color:#fff;border-radius:10px;padding:1px 6px">⭐加星星</div>':''}
+      </div>
       <button class="btn-del" onclick="event.stopPropagation();delRec('${id}')">🗑️</button>
     </div>`;
-  }).join('');
+  }
+
+  let html='';
+  ESSAY_SERIES.forEach(({num,label,hint})=>{
+    const recs=folders[num]||[];
+    const pct=Math.round(recs.length/26*100);
+    html+=`<div class="folder-card">
+      <div class="folder-hdr" onclick="toggleFolder(${num})">
+        <span class="folder-icon">📁</span>
+        <span class="folder-title">${label}：${hint}</span>
+        <span class="folder-count">${recs.length}/26 位</span>
+        <span class="folder-arrow" id="farrow${num}">▼</span>
+      </div>
+      <div class="folder-body" id="fbody${num}" style="display:none">
+        <div class="folder-progress"><div class="folder-progress-bar" style="width:${pct}%"></div></div>
+        ${recs.length?recs.map(([id,r])=>recRow(id,r)).join(''):'<div style="text-align:center;color:#94a3b8;padding:12px">尚無批改紀錄</div>'}
+      </div>
+    </div>`;
+  });
+
+  // 未分類（舊資料）
+  if(folders[0].length){
+    html+=`<div class="folder-card">
+      <div class="folder-hdr" onclick="toggleFolder(0)" style="background:#fefce8">
+        <span class="folder-icon">📂</span>
+        <span class="folder-title" style="color:#92400e">未分類（舊紀錄）</span>
+        <span class="folder-count" style="background:#fde68a;color:#92400e">${folders[0].length} 篇</span>
+        <span class="folder-arrow" id="farrow0">▼</span>
+      </div>
+      <div class="folder-body" id="fbody0" style="display:none">
+        ${folders[0].map(([id,r])=>recRow(id,r)).join('')}
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML=html;
+}
+
+function toggleFolder(num){
+  const body=document.getElementById('fbody'+num);
+  const arrow=document.getElementById('farrow'+num);
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  if(arrow){arrow.style.transform=open?'':'rotate(180deg)';}
 }
 
 function loadRec(id){
@@ -820,6 +903,7 @@ function loadRec(id){
   STRS.forEach(s=>{const el=document.getElementById('str_'+s);if(el){el.checked=!!(r.strengths&&r.strengths.includes(s));chkStyle('str_'+s);}});
   SUGS.forEach(s=>{const el=document.getElementById('sug_'+s);if(el){el.checked=!!(r.suggestions&&r.suggestions.includes(s));chkStyle('sug_'+s);}});
 
+  document.getElementById('essayNumSel').value=r.essayNum||1;
   document.getElementById('essayHL').value=r.highlights||'';
   document.getElementById('essayDir').value=r.direction||'';
   document.getElementById('essayComment').value=r.comment||'';
