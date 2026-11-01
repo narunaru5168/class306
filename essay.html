@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="essay-v20261101-f">
+<meta name="app-version" content="essay-v20261101-g">
 <title>✍️ 306 班作文批改</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -203,10 +203,8 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
       </div>
       <div class="fg" style="margin-bottom:0;flex:0 0 auto;min-width:140px">
         <label>篇次</label>
-        <select id="essayNumSel">
-          <option value="1">第一篇：我學會了…</option>
-          <option value="2">第二篇：時間是什麼</option>
-          <option value="3">第三篇：旅遊</option>
+        <select id="essayNumSel" onchange="onFolderChange()">
+          <option value="第一篇">第一篇</option>
         </select>
       </div>
       <div class="fg" style="margin-bottom:0">
@@ -391,6 +389,32 @@ const ESSAY_SERIES = [
 
 let db=null, students=[], essays={}, editId=null;
 let extractedFullText='';
+let currentParagraphFeedback=[];  // 儲存當前批改的段落資料
+
+// ── 自訂資料夾（存在 localStorage）──
+function getFolders(){
+  try{return JSON.parse(localStorage.getItem('cls_folders')||'null')||['第一篇','第二篇','第三篇'];}
+  catch{return['第一篇','第二篇','第三篇'];}
+}
+function saveFolders(arr){try{localStorage.setItem('cls_folders',JSON.stringify(arr));}catch{}}
+function buildFolderSel(){
+  const sel=document.getElementById('essayNumSel');
+  if(!sel)return;
+  const folders=getFolders();
+  const cur=sel.value||folders[0];
+  sel.innerHTML=folders.map((f,i)=>`<option value="${esc(f)}"${f===cur?' selected':''}>${esc(f)}</option>`).join('')+
+    `<option value="__add__">＋ 新增篇次...</option>`;
+}
+function onFolderChange(){
+  const sel=document.getElementById('essayNumSel');
+  if(sel.value!=='__add__')return;
+  const name=(prompt('請輸入新篇次名稱（例如：第四篇）')||'').trim();
+  if(!name){sel.value=getFolders()[0];return;}
+  const arr=getFolders();
+  if(!arr.includes(name)){arr.push(name);saveFolders(arr);}
+  buildFolderSel();
+  sel.value=name;
+}
 
 // ── Firebase ──
 try{
@@ -408,6 +432,7 @@ try{
 
 document.addEventListener('DOMContentLoaded',()=>{
   buildChecks();
+  buildFolderSel();
   loadApi();
   updateStar(3);
   if(db){
@@ -621,6 +646,8 @@ starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82
     const r=parseJSON(result);
     if(!r) throw new Error('AI 未回傳有效結果，請重試');
 
+    // 儲存段落資料供後續 save 使用
+    currentParagraphFeedback=r.paragraphFeedback||[];
     // 填段落表格
     const tbody=document.getElementById('pfBody');
     if(r.paragraphFeedback&&r.paragraphFeedback.length){
@@ -792,8 +819,9 @@ async function saveEssay(){
 
   const rec={
     studentName:student, title,
-    essayNum: parseInt(document.getElementById('essayNumSel').value)||1,
+    folderLabel: document.getElementById('essayNumSel').value||'第一篇',
     essayText: document.getElementById('extractedText').value.trim(),
+    paragraphFeedback: currentParagraphFeedback,
     dimScores, strengths, suggestions,
     highlights: (document.getElementById('essayHL').value||'').trim(),
     direction:  (document.getElementById('essayDir').value||'').trim(),
@@ -818,14 +846,19 @@ function renderRecs(){
   const list=Object.entries(essays);
   if(!list.length){el.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px">尚無批改紀錄</div>';return;}
 
-  // 分組
-  const folders={1:[],2:[],3:[],0:[]};
+  // 分組（依 folderLabel 字串，相容舊 essayNum）
+  const folderNames=getFolders();
+  const folderMap={};
+  folderNames.forEach(f=>{folderMap[f]=[];});
+  const uncategorized=[];
   list.forEach(([id,r])=>{
-    const n=r.essayNum||0;
-    (folders[n]||folders[0]).push([id,r]);
+    const lbl=r.folderLabel||(r.essayNum?`第${['','一','二','三'][r.essayNum]||r.essayNum}篇`:null);
+    if(lbl&&folderMap[lbl]) folderMap[lbl].push([id,r]);
+    else if(lbl){folderMap[lbl]=[...( folderMap[lbl]||[]),[id,r]];}  // 自訂資料夾
+    else uncategorized.push([id,r]);
   });
   // 每組依姓名排序
-  Object.values(folders).forEach(arr=>arr.sort((a,b)=>(a[1].studentName||'').localeCompare(b[1].studentName||'')));
+  Object.values(folderMap).forEach(arr=>arr.sort((a,b)=>(a[1].studentName||'').localeCompare(b[1].studentName||'')));
 
   function recRow(id,r){
     const stars=r.starsAwarded||0;
@@ -846,35 +879,39 @@ function renderRecs(){
     </div>`;
   }
 
+  // 取所有資料夾名（包含資料中有但 localStorage 沒有的）
+  const allFolderKeys=[...new Set([...folderNames,...Object.keys(folderMap)])];
+
   let html='';
-  ESSAY_SERIES.forEach(({num,label,hint})=>{
-    const recs=folders[num]||[];
+  allFolderKeys.forEach((lbl,i)=>{
+    const recs=folderMap[lbl]||[];
     const pct=Math.round(recs.length/26*100);
+    const fid='folder_'+i;
     html+=`<div class="folder-card">
-      <div class="folder-hdr" onclick="toggleFolder(${num})">
+      <div class="folder-hdr" onclick="toggleFolder('${fid}')">
         <span class="folder-icon">📁</span>
-        <span class="folder-title">${label}：${hint}</span>
+        <span class="folder-title">${esc(lbl)}</span>
         <span class="folder-count">${recs.length}/26 位</span>
-        <span class="folder-arrow" id="farrow${num}">▼</span>
+        <span class="folder-arrow" id="farrow${fid}">▼</span>
       </div>
-      <div class="folder-body" id="fbody${num}" style="display:none">
+      <div class="folder-body" id="fbody${fid}" style="display:none">
         <div class="folder-progress"><div class="folder-progress-bar" style="width:${pct}%"></div></div>
         ${recs.length?recs.map(([id,r])=>recRow(id,r)).join(''):'<div style="text-align:center;color:#94a3b8;padding:12px">尚無批改紀錄</div>'}
       </div>
     </div>`;
   });
 
-  // 未分類（舊資料）
-  if(folders[0].length){
+  // 未分類（舊資料，無 folderLabel 也無 essayNum）
+  if(uncategorized.length){
     html+=`<div class="folder-card">
-      <div class="folder-hdr" onclick="toggleFolder(0)" style="background:#fefce8">
+      <div class="folder-hdr" onclick="toggleFolder('unc')" style="background:#fefce8">
         <span class="folder-icon">📂</span>
         <span class="folder-title" style="color:#92400e">未分類（舊紀錄）</span>
-        <span class="folder-count" style="background:#fde68a;color:#92400e">${folders[0].length} 篇</span>
-        <span class="folder-arrow" id="farrow0">▼</span>
+        <span class="folder-count" style="background:#fde68a;color:#92400e">${uncategorized.length} 篇</span>
+        <span class="folder-arrow" id="farrowunc">▼</span>
       </div>
-      <div class="folder-body" id="fbody0" style="display:none">
-        ${folders[0].map(([id,r])=>recRow(id,r)).join('')}
+      <div class="folder-body" id="fbodyunc" style="display:none">
+        ${uncategorized.map(([id,r])=>recRow(id,r)).join('')}
       </div>
     </div>`;
   }
@@ -882,9 +919,9 @@ function renderRecs(){
   el.innerHTML=html;
 }
 
-function toggleFolder(num){
-  const body=document.getElementById('fbody'+num);
-  const arrow=document.getElementById('farrow'+num);
+function toggleFolder(key){
+  const body=document.getElementById('fbody'+key);
+  const arrow=document.getElementById('farrow'+key);
   if(!body) return;
   const open=body.style.display!=='none';
   body.style.display=open?'none':'block';
@@ -903,7 +940,17 @@ function loadRec(id){
   STRS.forEach(s=>{const el=document.getElementById('str_'+s);if(el){el.checked=!!(r.strengths&&r.strengths.includes(s));chkStyle('str_'+s);}});
   SUGS.forEach(s=>{const el=document.getElementById('sug_'+s);if(el){el.checked=!!(r.suggestions&&r.suggestions.includes(s));chkStyle('sug_'+s);}});
 
-  document.getElementById('essayNumSel').value=r.essayNum||1;
+  buildFolderSel();
+  document.getElementById('essayNumSel').value=r.folderLabel||r.essayNum||'第一篇';
+  // 恢復段落表格
+  currentParagraphFeedback=r.paragraphFeedback||[];
+  const tbody=document.getElementById('pfBody');
+  if(currentParagraphFeedback.length){
+    tbody.innerHTML=currentParagraphFeedback.map(row=>{
+      const badge=row.grade==='優'?'score-good':row.grade==='良'?'score-ok':'score-weak';
+      return`<tr><td class="col-orig">${esc(row.paragraph||'')}<div><span class="score-badge ${badge}">${esc(row.grade||'')}</span></div></td><td class="col-issue">${esc(row.analysis||'')}</td><td class="col-impr">${esc(row.improved||'')}</td></tr>`;
+    }).join('');
+  }else{tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">此紀錄無段落分析（批改時未儲存）</td></tr>';}
   document.getElementById('essayHL').value=r.highlights||'';
   document.getElementById('essayDir').value=r.direction||'';
   document.getElementById('essayComment').value=r.comment||'';
