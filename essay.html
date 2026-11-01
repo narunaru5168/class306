@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="essay-v20261031-b">
+<meta name="app-version" content="essay-v20261101-a">
 <title>✍️ 306 班作文批改</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       students.sort((a,b)=>parseInt(a.seatNo||a.sid||99)-parseInt(b.seatNo||b.sid||99));
       buildStudents();
     });
-    db.ref('/essays').on('value',s=>{
+    db.ref('class306/essays').on('value',s=>{
       essays=s.val()||{};
       renderRecs();
     });
@@ -746,8 +746,8 @@ async function saveEssay(){
 
   try{
     if(db){
-      if(editId) await db.ref('/essays/'+editId).set(rec);
-      else       await db.ref('/essays').push(rec);
+      if(editId) await db.ref('class306/essays/'+editId).set(rec);
+      else       await db.ref('class306/essays').push(rec);
       toast(editId?'✅ 已更新':'✅ 儲存成功！');
       resetAll();
     }else toast('❌ 無法連線到資料庫');
@@ -801,7 +801,7 @@ function loadRec(id){
 
 async function delRec(id){
   if(!confirm('確定刪除？')) return;
-  try{await db.ref('/essays/'+id).remove();toast('🗑️ 已刪除');}
+  try{await db.ref('class306/essays/'+id).remove();toast('🗑️ 已刪除');}
   catch(e){toast('❌ 刪除失敗');}
 }
 
