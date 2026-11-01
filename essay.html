@@ -478,8 +478,9 @@ async function step1Extract(input){
   document.getElementById('step1Status').innerHTML='🔄 AI 正在辨識手寫文字...';
   document.getElementById('extractedBox').style.display='none';
   try{
-    const b64=await toB64(file);
-    const mime=file.type||'image/jpeg';
+    const compressed=await compressImg(file);
+    const b64=await toB64(compressed);
+    const mime='image/jpeg';
     const preTitle=(document.getElementById('titleInput').value||'').trim();
 
     const prompt=`你是作文辨識助手。請仔細閱讀照片中學生的手寫作文，將所有文字轉錄出來。只輸出JSON，不加任何說明。
@@ -653,6 +654,20 @@ function parseJSON(raw){
   }catch{return null;}
 }
 
+function compressImg(file,maxPx=1280,q=0.82){
+  return new Promise(res=>{
+    const img=new Image(),url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.naturalWidth,h=img.naturalHeight;
+      if(w>maxPx||h>maxPx){const s=maxPx/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob(b=>res(b),'image/jpeg',q);
+    };
+    img.src=url;
+  });
+}
 function toB64(file){
   return new Promise((res,rej)=>{
     const r=new FileReader();
