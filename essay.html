@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="essay-v20261101-b">
+<meta name="app-version" content="essay-v20261101-d">
 <title>✍️ 306 班作文批改</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -326,14 +326,18 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     <textarea id="essayComment" rows="3" placeholder="40–50 字的整體評語" style="border:2px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:.9rem;width:100%;outline:none;resize:vertical;"></textarea>
   </div>
 
-  <!-- 星等 -->
+  <!-- 星等 + 分數 -->
   <div class="card" style="background:#fffbeb;border:1.5px solid #fde047;">
     <div class="star-row">
       <span class="star-lbl">⭐ 這篇加幾顆星：</span>
       <input type="range" id="starsSlider" min="0" max="5" value="3" oninput="updateStar(this.value)">
       <span class="star-val" id="starVal">3 顆星</span>
     </div>
-    <div class="star-sub" id="starSub">達標 ≈ 80 分</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap">
+      <div class="star-sub" id="starSub">達標</div>
+      <div id="scoreDisplay" style="font-size:2rem;font-weight:900;color:#d97706;line-height:1">85分</div>
+      <div id="xinshinLabel" style="display:none;background:#16a34a;color:#fff;border-radius:20px;padding:4px 14px;font-size:.88rem;font-weight:800">🪙 加薪薪！</div>
+    </div>
   </div>
 
   <!-- 儲存 -->
@@ -358,7 +362,8 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
 const DIMS    = ['內容主題','結構段落','語意流暢','標點符號','修辭詞句'];
 const STRS    = ['詞句通順流暢','標點運用正確','字體書寫工整','主旨符合明確','段落清楚分明','內容豐富充實','文章創意十足','引證客觀明確','結構紮實嚴謹','結尾呼應有力'];
 const SUGS    = ['語意要通順流暢','標點要運用妥當','字體要端正寫好','主旨要事先掌握','事先審題再下筆','內容要加深加廣','修辭要適時加入','創意要發揮加入','結尾要前後呼應','優美詞句多閱讀'];
-const STAR_LB = ['未批','需大幅加強','需加強','達標 ≈ 80 分','良好 ≈ 85–90 分','優秀 ≈ 95 分以上'];
+const STAR_LB    = ['未批（重新批改）','加強努力','繼續加油','達標','優良','優秀'];
+const STAR_SCORE = [null, 80, 82, 85, 90, 95];
 
 let db=null, students=[], essays={}, editId=null;
 let extractedFullText='';
@@ -425,6 +430,10 @@ function updateStar(v){
   v=parseInt(v);
   document.getElementById('starVal').textContent=v+' 顆星';
   document.getElementById('starSub').textContent=STAR_LB[v]||'';
+  const sc=STAR_SCORE[v];
+  document.getElementById('scoreDisplay').textContent=sc?sc+'分':'—';
+  const xin=document.getElementById('xinshinLabel');
+  if(xin) xin.style.display=(sc&&sc>=90)?'inline-block':'none';
 }
 
 // ── API ──
@@ -483,14 +492,21 @@ async function step1Extract(input){
     const mime='image/jpeg';
     const preTitle=(document.getElementById('titleInput').value||'').trim();
 
-    const prompt=`你是作文辨識助手。請仔細閱讀照片中學生的手寫作文，將所有文字轉錄出來。只輸出JSON，不加任何說明。
+    const prompt=`你是手寫文字辨識工具（OCR）。你的唯一任務是將照片中的手寫文字「一字不差」地抄寫出來。
 
-${preTitle?`題目已知為「${preTitle}」。`:`請辨識題目欄（直式作文紙最右側第一欄頂端「題目：」後面的文字）。若看不清楚則title填""。`}
+【最重要的規則】
+- 嚴格禁止自己發明、改寫、補充、猜測任何內容
+- 只輸出照片中真實存在的文字，一個字都不能多，一個字都不能少
+- 如果某個字看不清楚，用「□」代替，絕對不能猜測或替換成其他字
+- 這是直式手寫作文，從右到左、從上到下閱讀
+- 不需要判斷文章好壞，只需要把看到的字抄出來
 
-輸出格式（只輸出JSON）：
-{"title":"作文題目","fullText":"完整作文正文逐字轉錄，段落之間用\\n\\n分隔，保留原文一字不改"}
+${preTitle?`題目已知為「${preTitle}」，不需再辨識題目欄。`:`請辨識直式作文紙最右側第一欄「題目：」後面的文字。若看不清楚則title填""。`}
 
-注意：fullText只包含作文正文，不含題目、姓名、日期等。`;
+只輸出JSON，不加任何說明文字：
+{"title":"作文題目","fullText":"照片中的手寫正文逐字照抄，段落之間用\\n\\n分隔，保留原文一字不改，不含題目、姓名、日期"}
+
+再次強調：fullText必須是照片中真實看到的文字，不是你自己想的或生成的。`;
 
     const result=await callClaude({prompt,b64,mime,proxy,key,maxTokens:1200});
     const extracted=parseJSON(result);
@@ -518,7 +534,10 @@ async function step2Grade(){
   const {proxy,key}=getApiCreds();
   if(!key){ toast('❌ 請先設定 Claude API 金鑰'); return; }
 
-  // 切換到 step2 畫面
+  // 切換到 step2 畫面，鎖定按鈕防止重複點擊
+  const gradeBtn=document.getElementById('gradeBtn');
+  gradeBtn.disabled=true;
+  gradeBtn.textContent='⏳ 批改中，請稍候...';
   setStep(2);
   document.getElementById('step2Status').innerHTML='🤖 AI 正在進行逐段批改（約 20–40 秒）...';
 
@@ -569,7 +588,8 @@ ${text}
 ■修辭詞句：1貧乏 2單調 3偶有美句 4有成語或修辭 5多處成語修辭佳句
 優點只能選：${STRS.join('、')}
 建議只能選：${SUGS.join('、')}
-starsAwarded：0未批 1需大幅加強 2需加強 3達標約80 4良好約85-90 5優秀約95+
+starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82分 3=85分 4=90分 5=95分
+【分數規則】最低給1顆星（80分）。三年級學生只要認真完成作文就有80分，不可低於80分。
 【校準】三年級以鼓勵為主，預設3分。使用成語/修辭→修辭詞句至少4分+starsAwarded+1（不超5）。`;
 
   try{
@@ -623,6 +643,9 @@ starsAwarded：0未批 1需大幅加強 2需加強 3達標約80 4良好約85-90 
     setStep(3);
   }catch(e){
     document.getElementById('step2Status').innerHTML=`<span style="color:#ef4444">❌ ${e.message}</span>`;
+    // 批改失敗時恢復按鈕
+    const gb=document.getElementById('gradeBtn');
+    if(gb){gb.disabled=false;gb.textContent='🤖 文字確認無誤，開始 AI 批改 →';}
   }
 }
 
@@ -631,16 +654,26 @@ async function callClaude({prompt,b64,mime,proxy,key,maxTokens=1500}){
   const endpoint=proxy||'https://api.anthropic.com/v1/messages';
   const headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
   if(!proxy) headers['anthropic-dangerous-direct-browser-access']='true';
-  const model=proxy?'claude-sonnet-4-6':'claude-haiku-4-5';
+  const model='claude-sonnet-4-6';
 
   const content=[];
   if(b64) content.push({type:'image',source:{type:'base64',media_type:mime,data:b64}});
   content.push({type:'text',text:prompt});
 
-  const resp=await fetch(endpoint,{
-    method:'POST',headers,
-    body:JSON.stringify({model,max_tokens:maxTokens,messages:[{role:'user',content}]})
-  });
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),90000); // 90秒超時
+  let resp;
+  try{
+    resp=await fetch(endpoint,{
+      method:'POST',headers,signal:controller.signal,
+      body:JSON.stringify({model,max_tokens:maxTokens,messages:[{role:'user',content}]})
+    });
+  }catch(err){
+    clearTimeout(timer);
+    if(err.name==='AbortError') throw new Error('請求超時（90秒），請再試一次');
+    throw err;
+  }
+  clearTimeout(timer);
   const rawText=await resp.text();
   if(!resp.ok){
     let msg=`HTTP ${resp.status}｜${rawText.slice(0,200)}`;
