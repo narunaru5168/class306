@@ -628,7 +628,7 @@ async function callClaude({prompt,b64,mime,proxy,key,maxTokens=1500}){
   const endpoint=proxy||'https://api.anthropic.com/v1/messages';
   const headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
   if(!proxy) headers['anthropic-dangerous-direct-browser-access']='true';
-  const model=proxy?'claude-sonnet-4-6':'claude-haiku-4-5';
+  const model=proxy?'claude-sonnet-5-5':'claude-haiku-4-5';
 
   const content=[];
   if(b64) content.push({type:'image',source:{type:'base64',media_type:mime,data:b64}});
@@ -654,7 +654,7 @@ function parseJSON(raw){
   }catch{return null;}
 }
 
-function compressImg(file,maxPx=1280,q=0.82){
+function compressImg(file,maxPx=2000,q=0.90){
   return new Promise(res=>{
     const img=new Image(),url=URL.createObjectURL(file);
     img.onload=()=>{
