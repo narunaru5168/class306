@@ -494,7 +494,10 @@ ${preTitle?`題目已知為「${preTitle}」。`:`請辨識題目欄（直式作
 
     const result=await callClaude({prompt,b64,mime,proxy,key,maxTokens:1200});
     const extracted=parseJSON(result);
-    if(!extracted||!extracted.fullText) throw new Error('辨識失敗，請重試');
+    if(!extracted||!extracted.fullText){
+      const preview=result?result.slice(0,120):'（空回應）';
+      throw new Error('辨識失敗｜Claude 回傳：'+preview);
+    }
 
     extractedFullText=extracted.fullText;
     if(extracted.title&&!preTitle) document.getElementById('titleInput').value=extracted.title;
