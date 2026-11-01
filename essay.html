@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="essay-v20261101-a">
+<meta name="app-version" content="essay-v20261101-b">
 <title>✍️ 306 班作文批改</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -643,8 +643,8 @@ async function callClaude({prompt,b64,mime,proxy,key,maxTokens=1500}){
   });
   const rawText=await resp.text();
   if(!resp.ok){
-    let msg=`HTTP ${resp.status}`;
-    try{const e=JSON.parse(rawText);msg=e.error?.message||msg;}catch{}
+    let msg=`HTTP ${resp.status}｜${rawText.slice(0,200)}`;
+    try{const e=JSON.parse(rawText);msg=`HTTP ${resp.status}｜${e.error?.message||e.message||JSON.stringify(e).slice(0,150)}`;}catch{}
     throw new Error(msg);
   }
   let data;
