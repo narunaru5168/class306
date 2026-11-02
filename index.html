@@ -8296,7 +8296,9 @@ function openWeeklySettleModal(){
   }
 
   const _e=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const listHtml=weeklySettleData.map(r=>{
+  // 依座號排序
+  const sorted=[...weeklySettleData].sort((a,b)=>parseInt(a.s.seatNo||99)-parseInt(b.s.seatNo||99));
+  const listHtml=sorted.map(r=>{
     let statusHtml;
     if(r.snapshot===null){
       statusHtml='<span style="color:#94a3b8;">第一次結算，建立基準（下週開始比進步）</span>';
@@ -8311,20 +8313,21 @@ function openWeeklySettleModal(){
       const extraTxt=extras.length?'　'+extras.join('　'):'';
       statusHtml='<span style="color:#16a34a;font-weight:800;">📈 '+r.snapshot+'→'+r.current+'（+'+r.delta+'顆）'+bonusTxt+extraTxt+'</span>';
     }
+    const seatLabel=r.s.seatNo?'<span style="color:#94a3b8;font-size:.75rem;font-weight:400;">'+_e(r.s.seatNo)+'號</span> ':'';
     return'<div style="border:2px solid #f0fdf4;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="font-weight:800;font-size:.88rem;min-width:64px;">'+_e(r.s.name)+'</div>'
+      +'<div style="font-weight:800;font-size:.88rem;min-width:72px;white-space:nowrap;">'+seatLabel+_e(r.s.name)+'</div>'
       +'<div style="font-size:.8rem;flex:1;">'+statusHtml+'</div>'
       +'</div>';
   }).join('');
 
-  overlay.innerHTML='<div class="modal" style="max-width:500px;">'
+  overlay.innerHTML='<div class="modal" style="max-width:520px;">'
     +'<h3 style="margin-bottom:6px;">📅 個人週進步結算</h3>'
     +'<div style="font-size:.78rem;color:#94a3b8;margin-bottom:10px;line-height:1.6;">'
     +'跟自己比，不跟別人比。每次結算後系統記錄當下星星數，下次結算時比對進步幅度。<br>'
     +'<strong style="color:#065f46;">進步 3–5 顆 → +1星　｜　6–9 顆 → +2星　｜　10顆以上 → +3星＋全班表揚</strong><br>'
     +'連續 3 週都有進步 → 額外再 +1星　｜　打破個人紀錄 → 🏆個人新高'
     +'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:380px;overflow-y:auto;">'+listHtml+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px;max-height:65vh;overflow-y:auto;">'+listHtml+'</div>'
     +'<div style="display:flex;gap:8px;justify-content:flex-end;">'
     +'<button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal(\'weeklySettleModal\')">取消</button>'
     +'<button class="btn btn-primary" onclick="applyWeeklySettlement()">✅ 套用結算</button>'
