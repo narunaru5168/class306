@@ -8284,25 +8284,51 @@ function openWeeklySettleModal(){
     const streakBonus=(delta!==null&&delta>0&&currentStreak>=2)?1:0;
     return{s,snapshot,current,delta,bonus,isPersonalBest,streakBonus};
   });
-  const wrap=document.getElementById('weeklySettleList');
-  wrap.innerHTML=weeklySettleData.map(r=>{
+
+  // 動態建立或更新 modal（不依賴 HTML 裡的靜態 div）
+  let overlay=document.getElementById('weeklySettleModal');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='weeklySettleModal';
+    overlay.className='modal-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  const listHtml=weeklySettleData.map(r=>{
     let statusHtml;
     if(r.snapshot===null){
-      statusHtml=`<span style="color:#94a3b8;">第一次結算，建立基準（下週開始比進步）</span>`;
+      statusHtml='<span style="color:#94a3b8;">第一次結算，建立基準（下週開始比進步）</span>';
     }else if(r.delta<=0){
-      statusHtml=`<span style="color:#94a3b8;">${r.snapshot}→${r.current}（這週沒有進步，繼續加油！）</span>`;
+      statusHtml='<span style="color:#94a3b8;">'+r.snapshot+'→'+r.current+'（這週沒有進步，繼續加油！）</span>';
     }else{
       const extras=[];
       if(r.isPersonalBest) extras.push('🏆個人新高');
       if(r.streakBonus)    extras.push('🔥連續進步 +1');
       const total=r.bonus+r.streakBonus;
-      statusHtml=`<span style="color:#16a34a;font-weight:800;">📈 ${r.snapshot}→${r.current}（+${r.delta}顆）${total>0?`　獎勵 +${total}星`:''}${extras.length?'　'+extras.join('　'):''}</span>`;
+      const bonusTxt=total>0?'　獎勵 +'+total+'星':'';
+      const extraTxt=extras.length?'　'+extras.join('　'):'';
+      statusHtml='<span style="color:#16a34a;font-weight:800;">📈 '+r.snapshot+'→'+r.current+'（+'+r.delta+'顆）'+bonusTxt+extraTxt+'</span>';
     }
-    return`<div style="border:2px solid #f0fdf4;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;">
-      <div style="font-weight:800;font-size:.88rem;min-width:64px;">${esc(r.s.name)}</div>
-      <div style="font-size:.8rem;flex:1;">${statusHtml}</div>
-    </div>`;
+    return'<div style="border:2px solid #f0fdf4;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;">'
+      +'<div style="font-weight:800;font-size:.88rem;min-width:64px;">'+esc(r.s.name)+'</div>'
+      +'<div style="font-size:.8rem;flex:1;">'+statusHtml+'</div>'
+      +'</div>';
   }).join('');
+
+  overlay.innerHTML='<div class="modal" style="max-width:500px;">'
+    +'<h3 style="margin-bottom:6px;">📅 個人週進步結算</h3>'
+    +'<div style="font-size:.78rem;color:#94a3b8;margin-bottom:10px;line-height:1.6;">'
+    +'跟自己比，不跟別人比。每次結算後系統記錄當下星星數，下次結算時比對進步幅度。<br>'
+    +'<strong style="color:#065f46;">進步 3–5 顆 → +1星　｜　6–9 顆 → +2星　｜　10顆以上 → +3星＋全班表揚</strong><br>'
+    +'連續 3 週都有進步 → 額外再 +1星　｜　打破個人紀錄 → 🏆個人新高'
+    +'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:380px;overflow-y:auto;">'+listHtml+'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    +'<button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal(\'weeklySettleModal\')">取消</button>'
+    +'<button class="btn btn-primary" onclick="applyWeeklySettlement()">✅ 套用結算</button>'
+    +'</div>'
+    +'</div>';
+
   openModal('weeklySettleModal');
 }
 function applyWeeklySettlement(){
