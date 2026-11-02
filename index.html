@@ -8295,6 +8295,7 @@ function openWeeklySettleModal(){
     document.body.appendChild(overlay);
   }
 
+  const _e=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const listHtml=weeklySettleData.map(r=>{
     let statusHtml;
     if(r.snapshot===null){
@@ -8311,7 +8312,7 @@ function openWeeklySettleModal(){
       statusHtml='<span style="color:#16a34a;font-weight:800;">📈 '+r.snapshot+'→'+r.current+'（+'+r.delta+'顆）'+bonusTxt+extraTxt+'</span>';
     }
     return'<div style="border:2px solid #f0fdf4;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;">'
-      +'<div style="font-weight:800;font-size:.88rem;min-width:64px;">'+esc(r.s.name)+'</div>'
+      +'<div style="font-weight:800;font-size:.88rem;min-width:64px;">'+_e(r.s.name)+'</div>'
       +'<div style="font-size:.8rem;flex:1;">'+statusHtml+'</div>'
       +'</div>';
   }).join('');
