@@ -1412,6 +1412,7 @@
     <button class="grade-tab active" id="filter-all" onclick="setStudentFilter('all',this)">👥 全部</button>
     <button class="grade-tab" id="filter-boy" onclick="setStudentFilter('boy',this)">👦 男生</button>
     <button class="grade-tab" id="filter-girl" onclick="setStudentFilter('girl',this)">👧 女生</button>
+    <button class="grade-tab" style="background:#ecfdf5;border-color:#34d399;color:#065f46;" onclick="openWeeklySettleModal()">📅 週進步結算</button>
     <button class="grade-tab" id="batchModeToggle" style="margin-left:auto;" onclick="toggleBatchMode()">☑️ 批次選擇</button>
   </div>
 
@@ -8234,6 +8235,75 @@ function applyMonthlySettlement(){
   toast(totalStarGroups>0 ? `🏆 已套用本月進步星星，共有 ${totalStarGroups} 組進步、記錄新基準！${skipNote}` : '📌 已記錄本月基準（這次還沒有組達到進步標準）');
 }
 
+// ─── 個人「週進步結算」───
+// 邏輯：每次結算後記錄每位學生的星星快照；下次結算時比對進步幅度，
+// 依 3–5 / 6–9 / 10+ 三個門檻加 1 / 2 / 3 顆獎勵星。
+// 額外：連續 3 週都有進步 → 再加 1 顆；打破個人單週進步紀錄 → 顯示🏆。
+function weeklyBonusStars(delta){
+  if(delta>=10) return 3;
+  if(delta>=6)  return 2;
+  if(delta>=3)  return 1;
+  return 0;
+}
+let weeklySettleData=null;
+function openWeeklySettleModal(){
+  if(!students.length){ toast('⚠️ 請先新增學生！'); return; }
+  weeklySettleData=students.map(s=>{
+    const snapshot=typeof s.weeklyStarSnapshot==='number'?s.weeklyStarSnapshot:null;
+    const current=s.stars||0;
+    const delta=snapshot!==null?current-snapshot:null;
+    const bonus=(delta!==null&&delta>0)?weeklyBonusStars(delta):0;
+    const isPersonalBest=delta!==null&&delta>0&&delta>(s.weeklyProgressBest||0);
+    const currentStreak=s.weeklyProgressStreak||0;
+    const streakBonus=(delta!==null&&delta>0&&currentStreak>=2)?1:0;
+    return{s,snapshot,current,delta,bonus,isPersonalBest,streakBonus};
+  });
+  const wrap=document.getElementById('weeklySettleList');
+  wrap.innerHTML=weeklySettleData.map(r=>{
+    let statusHtml;
+    if(r.snapshot===null){
+      statusHtml=`<span style="color:#94a3b8;">第一次結算，建立基準（下週開始比進步）</span>`;
+    }else if(r.delta<=0){
+      statusHtml=`<span style="color:#94a3b8;">${r.snapshot}→${r.current}（這週沒有進步，繼續加油！）</span>`;
+    }else{
+      const extras=[];
+      if(r.isPersonalBest) extras.push('🏆個人新高');
+      if(r.streakBonus)    extras.push('🔥連續進步 +1');
+      const total=r.bonus+r.streakBonus;
+      statusHtml=`<span style="color:#16a34a;font-weight:800;">📈 ${r.snapshot}→${r.current}（+${r.delta}顆）${total>0?`　獎勵 +${total}星`:''}${extras.length?'　'+extras.join('　'):''}</span>`;
+    }
+    return`<div style="border:2px solid #f0fdf4;border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;">
+      <div style="font-weight:800;font-size:.88rem;min-width:64px;">${esc(r.s.name)}</div>
+      <div style="font-size:.8rem;flex:1;">${statusHtml}</div>
+    </div>`;
+  }).join('');
+  openModal('weeklySettleModal');
+}
+function applyWeeklySettlement(){
+  if(!weeklySettleData) return;
+  const celebrities=[];
+  weeklySettleData.forEach(r=>{
+    const{s,delta,bonus,isPersonalBest,streakBonus,current}=r;
+    if(r.snapshot!==null){
+      s.weeklyProgressStreak=(delta!==null&&delta>0)?(s.weeklyProgressStreak||0)+1:0;
+    }
+    if(delta!==null&&delta>0&&isPersonalBest) s.weeklyProgressBest=delta;
+    const total=bonus+streakBonus;
+    if(total>0&&!hasPendingRepair(s)){
+      s.stars=(s.stars||0)+total;
+      if(total>=3) celebrities.push(s.name);
+    }
+    s.weeklyStarSnapshot=current;
+  });
+  save(); renderStudents(); updateStats();
+  closeModal('weeklySettleModal');
+  if(celebrities.length){
+    setTimeout(()=>{toast(`🌟 ${celebrities.join('、')} 本週進步最多！`);confetti();},300);
+  }else{
+    toast('📅 週進步結算完成，快照已更新！');
+  }
+}
+
 // ─── 個別學生的「小考走勢」：用本學期各單元小考分數（已經是時間順序）畫走勢圖 ───
 // 不需要額外存歷史資料，直接從已同步的成長紀錄裡，把欄位標題含「小考」的分數依序抓出來。
 function extractQuizTrend(student, sheetName){
@@ -10826,5 +10896,23 @@ function deleteEssayRecord(id) {
   toast('🗑️ 已刪除');
 }
 </script>
+
+<!-- ─────────────── 個人週進步結算 MODAL ─────────────── -->
+<div class="modal-overlay" id="weeklySettleModal">
+  <div class="modal" style="max-width:500px;">
+    <h3 style="margin-bottom:6px;">📅 個人週進步結算</h3>
+    <div style="font-size:.78rem;color:#94a3b8;margin-bottom:10px;line-height:1.6;">
+      跟自己比，不跟別人比。每次結算後系統記錄當下星星數，下次結算時比對進步幅度。<br>
+      <strong style="color:#065f46;">進步 3–5 顆 → +1星　｜　6–9 顆 → +2星　｜　10顆以上 → +3星＋全班表揚</strong><br>
+      連續 3 週都有進步 → 額外再 +1星　｜　打破個人紀錄 → 🏆個人新高
+    </div>
+    <div id="weeklySettleList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:380px;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('weeklySettleModal')">取消</button>
+      <button class="btn btn-primary" onclick="applyWeeklySettlement()">✅ 套用結算</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
