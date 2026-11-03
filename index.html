@@ -919,6 +919,11 @@
 </div>
 
 <!-- LOADING OVERLAY -->
+<!-- 雲端同步狀態指示燈（右下角小角標） -->
+<div id="cloudSyncDot" title="雲端同步狀態" style="position:fixed;bottom:12px;right:14px;z-index:9990;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.88);border-radius:20px;padding:4px 10px 4px 7px;box-shadow:0 2px 8px rgba(0,0,0,.12);font-size:.72rem;font-weight:700;color:#555;cursor:default;">
+  <span id="cloudSyncDotIcon" style="width:9px;height:9px;border-radius:50%;background:#94a3b8;flex-shrink:0;transition:background .4s;"></span>
+  <span id="cloudSyncDotLabel">連線中…</span>
+</div>
 <div id="loadingOverlay" style="position:fixed;inset:0;background:linear-gradient(160deg,#e0f2fe,#fef9c3,#dcfce7);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;">
   <div style="font-family:'Baloo 2',cursive;font-size:1.4rem;font-weight:800;color:#1E2A4A;">⭐ 星星班級大冒險</div>
   <div style="display:flex;gap:6px;">
@@ -4666,8 +4671,24 @@ try {
     });
     db = firebase.database();
     useCloud = true;
+    // 即時監聽 Firebase 連線狀態，顯示在右下角小燈
+    db.ref('.info/connected').on('value', snap=>{
+      const dot = document.getElementById('cloudSyncDotIcon');
+      const lbl = document.getElementById('cloudSyncDotLabel');
+      if(!dot||!lbl) return;
+      if(snap.val()===true){
+        dot.style.background='#22c55e'; lbl.textContent='雲端已連線';
+      } else {
+        dot.style.background='#f59e0b'; lbl.textContent='網路中斷中';
+      }
+    });
   }
-} catch(e) { console.warn('Firebase 初始化失敗，改用本地儲存'); }
+} catch(e) { console.warn('Firebase 初始化失敗，改用本地儲存');
+  const dot=document.getElementById('cloudSyncDotIcon');
+  const lbl=document.getElementById('cloudSyncDotLabel');
+  if(dot) dot.style.background='#ef4444';
+  if(lbl) lbl.textContent='雲端連線失敗';
+}
 
 // ─── STATE ───
 let students = [];
@@ -4827,12 +4848,50 @@ async function saveField(path, value, localKey){
   }
 }
 let saveChain = Promise.resolve();
+let _suppressListenerUntil = 0; // 本裝置剛存完時，先忍住不處理遠端推播（避免多餘 re-render）
 function save() {
   // 排隊依序執行，避免像抽轉盤這種「先扣機會、幾秒後才加星星」的情況，
   // 讓比較舊的那次雲端寫入晚完成、把比較新的星星資料蓋掉。
+  _suppressListenerUntil = Date.now() + 6000; // 存完後 6 秒內忽略遠端推播
   const run = () => doSaveAll().catch(e => console.error('儲存失敗', e));
   saveChain = saveChain.then(run, run);
   return saveChain;
+}
+
+// ─── 即時同步監聽（讓其他裝置的修改可以即時推過來）───
+function setupMainDataListeners(){
+  if(!useCloud || !db) return;
+  let skipInit_s=true, skipInit_ts=true, skipInit_ma=true;
+
+  db.ref('class306/students').on('value', snap=>{
+    if(skipInit_s){ skipInit_s=false; return; }
+    if(Date.now()<_suppressListenerUntil) return;
+    const val=snap.val();
+    if(!val) return;
+    students=val;
+    try{ localStorage.setItem('cls_students',JSON.stringify(students)); }catch(e){}
+    try{ renderStudents(); updateStats(); }catch(e){}
+  });
+
+  db.ref('class306/teamScores').on('value', snap=>{
+    if(skipInit_ts){ skipInit_ts=false; return; }
+    if(Date.now()<_suppressListenerUntil) return;
+    const val=snap.val();
+    if(!val) return;
+    teamScores=val;
+    try{ localStorage.setItem('cls_teamScores',JSON.stringify(teamScores)); }catch(e){}
+    try{ renderTeamScoreTable(); }catch(e){}
+  });
+
+  db.ref('class306/mutualAidGroups').on('value', snap=>{
+    if(skipInit_ma){ skipInit_ma=false; return; }
+    if(Date.now()<_suppressListenerUntil) return;
+    const val=snap.val();
+    if(!val) return;
+    mutualAidGroups=val;
+    try{ localStorage.setItem('cls_mutualAidGroups',JSON.stringify(mutualAidGroups)); }catch(e){}
+    try{ renderMutualAidGroups(); }catch(e){}
+  });
 }
 async function doSaveAll() {
   await saveField('class306/students', students, 'cls_students');
@@ -10600,6 +10659,8 @@ async function initApp() {
   try { setupPendingStarAwardsListener(); } catch(e) { console.warn(e); }
   // 開始監聽「待完成的語詞遊戲挑戰」清單，讓伙伴名冊卡片上的按鈕即時更新
   try { setupPendingChallengesListener(); } catch(e) { console.warn(e); }
+  // 開始即時監聽主要資料（學生、組別評分、互助小組），讓跨裝置修改能自動同步
+  try { setupMainDataListeners(); } catch(e) { console.warn('即時同步監聽啟動失敗', e); }
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';
