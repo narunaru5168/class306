@@ -6897,9 +6897,9 @@ function confirmTeamStarAward(){
     if(ok) got.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
     else skipped.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
   });
-  // 記錄今日已加星星（用於顯示）
-  if(!teamDailyChecks.starsAwarded) teamDailyChecks.starsAwarded = {};
-  teamDailyChecks.starsAwarded[t.id] = (teamDailyChecks.starsAwarded[t.id]||0) + amt;
+  // 記錄今日已加星星（用於顯示，starAwards 是純數字欄位，跟原本的 starsAwarded 物件結構分開）
+  if(!teamDailyChecks.starAwards) teamDailyChecks.starAwards = {};
+  teamDailyChecks.starAwards[t.id] = (teamDailyChecks.starAwards[t.id]||0) + amt;
   closeModal('teamStarAwardModal');
   save(); renderStudents(); updateStats(); renderTeamScoreTable();
   let msg = `⭐ ${t.name} 每人 +${amt} 顆星！（${got.join('、')}）`;
@@ -6986,7 +6986,7 @@ function renderTeamScoreTable(){
     teamCategories.forEach(c=>{
       if(c === '小組課堂表現'){
         // 特殊：直接加星星給全組，不走打勾流程
-        const todayStars = (teamDailyChecks.starsAwarded && teamDailyChecks.starsAwarded[t.id]) || 0;
+        const todayStars = (teamDailyChecks.starAwards && teamDailyChecks.starAwards[t.id]) || 0;
         html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
           <button onclick="openTeamStarAwardModal(${ti})" style="border:2px solid ${todayStars>0?'#f59e0b':'#cbd5e1'};background:${todayStars>0?'#fffbeb':'#fff'};border-radius:10px;padding:4px 12px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
             <span style="font-size:.9em;color:${todayStars>0?'#f59e0b':'#94a3b8'};">⭐</span>
