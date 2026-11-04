@@ -990,8 +990,12 @@
       <div style="background:#fff7ed;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
         <div style="font-weight:800;color:#9a3412;margin-bottom:4px;">🔧 如果因為行為問題被扣星，會怎麼樣？</div>
         老師會指派一個「修復任務」給你（例如：跟同學道歉）。<br><br>
-        <strong>在修復任務完成之前，不管從哪裡得到的星星，都不會再累加</strong>——不是只有老師手動給的星星，連抽獎、遊戲、小組獎勵……全部都一樣會先暫停。<br><br>
-        只要把修復任務完成（在夥伴名冊卡片上按「🔧 有修復任務待完成」，標記完成），<strong>被扣掉的星星會馬上還回來，而且星星也會立刻解鎖，可以繼續累加</strong>。如果同時有好幾個修復任務，要全部都完成才會解鎖喔。
+        <strong>在修復任務完成之前，不管從哪裡得到的星星，都不會再累加</strong>——不是只有老師手動給的星星，連抽獎、遊戲……全部都一樣會先暫停。系統擋住的時候，會跳出一個提示，告訴你是哪個修復任務還沒完成。<br><br>
+        只要把修復任務完成（在夥伴名冊卡片上按「🔧 有修復任務待完成」，標記完成），<strong>被扣掉的星星會馬上還回來，而且星星也會立刻解鎖，可以繼續累加</strong>。如果同時有好幾個修復任務，要全部都完成才會解鎖喔。<br><br>
+        <div style="background:#fffbeb;border-radius:8px;padding:8px 10px;border-left:3px solid #f59e0b;font-size:.82rem;color:#78350f;">
+          ⭐ <strong>例外：小組課堂表現</strong><br>
+          這是全組一起拿的集體競賽獎勵，就算你有未完成的修復任務，小組課堂表現的星星還是會照加進來。修復任務是個人責任，不影響全組一起得到的榮譽。
+        </div>
       </div>
 
       <div style="background:#f0fdf4;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
@@ -6201,7 +6205,10 @@ function openEffortModal(id){
 }
 // 回傳 true＝有成功加到星星，false＝因為還有未完成的修復任務被擋下來（完全不會加）
 function grantStars(s, amt){
-  if(hasPendingRepair(s)) return false;
+  if(hasPendingRepair(s)){
+    toast(`🚫 ${s.name} 有未完成的修復任務（${pendingRepairSummary(s)}），完成後才能加星星！`);
+    return false;
+  }
   const beforeLevel = levelInfo(s.stars).label;
   s.stars += amt;
   const afterLevel = levelInfo(s.stars).label;
@@ -6891,20 +6898,31 @@ function confirmTeamStarAward(){
   if(!t) return;
   const roster = getTeamRoster(ti);
   const amt = teamStarAwardAmount || 1;
-  const got = [], skipped = [];
+  // 小組競賽獎勵：全組一律加，不受修復任務限制
+  const got = [];
   roster.forEach(s=>{
-    const ok = grantStars(s, amt);
-    if(ok) got.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
-    else skipped.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
+    const beforeLevel = levelInfo(s.stars).label;
+    s.stars += amt;
+    const afterLevel = levelInfo(s.stars).label;
+    s.chanceProgress = (s.chanceProgress||0) + amt;
+    while(s.chanceProgress >= CHANCE_THRESHOLD){
+      s.chanceProgress -= CHANCE_THRESHOLD;
+      if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
+      else { s.chanceProgress = 0; }
+    }
+    if(beforeLevel !== afterLevel){
+      if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
+      const lbl = afterLevel.replace(/^[^\s]+\s/,'');
+      setTimeout(()=>{ toast(`🎊 ${s.name} 升級為「${lbl}」！額外獲得 1 次抽選機會！`); confetti(); }, 600);
+    }
+    got.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
   });
   // 記錄今日已加星星（用於顯示，starAwards 是純數字欄位，跟原本的 starsAwarded 物件結構分開）
   if(!teamDailyChecks.starAwards) teamDailyChecks.starAwards = {};
   teamDailyChecks.starAwards[t.id] = (teamDailyChecks.starAwards[t.id]||0) + amt;
   closeModal('teamStarAwardModal');
   save(); renderStudents(); updateStats(); renderTeamScoreTable();
-  let msg = `⭐ ${t.name} 每人 +${amt} 顆星！（${got.join('、')}）`;
-  if(skipped.length) msg += `\n⚠️ 以下有未完成的修復任務，未加星星：${skipped.join('、')}`;
-  toast(msg);
+  toast(`⭐ ${t.name} 每人 +${amt} 顆星！（${got.join('、')}）`);
 }
 
 let teamCheckModalTarget = null;
