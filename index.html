@@ -872,6 +872,27 @@
   </div>
 </div>
 
+<!-- ── 小組課堂表現 加星星 Modal ── -->
+<div class="modal-overlay" id="teamStarAwardModal">
+  <div class="modal" style="max-width:360px;">
+    <h3 id="teamStarAwardTitle">小組課堂表現 ⭐</h3>
+    <p style="font-size:.78rem;color:#64748b;margin-bottom:12px;">全組每位成員都會獲得相同數量的星星，並同步到夥伴名冊。</p>
+    <div id="teamStarAwardRoster" style="margin-bottom:16px;font-size:.82rem;color:#475569;line-height:1.9;padding:8px 10px;background:#fffbeb;border-radius:10px;border:1.5px solid #fde68a;"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:14px;">
+      <button onclick="adjustTeamStarInput(-1)" style="width:40px;height:40px;border-radius:50%;border:2px solid #e2e8f0;background:#f8fafc;font-size:1.4rem;cursor:pointer;font-weight:900;line-height:1;">−</button>
+      <div style="text-align:center;min-width:60px;">
+        <div id="teamStarAwardCount" style="font-size:2.5rem;font-weight:900;color:#f59e0b;line-height:1.1;">1</div>
+        <div style="font-size:.7rem;color:#94a3b8;font-weight:700;margin-top:2px;">顆 ⭐ / 人</div>
+      </div>
+      <button onclick="adjustTeamStarInput(1)" style="width:40px;height:40px;border-radius:50%;border:2px solid #e2e8f0;background:#f8fafc;font-size:1.4rem;cursor:pointer;font-weight:900;line-height:1;">＋</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('teamStarAwardModal')">取消</button>
+      <button class="btn" style="background:#f59e0b;color:#fff;" onclick="confirmTeamStarAward()">⭐ 確定加星星</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 個人成長圖 Modal ── -->
 <div class="modal-overlay" id="growthModal">
   <div class="modal">
@@ -4859,19 +4880,12 @@ function save() {
 }
 
 // ─── 即時同步監聽（讓其他裝置的修改可以即時推過來）───
+// ⚠️ 注意：students（星星資料）不做即時 listener——Firebase 離線快取有時會先推舊版本，
+// 有導致星星被舊資料蓋掉的風險。星星同步請改用手動重新整理頁面（Ctrl+Shift+R）。
+// teamScores（組別組長）和 mutualAidGroups（互助小組）不影響星星，可以安全即時同步。
 function setupMainDataListeners(){
   if(!useCloud || !db) return;
-  let skipInit_s=true, skipInit_ts=true, skipInit_ma=true;
-
-  db.ref('class306/students').on('value', snap=>{
-    if(skipInit_s){ skipInit_s=false; return; }
-    if(Date.now()<_suppressListenerUntil) return;
-    const val=snap.val();
-    if(!val) return;
-    students=val;
-    try{ localStorage.setItem('cls_students',JSON.stringify(students)); }catch(e){}
-    try{ renderStudents(); updateStats(); }catch(e){}
-  });
+  let skipInit_ts=true, skipInit_ma=true;
 
   db.ref('class306/teamScores').on('value', snap=>{
     if(skipInit_ts){ skipInit_ts=false; return; }
@@ -6842,6 +6856,57 @@ function toggleTeamDailyCheck(teamIdx, studentId, cat){
   renderTeamScoreTable();
   renderTeamDailyCheckModal();
 }
+// ── 小組課堂表現：直接加星星給全組 ──
+let teamStarAwardTarget = null;
+let teamStarAwardAmount = 1;
+function openTeamStarAwardModal(teamIdx){
+  teamStarAwardTarget = teamIdx;
+  teamStarAwardAmount = 1;
+  const t = teamScores[teamIdx];
+  if(!t) return;
+  const roster = getTeamRoster(teamIdx);
+  const titleEl = document.getElementById('teamStarAwardTitle');
+  if(titleEl) titleEl.textContent = t.name + '．小組課堂表現 ⭐';
+  const rosterEl = document.getElementById('teamStarAwardRoster');
+  if(rosterEl){
+    if(!roster.length){
+      rosterEl.innerHTML = '<span style="color:#94a3b8;">這組目前沒有成員（請確認座位表排列與小組數量是否一致）</span>';
+    } else {
+      rosterEl.innerHTML = '👥 組員：' + roster.map(s=>`<strong>${s.seatNo?s.seatNo+'號 ':''}${s.name}</strong>`).join('、');
+    }
+  }
+  const countEl = document.getElementById('teamStarAwardCount');
+  if(countEl) countEl.textContent = teamStarAwardAmount;
+  openModal('teamStarAwardModal');
+}
+function adjustTeamStarInput(delta){
+  teamStarAwardAmount = Math.max(1, Math.min(20, (teamStarAwardAmount||1)+delta));
+  const countEl = document.getElementById('teamStarAwardCount');
+  if(countEl) countEl.textContent = teamStarAwardAmount;
+}
+function confirmTeamStarAward(){
+  const ti = teamStarAwardTarget;
+  if(ti===null || ti===undefined) return;
+  const t = teamScores[ti];
+  if(!t) return;
+  const roster = getTeamRoster(ti);
+  const amt = teamStarAwardAmount || 1;
+  const got = [], skipped = [];
+  roster.forEach(s=>{
+    const ok = grantStars(s, amt);
+    if(ok) got.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
+    else skipped.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
+  });
+  // 記錄今日已加星星（用於顯示）
+  if(!teamDailyChecks.starsAwarded) teamDailyChecks.starsAwarded = {};
+  teamDailyChecks.starsAwarded[t.id] = (teamDailyChecks.starsAwarded[t.id]||0) + amt;
+  closeModal('teamStarAwardModal');
+  save(); renderStudents(); updateStats(); renderTeamScoreTable();
+  let msg = `⭐ ${t.name} 每人 +${amt} 顆星！（${got.join('、')}）`;
+  if(skipped.length) msg += `\n⚠️ 以下有未完成的修復任務，未加星星：${skipped.join('、')}`;
+  toast(msg);
+}
+
 let teamCheckModalTarget = null;
 function openTeamDailyCheckModal(teamIdx, cat){
   ensureTeamDailyChecksFresh();
@@ -6919,16 +6984,28 @@ function renderTeamScoreTable(){
       </div>
     </td>`;
     teamCategories.forEach(c=>{
-      const val = teamCategoryDisplayValue(ti,c);
-      const todayCount = teamCategoryTodayCount(ti,c);
-      const allDoneToday = roster.length>0 && todayCount===roster.length;
-      html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
-        <button onclick="openTeamDailyCheckModal(${ti},'${c.replace(/'/g,"\\'")}')" style="border:2px solid ${allDoneToday?'#16a34a':'#cbd5e1'};background:${allDoneToday?'#f0fff4':'#fff'};border-radius:10px;padding:4px 10px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
-          <span style="font-size:.85em;${allDoneToday?'color:#16a34a;':'color:#94a3b8;'}">${allDoneToday?'✅':'📋'}</span>
-          <span style="min-width:20px;${val<0?'color:#dc2626;':''}">${val}</span>
-        </button>
-        <div style="font-size:.65rem;color:#94a3b8;margin-top:2px;">今天 ${todayCount}${roster.length?'/'+roster.length:''}</div>
-      </td>`;
+      if(c === '小組課堂表現'){
+        // 特殊：直接加星星給全組，不走打勾流程
+        const todayStars = (teamDailyChecks.starsAwarded && teamDailyChecks.starsAwarded[t.id]) || 0;
+        html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
+          <button onclick="openTeamStarAwardModal(${ti})" style="border:2px solid ${todayStars>0?'#f59e0b':'#cbd5e1'};background:${todayStars>0?'#fffbeb':'#fff'};border-radius:10px;padding:4px 12px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:.9em;color:${todayStars>0?'#f59e0b':'#94a3b8'};">⭐</span>
+            <span style="min-width:24px;color:${todayStars>0?'#92400e':'#64748b'};">+${todayStars}</span>
+          </button>
+          <div style="font-size:.65rem;color:#94a3b8;margin-top:2px;">今天已加 ${todayStars} 顆</div>
+        </td>`;
+      } else {
+        const val = teamCategoryDisplayValue(ti,c);
+        const todayCount = teamCategoryTodayCount(ti,c);
+        const allDoneToday = roster.length>0 && todayCount===roster.length;
+        html += `<td style="padding:6px;text-align:center;white-space:nowrap;">
+          <button onclick="openTeamDailyCheckModal(${ti},'${c.replace(/'/g,"\\'")}')" style="border:2px solid ${allDoneToday?'#16a34a':'#cbd5e1'};background:${allDoneToday?'#f0fff4':'#fff'};border-radius:10px;padding:4px 10px;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:6px;">
+            <span style="font-size:.85em;${allDoneToday?'color:#16a34a;':'color:#94a3b8;'}">${allDoneToday?'✅':'📋'}</span>
+            <span style="min-width:20px;${val<0?'color:#dc2626;':''}">${val}</span>
+          </button>
+          <div style="font-size:.65rem;color:#94a3b8;margin-top:2px;">今天 ${todayCount}${roster.length?'/'+roster.length:''}</div>
+        </td>`;
+      }
     });
     html += `<td style="padding:8px;text-align:center;font-weight:900;font-size:1.05rem;color:${teamTotal(t)<0?'#dc2626':'#3b82f6'};">${teamTotal(t)}</td></tr>`;
   });
