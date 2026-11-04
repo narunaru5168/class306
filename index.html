@@ -830,6 +830,19 @@
 </div>
 
 <!-- ── 幸運詩籤 Modal（轉盤結果出來後，彈出的那張詩籤卡）── -->
+<!-- ── 鼓勵小卡 Modal ── -->
+<div class="modal-overlay" id="encourageCardModal">
+  <div class="modal" style="max-width:340px;text-align:center;padding:0;overflow:hidden;border-radius:22px;">
+    <div id="encourageCardInner" style="padding:28px 22px 22px;">
+      <div style="font-size:.72rem;font-weight:800;letter-spacing:3px;opacity:.6;margin-bottom:10px;" id="encourageCardTo"></div>
+      <div id="encourageCardEmoji" style="font-size:3rem;line-height:1;margin-bottom:12px;"></div>
+      <div id="encourageCardMsg" style="font-size:1.12rem;font-weight:900;line-height:1.65;margin-bottom:10px;"></div>
+      <div id="encourageCardNote" style="font-size:.8rem;font-weight:700;opacity:.72;line-height:1.6;"></div>
+    </div>
+    <button class="btn" style="width:100%;border-radius:0 0 22px 22px;padding:14px;font-size:.95rem;font-weight:800;" onclick="closeModal('encourageCardModal')">💪 收下這張卡，繼續加油！</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="fortuneSlipModal">
   <div class="modal" style="max-width:360px;text-align:center;padding:28px 24px;">
     <div id="fortuneSlipCard" style="border-radius:18px;padding:26px 20px;">
@@ -9292,6 +9305,28 @@ function renderGameLeaderboard(){
 
 // ─── WHEEL ───
 // 顏色對應下方「獎勵清單說明」的四大類，方便老師和學生一眼對照
+// ─── 鼓勵小卡內容庫 ───
+const ENCOURAGE_CARDS = [
+  { emoji:'🌟', msg:'你每次認真的樣子，\n老師都看在眼裡！', note:'繼續保持，你做得比你想的還要好。', bg:'linear-gradient(135deg,#fef9c3,#fde68a)', color:'#92400e' },
+  { emoji:'💪', msg:'跌倒了再站起來，\n這就是你最厲害的地方！', note:'困難是讓你變強的練習，你可以的。', bg:'linear-gradient(135deg,#fce7f3,#fbcfe8)', color:'#9d174d' },
+  { emoji:'🌈', msg:'你的笑容讓班上\n變得更溫暖！', note:'有你在，大家都覺得很開心。', bg:'linear-gradient(135deg,#e0f2fe,#bae6fd)', color:'#0c4a6e' },
+  { emoji:'🔥', msg:'今天你有沒有發現，\n你比昨天更厲害了？', note:'進步不用很大，一點點就很棒。', bg:'linear-gradient(135deg,#fee2e2,#fecaca)', color:'#991b1b' },
+  { emoji:'🌱', msg:'每一次的努力，\n都在悄悄讓你長大。', note:'現在播下的種子，以後一定會開花。', bg:'linear-gradient(135deg,#dcfce7,#bbf7d0)', color:'#14532d' },
+  { emoji:'🧩', msg:'你的想法很有趣，\n讓老師也想繼續聽！', note:'不一樣的想法才是你最特別的寶貝。', bg:'linear-gradient(135deg,#ede9fe,#ddd6fe)', color:'#4c1d95' },
+  { emoji:'🎯', msg:'認真做好一件事，\n就是今天最大的成功。', note:'不用每次都完美，今天有做到就很好。', bg:'linear-gradient(135deg,#fff7ed,#fed7aa)', color:'#7c2d12' },
+  { emoji:'🤝', msg:'你幫助同學的那一刻，\n整個班都變得更好了。', note:'善良是一種超能力，你有！', bg:'linear-gradient(135deg,#f0fdf4,#bbf7d0)', color:'#166534' },
+  { emoji:'⭐', msg:'你不一定最快，\n但你是最用心的那個！', note:'用心比速度更重要，老師覺得你很棒。', bg:'linear-gradient(135deg,#fefce8,#fef08a)', color:'#713f12' },
+  { emoji:'🦁', msg:'面對不會的東西，\n你沒有逃開，你真勇敢！', note:'願意試試看，就已經贏一半了。', bg:'linear-gradient(135deg,#fff1f2,#fecdd3)', color:'#881337' },
+  { emoji:'🎵', msg:'每個人學習的速度\n都不一樣，不用比較。', note:'你有你的節奏，那是屬於你的歌。', bg:'linear-gradient(135deg,#f5f3ff,#ddd6fe)', color:'#3730a3' },
+  { emoji:'🌻', msg:'今天，你讓老師覺得\n教書是一件很美的事。', note:'謝謝你認真的樣子。', bg:'linear-gradient(135deg,#fefce8,#fde68a)', color:'#854d0e' },
+  { emoji:'🐢', msg:'慢慢來也沒關係，\n烏龜最後也到了終點！', note:'你的速度，就是你的步伐。', bg:'linear-gradient(135deg,#ecfdf5,#a7f3d0)', color:'#065f46' },
+  { emoji:'💡', msg:'你剛才想到的那個方法，\n老師覺得很聰明！', note:'繼續用你的方式思考，很有創意。', bg:'linear-gradient(135deg,#fffbeb,#fde68a)', color:'#92400e' },
+  { emoji:'🕊️', msg:'你是這個班的\n特別的一份子！', note:'有你，班上才完整。', bg:'linear-gradient(135deg,#eff6ff,#bfdbfe)', color:'#1e3a8a' },
+  { emoji:'🏆', msg:'你今天最大的成就，\n就是你沒有放棄！', note:'堅持下去，你已經在贏了。', bg:'linear-gradient(135deg,#fef9c3,#fde68a)', color:'#713f12' },
+  { emoji:'🌊', msg:'有些時候會不順，\n但你每次都想辦法撐過去！', note:'這就是你最讓人欽佩的地方。', bg:'linear-gradient(135deg,#e0f2fe,#7dd3fc)', color:'#0369a1' },
+  { emoji:'🧸', msg:'在這個班，\n你是大家的好夥伴！', note:'你的存在讓這裡更溫暖。', bg:'linear-gradient(135deg,#fdf4ff,#f5d0fe)', color:'#701a75' },
+];
+
 // 🎭 自主選擇類 = 紫色 #A855F7　🌟 身份榮耀類 = 金色 #FFD93D　🤝 連結歸屬類 = 天藍 #5BB8F5　🎲 驚喜/趣味類 = 珊瑚 #FF6B6B
 const wheelSegments=[
   {label:'🎨 自由做10分鐘', color:'#A855F7', weight:2}, // 🎭 自主選擇類
@@ -9311,6 +9346,7 @@ const wheelSegments=[
   {label:'🌟 感謝有你，全班加一顆星', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
   {label:'🙏 找一位老師說一句感謝的話（非導師）', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
   {label:'🎮 語詞遊戲挑戰', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類：90秒內拿到目標分數，額外得到星星
+  {label:'💌 抽一張鼓勵小卡', color:'#f472b6', weight:3}, // 💌 鼓勵類：隨機抽一張鼓勵卡片，讓學生感受到被看見
 ];
 let wheelAngle=0, spinning=false;
 function drawWheel(angle=0){
@@ -9363,7 +9399,7 @@ let lastSpinRecord = null;
 // 跟任務倒數計時／整理時間倒數鈴一樣，改用「結束時間點」反推剩餘秒數（而不是每秒單純 -1），
 // 避免分頁被瀏覽器丟到背景時，倒數畫面卡住不動、永遠停在某個數字。
 let wheelResultTimerInterval = null, wheelResultTimerRunning = false, wheelResultTimerEndAt = 0;
-const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
+const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰','鼓勵小卡']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
 function tickWheelResultTimer(){
   if(!wheelResultTimerRunning) return;
   const el = document.getElementById('wheelResultTimer');
@@ -9489,6 +9525,10 @@ function spinWheel(){
           <div style="margin-top:8px;font-size:.8rem;color:#666;font-weight:700;">🕒 現在不方便也沒關係，已經記錄在「${studentsLabel}」${s.name}的卡片上，之後隨時可以去完成挑戰</div>`;
       }
     }
+    if(result.label.includes('鼓勵小卡')){
+      const s=students.find(x=>x.id==sid);
+      setTimeout(()=>{ showEncourageCard(s ? s.name : ''); }, 700);
+    }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
 
@@ -9501,6 +9541,28 @@ function spinWheel(){
   }
   requestAnimationFrame(step);
 }
+// ─── 鼓勵小卡 ───
+function showEncourageCard(studentName){
+  if(!ENCOURAGE_CARDS.length) return;
+  const card = ENCOURAGE_CARDS[Math.floor(Math.random()*ENCOURAGE_CARDS.length)];
+  const inner = document.getElementById('encourageCardInner');
+  if(inner){
+    inner.style.background = card.bg;
+    inner.style.color = card.color;
+  }
+  const toEl = document.getElementById('encourageCardTo');
+  if(toEl) toEl.textContent = studentName ? `✉️ 給 ${studentName} 的鼓勵小卡` : '✉️ 鼓勵小卡';
+  const emojiEl = document.getElementById('encourageCardEmoji');
+  if(emojiEl) emojiEl.textContent = card.emoji;
+  const msgEl = document.getElementById('encourageCardMsg');
+  if(msgEl) msgEl.style.whiteSpace = 'pre-line', msgEl.textContent = card.msg;
+  const noteEl = document.getElementById('encourageCardNote');
+  if(noteEl) noteEl.textContent = card.note;
+  const btn = document.querySelector('#encourageCardModal .btn');
+  if(btn){ btn.style.background = card.color; btn.style.color = '#fff'; }
+  openModal('encourageCardModal');
+}
+
 // ─── 幸運詩籤 ───
 function showFortuneSlipCard(){
   if(!fortuneSlips.length) return;
