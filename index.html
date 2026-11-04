@@ -872,6 +872,17 @@
   </div>
 </div>
 
+<!-- ── 擋星說明 Modal ── -->
+<div class="modal-overlay" id="blockStarModal">
+  <div class="modal" style="max-width:380px;">
+    <h3 style="color:#dc2626;">🚫 星星暫時被鎖住了</h3>
+    <div id="blockStarModalBody" style="font-size:.86rem;line-height:1.8;color:#334155;"></div>
+    <div class="modal-btns">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('blockStarModal')">我知道了</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── 小組課堂表現 加星星 Modal ── -->
 <div class="modal-overlay" id="teamStarAwardModal">
   <div class="modal" style="max-width:360px;">
@@ -6206,7 +6217,22 @@ function openEffortModal(id){
 // 回傳 true＝有成功加到星星，false＝因為還有未完成的修復任務被擋下來（完全不會加）
 function grantStars(s, amt){
   if(hasPendingRepair(s)){
-    toast(`🚫 ${s.name} 有未完成的修復任務（${pendingRepairSummary(s)}），完成後才能加星星！`);
+    const pending = (s.repairTasks||[]).filter(t=>!t.done);
+    const rows = pending.map((t,i)=>`
+      <div style="background:#fff7ed;border-radius:10px;padding:10px 12px;border-left:3px solid #f97316;">
+        <div style="font-weight:800;color:#9a3412;">${i+1}. ${t.task}</div>
+        <div style="font-size:.78rem;color:#78350f;margin-top:3px;">
+          扣了 ${t.deductedStars||'？'} 顆星・${t.date||''}
+        </div>
+      </div>`).join('');
+    const body = document.getElementById('blockStarModalBody');
+    if(body) body.innerHTML = `
+      <div style="margin-bottom:10px;font-weight:700;color:#dc2626;">
+        ${s.name} 還有 <strong>${pending.length}</strong> 個修復任務沒完成，把它完成之後才能加星星喔！
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">${rows}</div>
+      <div style="font-size:.78rem;color:#94a3b8;">💡 在夥伴名冊找到 ${s.name} 的卡片，點「🔧 有修復任務待完成」就可以標記完成。</div>`;
+    openModal('blockStarModal');
     return false;
   }
   const beforeLevel = levelInfo(s.stars).label;
