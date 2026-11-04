@@ -1372,6 +1372,133 @@
     </div>
   </div>
 
+  <!-- ════════════════ 校慶重要行程 ════════════════ -->
+  <div class="section-title" style="margin-top:24px;">🏃 校慶重要行程</div>
+
+  <!-- 倒數主卡 -->
+  <div style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:18px;padding:18px 20px 14px;margin-bottom:14px;position:relative;overflow:hidden;">
+    <div style="position:absolute;right:-10px;top:-10px;font-size:5rem;opacity:.08;line-height:1;">🏆</div>
+    <div style="font-size:.7rem;font-weight:800;letter-spacing:3px;color:#6ee7b7;margin-bottom:6px;">麗山國小 39 週年校慶暨運動會</div>
+    <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+      <div>
+        <div id="schoolDayCountdown" style="font-size:3rem;font-weight:900;color:#fff;line-height:1;font-family:'Courier New',monospace;"></div>
+        <div style="font-size:.72rem;color:#a7f3d0;font-weight:700;margin-top:2px;" id="schoolDayCountdownLabel"></div>
+      </div>
+      <div style="flex:1;min-width:140px;">
+        <div style="font-size:.88rem;font-weight:800;color:#ecfdf5;">📅 12 / 19（六）</div>
+        <div style="font-size:.7rem;color:#6ee7b7;margin-top:4px;line-height:1.6;">
+          🏅 三年級出場<br>
+          09:40 追趕跑跳GOGOGO（趣味競賽）<br>
+          10:20 風速傳奇2（三年級100m決賽）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 重要日期時間軸 -->
+  <div style="display:flex;flex-direction:column;gap:0;margin-bottom:14px;" id="schoolEventTimeline">
+    <!-- JS fill -->
+  </div>
+
+  <!-- 展開當天流程按鈕 -->
+  <div style="text-align:center;margin-bottom:14px;">
+    <button class="btn" style="background:#ecfdf5;color:#065f46;border:2px solid #6ee7b7;font-size:.82rem;padding:8px 20px;font-weight:800;"
+      onclick="const p=document.getElementById('schoolDaySchedulePanel');const isOpen=p.style.display!=='none';p.style.display=isOpen?'none':'block';this.textContent=isOpen?'📋 展開當天完整流程表 ▼':'▲ 收起流程表';">
+      📋 展開當天完整流程表 ▼
+    </button>
+  </div>
+
+  <!-- 當天完整流程表（預設收合） -->
+  <div id="schoolDaySchedulePanel" style="display:none;margin-bottom:20px;overflow-x:auto;">
+    <div style="font-weight:800;font-size:.9rem;color:#065f46;margin-bottom:10px;padding:10px 14px;background:#ecfdf5;border-radius:10px;border-left:4px solid #10b981;">
+      🏆 12/19 當天流程（07:50 工作人員就位，08:00 正式開始）
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.82rem;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+      <thead>
+        <tr style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;">
+          <th style="padding:9px 10px;white-space:nowrap;">項次</th>
+          <th style="padding:9px 10px;white-space:nowrap;">時間</th>
+          <th style="padding:9px 10px;">活動主題</th>
+          <th style="padding:9px 10px;">活動內容</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">1</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">08:00</td><td style="padding:8px 10px;font-weight:700;">開幕典禮暨運動員繞場</td><td style="padding:8px 10px;color:#475569;">繞場、頒獎、貴賓介紹致詞</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">2</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">08:50</td><td style="padding:8px 10px;font-weight:700;"></td><td style="padding:8px 10px;color:#475569;">國立臺灣戲曲學院（表演）</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">3</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">09:10</td><td style="padding:8px 10px;font-weight:700;">幸福甜甜圈</td><td style="padding:8px 10px;color:#475569;">幼兒園趣味競賽及頒獎</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">4</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">09:20</td><td style="padding:8px 10px;font-weight:700;">健康跑跑GO</td><td style="padding:8px 10px;color:#475569;">一、二年級運動員</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">5</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">09:30</td><td style="padding:8px 10px;font-weight:700;">風速傳奇1</td><td style="padding:8px 10px;color:#475569;">五六年級 200 公尺決賽</td></tr>
+        <tr style="border-bottom:2px solid #10b981;background:#ecfdf5;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#065f46;">6</td><td style="padding:8px 10px;font-weight:900;white-space:nowrap;color:#065f46;">09:40</td><td style="padding:8px 10px;font-weight:900;color:#065f46;">🏅 追趕跑跳GOGOGO</td><td style="padding:8px 10px;font-weight:800;color:#065f46;">三年級趣味競賽及頒獎</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">7</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">09:50</td><td style="padding:8px 10px;font-weight:700;">我愛吶喊冰淇淋</td><td style="padding:8px 10px;color:#475569;">一年級趣味競賽及頒獎</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">8</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">10:00</td><td style="padding:8px 10px;font-weight:700;">時來運轉</td><td style="padding:8px 10px;color:#475569;">二年級趣味競賽及頒獎</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">9</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">10:10</td><td style="padding:8px 10px;font-weight:700;">麗山39龍來做伙要</td><td style="padding:8px 10px;color:#475569;">親師生趣味競賽</td></tr>
+        <tr style="border-bottom:2px solid #10b981;background:#ecfdf5;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#065f46;">10</td><td style="padding:8px 10px;font-weight:900;white-space:nowrap;color:#065f46;">10:20</td><td style="padding:8px 10px;font-weight:900;color:#065f46;">🏅 風速傳奇2</td><td style="padding:8px 10px;font-weight:800;color:#065f46;">三/四/五/六年級 100m 決賽</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">11</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">11:00</td><td style="padding:8px 10px;font-weight:700;">萬眾齊心</td><td style="padding:8px 10px;color:#475569;">四/五/六年級大隊接力</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">12</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">11:45</td><td style="padding:8px 10px;font-weight:700;">閉幕典禮</td><td style="padding:8px 10px;color:#475569;">頒獎、閉幕式</td></tr>
+        <tr style="background:#fef9c3;"><td style="padding:8px 10px;text-align:center;font-weight:800;color:#94a3b8;">13</td><td style="padding:8px 10px;font-weight:800;white-space:nowrap;">11:50<br>─ 16:00</td><td style="padding:8px 10px;font-weight:700;" colspan="2">學生靜態學習成果展</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+  (function(){
+    const events = [
+      { date:'2026-12-08', day:'二', label:'第一次預演', note:'晴天走位 / 雨天全程', detail:'練習進場/退場、趣味競賽進場/退場', color:'#60a5fa', light:'#eff6ff', border:'#3b82f6', emoji:'🔵' },
+      { date:'2026-12-11', day:'五', label:'第二次預演', note:'晴天走位 / 雨天全程', detail:'運動員繞場、開幕、風速盃、趣味競賽、閉幕', color:'#a78bfa', light:'#f5f3ff', border:'#8b5cf6', emoji:'🟣' },
+      { date:'2026-12-15', day:'二', label:'第三次預演（正式）', note:'若雨天則順延', detail:'運動員繞場、開幕、風速盃、趣味競賽、閉幕', color:'#fb923c', light:'#fff7ed', border:'#f97316', emoji:'🟠' },
+      { date:'2026-12-19', day:'六', label:'🏆 校慶暨運動會', note:'麗山39週年', detail:'07:50 工作人員就位，08:00 正式開始', color:'#10b981', light:'#ecfdf5', border:'#059669', emoji:'🟢' },
+      { date:'2026-12-24', day:'四', label:'校慶補假', note:'放假一天', detail:'', color:'#f43f5e', light:'#fff1f2', border:'#e11d48', emoji:'🔴' },
+    ];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const main = new Date('2026-12-19');
+    main.setHours(0,0,0,0);
+    const diff = Math.round((main - today)/(1000*60*60*24));
+    const cdEl = document.getElementById('schoolDayCountdown');
+    const lbEl = document.getElementById('schoolDayCountdownLabel');
+    if(cdEl){
+      if(diff > 0){ cdEl.textContent = diff + ' 天'; lbEl.textContent = '距離校慶還有'; }
+      else if(diff === 0){ cdEl.textContent = '今天！'; lbEl.textContent = '就是校慶日'; }
+      else{ cdEl.textContent = diff*-1 + ' 天前'; lbEl.textContent = '校慶已過'; }
+    }
+    const tl = document.getElementById('schoolEventTimeline');
+    if(!tl) return;
+    let html = '';
+    events.forEach((e,i)=>{
+      const d = new Date(e.date); d.setHours(0,0,0,0);
+      const isPast = d < today;
+      const isToday = d.getTime() === today.getTime();
+      const isNext = !isPast && events.slice(0,i).every(x=>{ const dd=new Date(x.date); dd.setHours(0,0,0,0); return dd<=today; });
+      const daysLeft = Math.round((d-today)/(1000*60*60*24));
+      const daysLabel = isPast ? '已過' : isToday ? '今天' : `還有 ${daysLeft} 天`;
+      const opacity = isPast ? '.45' : '1';
+      const border = isNext ? `3px solid ${e.border}` : `1.5px solid #e2e8f0`;
+      const bg = isPast ? '#f8fafc' : e.light;
+      const lineColor = i<events.length-1 ? '#e2e8f0' : 'transparent';
+      html += `<div style="display:flex;gap:0;position:relative;opacity:${opacity};">
+        <div style="display:flex;flex-direction:column;align-items:center;width:36px;flex-shrink:0;">
+          <div style="width:28px;height:28px;border-radius:50%;background:${isPast?'#e2e8f0':e.color};display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#fff;flex-shrink:0;margin-top:12px;">
+            ${isPast?'✓':e.emoji.replace(/[🔵🟣🟠🟢🔴]/u,'')||'·'}
+          </div>
+          ${i<events.length-1?`<div style="flex:1;width:2px;background:${lineColor};min-height:12px;"></div>`:''}
+        </div>
+        <div style="flex:1;border-radius:12px;padding:10px 14px;margin:4px 0;background:${bg};border:${border};box-shadow:${isNext?'0 2px 8px rgba(0,0,0,.08)':'none'};">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+            <div>
+              <span style="font-size:.7rem;color:#94a3b8;font-weight:700;">12/${e.date.slice(8)} （${e.day}）</span>
+              <span style="margin-left:6px;font-size:.82rem;font-weight:900;color:${isPast?'#94a3b8':e.border};">${e.label}</span>
+            </div>
+            <span style="font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;background:${isPast?'#e2e8f0':e.color};color:${isPast?'#94a3b8':'#fff'};">${daysLabel}</span>
+          </div>
+          ${e.note?`<div style="font-size:.72rem;color:#94a3b8;margin-top:2px;">（${e.note}）</div>`:''}
+          ${e.detail?`<div style="font-size:.78rem;color:#475569;margin-top:4px;font-weight:600;">${e.detail}</div>`:''}
+        </div>
+      </div>`;
+    });
+    tl.innerHTML = html;
+  })();
+  </script>
+
   <div class="section-title">📢 老師小叮嚀</div>
   <div class="card" style="background: linear-gradient(135deg,#fef9c3,#fde68a); border-left: 6px solid var(--sun);">
     <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px;">🌟 星星制度說明</div>
