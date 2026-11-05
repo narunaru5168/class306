@@ -1715,6 +1715,30 @@
   </div>
 </div>
 
+<!-- ─────────────── 班級成績統計 ─────────────── -->
+<div class="card" style="margin-top:20px;padding:0;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#1e40af,#2563eb);padding:14px 18px 12px;display:flex;align-items:center;gap:10px;">
+    <div style="font-size:1.3rem;">📊</div>
+    <div style="color:#fff;font-weight:900;font-size:1rem;letter-spacing:.5px;">班級考試平均成績</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+    <!-- 國語 -->
+    <div style="padding:14px 16px;border-right:1px solid #e2e8f0;">
+      <div style="font-size:.78rem;font-weight:900;color:#2563eb;letter-spacing:2px;margin-bottom:10px;">📖 國語</div>
+      <div id="examAvgChinese" style="display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+    <!-- 數學 -->
+    <div style="padding:14px 16px;">
+      <div style="font-size:.78rem;font-weight:900;color:#059669;letter-spacing:2px;margin-bottom:10px;">🔢 數學</div>
+      <div id="examAvgMath" style="display:flex;flex-direction:column;gap:7px;"></div>
+    </div>
+  </div>
+  <div style="padding:8px 16px 12px;border-top:1px solid #f1f5f9;font-size:.7rem;color:#94a3b8;text-align:center;">
+    資料由老師手動更新 · 顯示本學期各次考試班級平均
+  </div>
+</div>
+
+
 <!-- ─────────────── REWARD ─────────────── -->
 <div id="page-reward" class="page">
   <div style="display:flex;align-items:center;margin-bottom:16px;">
@@ -10217,12 +10241,84 @@ function switchGradeTab(sheetName, el){
   renderGradeSheet();
 }
 
+function renderExamAvgPanel(){
+  const START_COL = 3; // 前三欄是座號/學號/姓名
+
+  function colAvg(rows, idx){
+    const vals = rows.map(r=>parseFloat(r[idx])).filter(v=>!isNaN(v)&&v>=0&&v<=100);
+    return vals.length ? { avg: vals.reduce((a,b)=>a+b,0)/vals.length, n: vals.length } : null;
+  }
+  function getData(name){ const d=gradeSheetData[name]||{}; return { h:d.headers||[], r:d.rows||[] }; }
+
+  // ── 國語：複習考（合併所有含「複習」欄的所有分數）＋ 期中考 ──
+  function chineseItems(){
+    const {h, r} = getData('306國語');
+    const list = [];
+    // 複習考：把所有含「複習」的欄位分數合併後計算一個平均
+    const reviewIdx = h.map((v,i)=>i>=START_COL&&v&&/複習/.test(v)?i:-1).filter(i=>i>=0);
+    if(reviewIdx.length){
+      const vals = r.flatMap(row=>reviewIdx.map(i=>parseFloat(row[i]))).filter(v=>!isNaN(v)&&v>=0&&v<=100);
+      list.push({ name:'複習考平均', sub:`共${reviewIdx.length}次`, avg: vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null, n:vals.length });
+    }
+    // 期中考
+    const midIdx = h.findIndex((v,i)=>i>=START_COL&&v&&/期中考/.test(v));
+    if(midIdx>=0){ const a=colAvg(r,midIdx); list.push({ name:'期中考平均', avg:a?.avg??null, n:a?.n??0, divider:list.length>0 }); }
+    return list;
+  }
+
+  // ── 數學：每單元小考（個別欄位）＋ 期中考 ──
+  function mathItems(){
+    const {h, r} = getData('306數學');
+    const list = [];
+    // 小考：每欄各自顯示
+    h.forEach((v,i)=>{
+      if(i<START_COL||!v) return;
+      if(/小考/.test(v)){ const a=colAvg(r,i); list.push({ name:v.trim(), avg:a?.avg??null, n:a?.n??0 }); }
+    });
+    // 期中考
+    const midIdx = h.findIndex((v,i)=>i>=START_COL&&v&&/期中考/.test(v));
+    if(midIdx>=0){ const a=colAvg(r,midIdx); list.push({ name:'期中考平均', avg:a?.avg??null, n:a?.n??0, divider:list.length>0 }); }
+    return list;
+  }
+
+  function renderAvgList(list, containerId, color){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    if(!list.length){
+      el.innerHTML = `<div style="color:#cbd5e1;font-size:.8rem;font-weight:700;padding:6px 0;">同步成績後自動顯示</div>`;
+      return;
+    }
+    el.innerHTML = list.map(d=>{
+      const scoreColor = d.avg===null?'#94a3b8':d.avg>=90?'#059669':d.avg>=80?'#2563eb':d.avg>=70?'#d97706':'#dc2626';
+      const bar = d.avg!==null?Math.min(100,Math.round(d.avg)):0;
+      const label = d.avg!==null?d.avg.toFixed(1):'—';
+      const sub = d.sub?`<span style="font-size:.65rem;color:#94a3b8;margin-left:4px;">${d.sub}</span>`
+                 :d.n?`<span style="font-size:.65rem;color:#94a3b8;margin-left:4px;">${d.n}人</span>`:'';
+      const top = d.divider?'border-top:1px dashed #e2e8f0;padding-top:7px;':'';
+      return `<div style="display:flex;align-items:center;gap:8px;${top}">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:.8rem;font-weight:800;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}${sub}</div>
+          <div style="margin-top:3px;height:5px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${bar}%;background:${color};border-radius:3px;transition:width .6s;"></div>
+          </div>
+        </div>
+        <div style="font-size:1.1rem;font-weight:900;color:${scoreColor};min-width:38px;text-align:right;">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  renderAvgList(chineseItems(), 'examAvgChinese', '#2563eb');
+  renderAvgList(mathItems(),    'examAvgMath',    '#059669');
+}
+
 function renderGradeSheet(){
   const data = gradeSheetData[currentGradeSheet];
   const table = document.getElementById('gradeSheetTable');
   const noMsg = document.getElementById('noGradeSheet');
   if(!data || !data.headers || !data.headers.length){
-    table.style.display='none'; noMsg.style.display='block'; return;
+    table.style.display='none'; noMsg.style.display='block';
+    renderExamAvgPanel();
+    return;
   }
   noMsg.style.display='none'; table.style.display='table';
   table.innerHTML='';
@@ -10264,6 +10360,7 @@ function renderGradeSheet(){
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
+  renderExamAvgPanel();
 }
 
 function editHeader(th,colIdx,oldVal){
@@ -10932,6 +11029,7 @@ async function initApp() {
     const inp = document.getElementById('appsScriptUrl');
     if(inp && appsScriptUrl) inp.value = appsScriptUrl;
     renderLastSyncTime(localStorage.getItem('cls_lastSyncTime') || '');
+    renderExamAvgPanel();
   } catch(e){}
 
   // 恢復已儲存的「班費收支」Apps Script 網址和資料（跟成績登記完全獨立的一組，指向另一個 Google 試算表）
