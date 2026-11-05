@@ -896,11 +896,11 @@
   </div>
 </div>
 
-<!-- ── 小組課堂表現 加星星 Modal ── -->
+<!-- ── 小組課堂表現 加/扣星星 Modal ── -->
 <div class="modal-overlay" id="teamStarAwardModal">
   <div class="modal" style="max-width:360px;">
     <h3 id="teamStarAwardTitle">小組課堂表現 ⭐</h3>
-    <p style="font-size:.78rem;color:#64748b;margin-bottom:12px;">全組每位成員都會獲得相同數量的星星，並同步到夥伴名冊。</p>
+    <p id="teamStarAwardDesc" style="font-size:.78rem;color:#64748b;margin-bottom:12px;">全組每位成員都會獲得相同數量的星星，並同步到夥伴名冊。</p>
     <div id="teamStarAwardRoster" style="margin-bottom:16px;font-size:.82rem;color:#475569;line-height:1.9;padding:8px 10px;background:#fffbeb;border-radius:10px;border:1.5px solid #fde68a;"></div>
     <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:14px;">
       <button onclick="adjustTeamStarInput(-1)" style="width:40px;height:40px;border-radius:50%;border:2px solid #e2e8f0;background:#f8fafc;font-size:1.4rem;cursor:pointer;font-weight:900;line-height:1;">−</button>
@@ -912,7 +912,7 @@
     </div>
     <div class="modal-btns">
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('teamStarAwardModal')">取消</button>
-      <button class="btn" style="background:#f59e0b;color:#fff;" onclick="confirmTeamStarAward()">⭐ 確定加星星</button>
+      <button class="btn" id="teamStarAwardConfirmBtn" style="background:#f59e0b;color:#fff;" onclick="confirmTeamStarAward()">⭐ 確定加星星</button>
     </div>
   </div>
 </div>
@@ -7073,13 +7073,33 @@ function openTeamStarAwardModal(teamIdx){
     }
   }
   const countEl = document.getElementById('teamStarAwardCount');
-  if(countEl) countEl.textContent = teamStarAwardAmount;
+  if(countEl){ countEl.textContent = '1'; countEl.style.color = '#f59e0b'; }
+  const btnEl = document.getElementById('teamStarAwardConfirmBtn');
+  if(btnEl){ btnEl.textContent = '⭐ 確定加星星'; btnEl.style.background = '#f59e0b'; }
+  const descEl = document.getElementById('teamStarAwardDesc');
+  if(descEl) descEl.textContent = '全組每位成員都會獲得相同數量的星星，並同步到夥伴名冊。';
   openModal('teamStarAwardModal');
 }
 function adjustTeamStarInput(delta){
-  teamStarAwardAmount = Math.max(1, Math.min(20, (teamStarAwardAmount||1)+delta));
+  teamStarAwardAmount = Math.max(-20, Math.min(20, (teamStarAwardAmount||1)+delta));
+  if(teamStarAwardAmount === 0) teamStarAwardAmount = delta > 0 ? 1 : -1; // 跳過0
   const countEl = document.getElementById('teamStarAwardCount');
-  if(countEl) countEl.textContent = teamStarAwardAmount;
+  const btnEl   = document.getElementById('teamStarAwardConfirmBtn');
+  const descEl  = document.getElementById('teamStarAwardDesc');
+  const isNeg   = teamStarAwardAmount < 0;
+  if(countEl){
+    countEl.textContent = (isNeg ? '' : '') + teamStarAwardAmount;
+    countEl.style.color = isNeg ? '#ef4444' : '#f59e0b';
+  }
+  if(btnEl){
+    btnEl.textContent = isNeg ? '💔 確定扣星星' : '⭐ 確定加星星';
+    btnEl.style.background = isNeg ? '#ef4444' : '#f59e0b';
+  }
+  if(descEl){
+    descEl.textContent = isNeg
+      ? '全組每位成員都會被扣除相同數量的星星，並同步到夥伴名冊。'
+      : '全組每位成員都會獲得相同數量的星星，並同步到夥伴名冊。';
+  }
 }
 function confirmTeamStarAward(){
   const ti = teamStarAwardTarget;
@@ -7090,29 +7110,33 @@ function confirmTeamStarAward(){
   const amt = teamStarAwardAmount || 1;
   // 小組競賽獎勵：全組一律加，不受修復任務限制
   const got = [];
+  const isDeduct = amt < 0;
   roster.forEach(s=>{
     const beforeLevel = levelInfo(s.stars).label;
-    s.stars += amt;
+    s.stars = Math.max(0, s.stars + amt); // 扣星不低於0
     const afterLevel = levelInfo(s.stars).label;
-    s.chanceProgress = (s.chanceProgress||0) + amt;
-    while(s.chanceProgress >= CHANCE_THRESHOLD){
-      s.chanceProgress -= CHANCE_THRESHOLD;
-      if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
-      else { s.chanceProgress = 0; }
-    }
-    if(beforeLevel !== afterLevel){
-      if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
-      const lbl = afterLevel.replace(/^[^\s]+\s/,'');
-      setTimeout(()=>{ toast(`🎊 ${s.name} 升級為「${lbl}」！額外獲得 1 次抽選機會！`); confetti(); }, 600);
+    if(amt > 0){
+      s.chanceProgress = (s.chanceProgress||0) + amt;
+      while(s.chanceProgress >= CHANCE_THRESHOLD){
+        s.chanceProgress -= CHANCE_THRESHOLD;
+        if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
+        else { s.chanceProgress = 0; }
+      }
+      if(beforeLevel !== afterLevel){
+        if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
+        const lbl = afterLevel.replace(/^[^\s]+\s/,'');
+        setTimeout(()=>{ toast(`🎊 ${s.name} 升級為「${lbl}」！額外獲得 1 次抽選機會！`); confetti(); }, 600);
+      }
     }
     got.push((s.seatNo?s.seatNo+'號 ':'')+s.name);
   });
-  // 記錄今日已加星星（用於顯示，starAwards 是純數字欄位，跟原本的 starsAwarded 物件結構分開）
+  // 記錄今日加/扣星星
   if(!teamDailyChecks.starAwards) teamDailyChecks.starAwards = {};
   teamDailyChecks.starAwards[t.id] = (teamDailyChecks.starAwards[t.id]||0) + amt;
   closeModal('teamStarAwardModal');
   save(); renderStudents(); updateStats(); renderTeamScoreTable();
-  toast(`⭐ ${t.name} 每人 +${amt} 顆星！（${got.join('、')}）`);
+  const sign = amt > 0 ? `+${amt}` : `${amt}`;
+  toast(`${isDeduct?'💔':'⭐'} ${t.name} 每人 ${sign} 顆星！（${got.join('、')}）`);
 }
 
 let teamCheckModalTarget = null;
