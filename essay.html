@@ -794,6 +794,9 @@ function resetAll(){
   document.getElementById('extractedBox').style.display='none';
   document.getElementById('step1Status').innerHTML='';
   document.getElementById('step2Status').innerHTML='';
+  // 重置批改按鈕狀態（修正：批改後按鈕卡在 disabled 狀態）
+  const gb=document.getElementById('gradeBtn');
+  if(gb){gb.disabled=false;gb.innerHTML='🤖 文字確認無誤，開始 AI 批改 →';}
   document.getElementById('pfBody').innerHTML='';
   document.getElementById('essayHL').value='';
   document.getElementById('essayDir').value='';
