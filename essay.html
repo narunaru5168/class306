@@ -242,6 +242,25 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
 <!-- ── STEP 2：AI 批改結果 ── -->
 <div id="panelStep2" class="section-hidden">
 
+  <!-- 編輯模式：顯示可修改的基本資料 -->
+  <div class="card" id="editBasicCard" style="display:none;background:#fffbeb;border:1.5px solid #fde047;">
+    <div class="card-ttl" style="color:#92400e;">✏️ 基本資料（可修改）</div>
+    <div class="frow" style="margin-bottom:8px">
+      <div class="fg" style="margin-bottom:0">
+        <label>學生</label>
+        <select id="editStudentSel"></select>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label>篇次</label>
+        <select id="editFolderSel"></select>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label>作文題目</label>
+      <input type="text" id="editTitleInput" placeholder="例：我學會了游泳">
+    </div>
+  </div>
+
   <div class="card">
     <div class="card-ttl">🔬 逐段分析（原文 → 問題 → 改善示範）</div>
     <div style="font-size:.78rem;color:var(--sub);margin-bottom:10px">
@@ -797,6 +816,9 @@ function resetAll(){
   // 重置批改按鈕狀態（修正：批改後按鈕卡在 disabled 狀態）
   const gb=document.getElementById('gradeBtn');
   if(gb){gb.disabled=false;gb.innerHTML='🤖 文字確認無誤，開始 AI 批改 →';}
+  // 隱藏編輯基本資料欄位
+  const ebc=document.getElementById('editBasicCard');
+  if(ebc) ebc.style.display='none';
   document.getElementById('pfBody').innerHTML='';
   document.getElementById('essayHL').value='';
   document.getElementById('essayDir').value='';
@@ -810,8 +832,17 @@ function resetAll(){
 
 // ── 儲存 ──
 async function saveEssay(){
-  const student=document.getElementById('studentSel').value;
-  const title=document.getElementById('titleInput').value.trim();
+  // 編輯模式：從 editBasicCard 讀；新增模式：從 step1 讀
+  const isEdit=!!editId;
+  const student=isEdit
+    ? (document.getElementById('editStudentSel').value||document.getElementById('studentSel').value)
+    : document.getElementById('studentSel').value;
+  const title=isEdit
+    ? (document.getElementById('editTitleInput').value.trim()||document.getElementById('titleInput').value.trim())
+    : document.getElementById('titleInput').value.trim();
+  const folderVal=isEdit
+    ? (document.getElementById('editFolderSel').value||document.getElementById('essayNumSel').value||'第一篇')
+    : (document.getElementById('essayNumSel').value||'第一篇');
   if(!student){toast('⚠️ 請選擇學生');return;}
   if(!title){toast('⚠️ 請填入作文題目');return;}
 
@@ -822,7 +853,7 @@ async function saveEssay(){
 
   const rec={
     studentName:student, title,
-    folderLabel: document.getElementById('essayNumSel').value||'第一篇',
+    folderLabel: folderVal,
     essayText: document.getElementById('extractedText').value.trim(),
     paragraphFeedback: currentParagraphFeedback,
     dimScores, strengths, suggestions,
@@ -938,6 +969,26 @@ function loadRec(id){
   document.getElementById('titleInput').value=r.title||'';
   document.getElementById('extractedText').value=r.essayText||'';
   document.getElementById('extractedBox').style.display=r.essayText?'block':'none';
+  // 填入可編輯的基本資料欄位
+  const ebc=document.getElementById('editBasicCard');
+  if(ebc) ebc.style.display='block';
+  // 學生下拉
+  const es=document.getElementById('editStudentSel');
+  if(es){
+    es.innerHTML=students.length
+      ? students.map(s=>{const no=s.seatNo||s.sid;return`<option value="${s.name}"${s.name===r.studentName?' selected':''}>${no?no+'號 ':''}${s.name}</option>`;}).join('')
+      : `<option value="${r.studentName||''}">${r.studentName||''}</option>`;
+  }
+  // 篇次下拉
+  const ef=document.getElementById('editFolderSel');
+  if(ef){
+    const folders=getFolders();
+    const cur=r.folderLabel||r.essayNum||'第一篇';
+    ef.innerHTML=folders.map(f=>`<option value="${esc(f)}"${f===cur?' selected':''}>${esc(f)}</option>`).join('');
+  }
+  // 題目
+  const et=document.getElementById('editTitleInput');
+  if(et) et.value=r.title||'';
 
   DIMS.forEach(d=>{const el=document.getElementById('dim_'+d);if(el)el.value=(r.dimScores&&r.dimScores[d])||3;});
   STRS.forEach(s=>{const el=document.getElementById('str_'+s);if(el){el.checked=!!(r.strengths&&r.strengths.includes(s));chkStyle('str_'+s);}});
