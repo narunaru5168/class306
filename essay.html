@@ -279,7 +279,10 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     <div style="font-size:.78rem;color:var(--sub);margin-bottom:10px">
       參考三師爸教學法：AI 逐段指出問題並示範改善寫法
     </div>
-    <div id="step2Status" style="font-size:.88rem;color:var(--sub);margin-bottom:8px"></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <div id="step2Status" style="font-size:.88rem;color:var(--sub);flex:1;"></div>
+      <button onclick="setStep(1)" style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:4px 10px;font-size:.78rem;color:#475569;cursor:pointer;white-space:nowrap;flex-shrink:0;">✏️ 修改辨識文字後重新批改</button>
+    </div>
     <div class="pf-wrap">
       <table class="pf-tbl">
         <thead>
