@@ -231,6 +231,19 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
       <div style="font-size:.72rem;color:#b45309;margin-top:4px">
         ⚠️ 請核對文字是否正確，有錯誤可直接在上方修改，再按下方按鈕開始批改
       </div>
+      <!-- 文體選擇（可覆蓋 AI 自動偵測） -->
+      <div style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;">
+        <span style="font-size:.82rem;color:#374151;font-weight:700;white-space:nowrap;">📝 文體：</span>
+        <select id="genreOverrideSel" style="flex:1;border:1.5px solid #d1d5db;border-radius:8px;padding:5px 10px;font-size:.85rem;background:#fff;">
+          <option value="">🤖 自動偵測</option>
+          <option value="記敘文">📖 記敘文</option>
+          <option value="新詩">🎵 新詩</option>
+          <option value="仿寫">✏️ 仿寫</option>
+          <option value="說明文">📋 說明文</option>
+          <option value="抒情文">💭 抒情文</option>
+        </select>
+        <span style="font-size:.72rem;color:#9ca3af;white-space:nowrap;">留空=自動</span>
+      </div>
       <button class="btn-grade" id="gradeBtn" onclick="step2Grade()">
         🤖 文字確認無誤，開始 AI 批改 →
       </button>
@@ -300,6 +313,18 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
       <span style="font-size:.8rem;color:#6b7280;" id="rubricToggleHint">▼ 展開（可給學生看）</span>
     </div>
     <div id="rubricBody" style="display:none;margin-top:12px;"></div>
+    <!-- 文體修正 & 重新批改 -->
+    <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;" onclick="event.stopPropagation()">
+      <span style="font-size:.78rem;color:#374151;white-space:nowrap;">文體有誤？</span>
+      <select id="genreReselSel" style="flex:1;border:1px solid #d1d5db;border-radius:8px;padding:4px 8px;font-size:.8rem;background:#fff;">
+        <option value="記敘文">📖 記敘文</option>
+        <option value="新詩">🎵 新詩</option>
+        <option value="仿寫">✏️ 仿寫</option>
+        <option value="說明文">📋 說明文</option>
+        <option value="抒情文">💭 抒情文</option>
+      </select>
+      <button onclick="reGradeWithGenre()" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;">🔄 重新批改</button>
+    </div>
   </div>
 
   <!-- 評分維度（動態，依文體切換） -->
@@ -528,6 +553,9 @@ function buildDimUI(genre){
   if(pill) pill.textContent=cfg.icon+' '+currentGenre;
   const tag=document.getElementById('genreTagInDim');
   if(tag) tag.textContent=cfg.icon+' '+currentGenre;
+  // 同步 Step2 的文體修正選單
+  const rs=document.getElementById('genreReselSel');
+  if(rs) rs.value=currentGenre;
   // 建立 dim selects
   const grid=document.getElementById('dimGrid');
   if(!grid) return;
@@ -541,6 +569,20 @@ function buildDimUI(genre){
   }).join('');
   // 建立評分標準內容
   renderRubricBody(cfg);
+}
+
+// ── 文體修正後重新批改 ──
+async function reGradeWithGenre(){
+  const sel=document.getElementById('genreReselSel');
+  if(!sel) return;
+  const newGenre=sel.value;
+  if(!newGenre||!GENRE_CONFIGS[newGenre]){ toast('⚠️ 請選擇文體'); return; }
+  // 把選擇同步到 Step1 的文體選單，再重跑批改
+  const os=document.getElementById('genreOverrideSel');
+  if(os) os.value=newGenre;
+  // 切回 step1 狀態（不清空文字）後執行批改
+  document.getElementById('extractedBox').style.display='block';
+  await step2Grade();
 }
 
 function renderRubricBody(cfg){
@@ -675,13 +717,19 @@ async function step2Grade(){
   const {proxy,key}=getApiCreds();
   if(!key){ toast('❌ 請先設定 Claude API 金鑰'); return; }
 
+  // 文體手動指定（若有選擇則跳過自動偵測）
+  const genreOverride=(document.getElementById('genreOverrideSel').value||'').trim();
+  const manualGenre=genreOverride&&GENRE_CONFIGS[genreOverride]?genreOverride:'';
+
   // 切換到 step2 畫面，鎖定按鈕防止重複點擊
   const gradeBtn=document.getElementById('gradeBtn');
   gradeBtn.disabled=true;
   gradeBtn.textContent='⏳ 批改中，請稍候...';
   setStep(2);
-  buildDimUI('記敘文'); // 先顯示預設，AI 完成後再更新
-  document.getElementById('step2Status').innerHTML='🤖 AI 正在偵測文體並逐段批改（約 20–40 秒）...';
+  buildDimUI(manualGenre||'記敘文'); // 先顯示預設，AI 完成後再更新
+  document.getElementById('step2Status').innerHTML=manualGenre
+    ?`🤖 AI 正在以【${manualGenre}】標準批改（約 20–40 秒）...`
+    :'🤖 AI 正在偵測文體並逐段批改（約 20–40 秒）...';
 
   // 建立文體的評分向度說明字串（供 AI 使用）
   const genreDimGuide=GENRE_LIST.map(g=>{
@@ -689,25 +737,33 @@ async function step2Grade(){
     return `■【${g}】${cfg.dims.map(d=>`${d.key}：${d.levels.join('→')}`).join('；')}`;
   }).join('\n');
 
+  // 若手動指定文體，直接告知 AI；否則請 AI 自動偵測
+  const genreInstruction=manualGenre
+    ? `【文體已確認】本篇文體為「${manualGenre}」，請直接使用「${manualGenre}」的評分向度，genre 欄位填「${manualGenre}」，不需重新偵測。`
+    : `【第一步：偵測文體】請先判斷這篇作文的文體，只能從以下選項選一個：${GENRE_LIST.join('、')}
+- 記敘文：敘述人事時地物的故事或經歷
+- 新詩：以詩的形式書寫，分行排列，重視意象與節奏
+- 仿寫：依照範文格式仿寫（如「X是什麼？X是……」這類格式）
+- 說明文：說明介紹事物知識
+- 抒情文：抒發情感為主，景物描寫與感受融合`;
+
+  // 若手動指定，列出該文體的向度供 AI 參考
+  const dimGuideForGenre=manualGenre&&GENRE_CONFIGS[manualGenre]
+    ? `【${manualGenre}評分向度】\n${GENRE_CONFIGS[manualGenre].dims.map(d=>`■${d.key}：${d.levels.join('→')}`).join('\n')}`
+    : `【文體對應評分向度】\n${genreDimGuide}`;
+
   const prompt=`你是國小三年級作文批改老師。以下是學生的作文原文，請仔細批改。只輸出JSON，不加任何說明文字。
 
 【作文題目】${title||'（未填）'}
 【作文原文】
 ${text}
 
-【第一步：偵測文體】
-請先判斷這篇作文的文體，只能從以下選項選一個：${GENRE_LIST.join('、')}
-- 記敘文：敘述人事時地物的故事或經歷
-- 新詩：以詩的形式書寫，分行排列，重視意象與節奏
-- 仿寫：依照範文格式仿寫（如「X是什麼？X是……」這類格式）
-- 說明文：說明介紹事物知識
-- 抒情文：抒發情感為主，景物描寫與感受融合
+${genreInstruction}
 
-【文體對應評分向度】
-${genreDimGuide}
+${dimGuideForGenre}
 
 【批改任務】
-1. 判斷文體，以該文體的評分向度為準
+1. ${manualGenre?`以「${manualGenre}」的評分向度批改`:'判斷文體，以該文體的評分向度為準'}
 2. 將作文分成自然段落（詩歌以每節為一段，最多6段），每段逐一分析
 3. 找出佳言美句（詩歌重視意象、比喻；記敘文重視成語修辭）
 4. 給出建議調整方向（針對該文體特性，2–3點）
@@ -726,7 +782,7 @@ ${genreDimGuide}
 
 輸出格式（只輸出JSON）：
 {
-  "genre":"偵測到的文體（記敘文/新詩/仿寫/說明文/抒情文）",
+  "genre":"${manualGenre||'偵測到的文體（記敘文/新詩/仿寫/說明文/抒情文）'}",
   "paragraphFeedback":[{"paragraph":"...","analysis":"...","improved":"...","grade":"良"}],
   "dimScores":{"第一個向度key":3,"第二個向度key":3,"第三個向度key":3,"第四個向度key":3,"第五個向度key":3},
   "strengths":["只能選：${STRS.join('、')}"],
@@ -737,7 +793,7 @@ ${genreDimGuide}
   "starsAwarded":3
 }
 
-【dimScores 說明】key 必須完全對應偵測到的文體向度名稱，分數 1–5，3分=達標。
+【dimScores 說明】key 必須完全對應使用文體的向度名稱，分數 1–5，3分=達標。
 【評分校準】三年級以鼓勵為主，最低1顆星（80分）。認真完成就有80分。有成語/修辭/意象鮮明→相關向度至少4分，starsAwarded可+1（不超5）。
 【詩歌特別提醒】新詩和仿寫不考核標點，不要在analysis中扣標點分。`;
 
@@ -903,6 +959,9 @@ function resetAll(){
   // 重置批改按鈕狀態（修正：批改後按鈕卡在 disabled 狀態）
   const gb=document.getElementById('gradeBtn');
   if(gb){gb.disabled=false;gb.innerHTML='🤖 文字確認無誤，開始 AI 批改 →';}
+  // 重置文體選擇
+  const gs=document.getElementById('genreOverrideSel');
+  if(gs) gs.value='';
   // 隱藏編輯基本資料欄位
   const ebc=document.getElementById('editBasicCard');
   if(ebc) ebc.style.display='none';
