@@ -394,7 +394,34 @@ const DIMS    = ['內容主題','結構段落','語意流暢','標點符號','�
 const STRS    = ['詞句通順流暢','標點運用正確','字體書寫工整','主旨符合明確','段落清楚分明','內容豐富充實','文章創意十足','引證客觀明確','結構紮實嚴謹','結尾呼應有力'];
 const SUGS    = ['語意要通順流暢','標點要運用妥當','字體要端正寫好','主旨要事先掌握','事先審題再下筆','內容要加深加廣','修辭要適時加入','創意要發揮加入','結尾要前後呼應','優美詞句多閱讀'];
 const STAR_LB    = ['未批（重新批改）','加強努力','繼續加油','達標','優良','優秀'];
-const STAR_SCORE = [null, 80, 82, 85, 90, 95];
+const STAR_SCORE = [null, 80, 82, 85, 90, 95]; // 保留相容舊資料，新資料用 calcScore()
+
+// 由 5 個維度分數（1–5）算出 60–100 的細分數
+// 公式：60 + (總和 − 5) × 2，總和 5→60分，15→80分，25→100分
+function calcScore(){
+  const cfg=GENRE_CONFIGS[currentGenre]||GENRE_CONFIGS['記敘文'];
+  let sum=0, count=0;
+  cfg.dims.forEach(d=>{
+    const el=document.getElementById('dim_'+d.key);
+    if(el){ sum+=parseInt(el.value)||3; count++; }
+  });
+  if(!count) return null;
+  // 標準化成 5 維度基準（防止維度數不同時偏移）
+  const normalizedSum = sum / count * 5;
+  // 分段計算：全1→72，全2→76，全3→80（達標），全4→88（優良），全5→95（傑出）
+  if(normalizedSum <= 15){
+    return Math.round(72 + (normalizedSum - 5) * 0.8); // 72→80 區間
+  } else {
+    return Math.round(80 + (normalizedSum - 15) * 1.5); // 80→95 區間
+  }
+}
+// 即時更新分數顯示（供維度 select 的 onchange 呼叫）
+function onDimChange(){
+  const sc=calcScore();
+  if(sc!=null) document.getElementById('scoreDisplay').textContent=sc+'分';
+  const xin=document.getElementById('xinshinLabel');
+  if(xin) xin.style.display=(sc&&sc>=90)?'inline-block':'none';
+}
 const ESSAY_SERIES = [
   {num:1, label:'第一篇', hint:'我學會了…'},
   {num:2, label:'第二篇', hint:'時間是什麼（仿寫）'},
@@ -564,7 +591,7 @@ function buildDimUI(genre){
     const opts=d.levels.map((lv,vi)=>`<option value="${vi+1}"${vi===2?' selected':''}>${vi+1} — ${lv}</option>`).join('');
     return`<div class="dim-item"${isLast?' style="grid-column:1/-1"':''}>
       <label title="${esc(d.desc)}">${esc(d.key)}</label>
-      <select class="dim-sel" id="dim_${esc(d.key)}">${opts}</select>
+      <select class="dim-sel" id="dim_${esc(d.key)}" onchange="onDimChange()">${opts}</select>
     </div>`;
   }).join('');
   // 建立評分標準內容
@@ -613,7 +640,9 @@ function updateStar(v){
   v=parseInt(v);
   document.getElementById('starVal').textContent=v+' 顆星';
   document.getElementById('starSub').textContent=STAR_LB[v]||'';
-  const sc=STAR_SCORE[v];
+  // 優先用維度算分；若維度還沒建立（0=未批），退回舊對照表
+  const dimSc=calcScore();
+  const sc=dimSc!=null?dimSc:STAR_SCORE[v];
   document.getElementById('scoreDisplay').textContent=sc?sc+'分':'—';
   const xin=document.getElementById('xinshinLabel');
   if(xin) xin.style.display=(sc&&sc>=90)?'inline-block':'none';
@@ -1010,6 +1039,7 @@ async function saveEssay(){
     direction:  (document.getElementById('essayDir').value||'').trim(),
     comment:    (document.getElementById('essayComment').value||'').trim(),
     starsAwarded: parseInt(document.getElementById('starsSlider').value)||3,
+    score: calcScore(), // 由維度計算的細分數
     savedAt: Date.now()
   };
 
@@ -1045,7 +1075,7 @@ function renderRecs(){
 
   function recRow(id,r){
     const stars=r.starsAwarded||0;
-    const score=STAR_SCORE[stars];
+    const score=r.score!=null?r.score:STAR_SCORE[stars]; // 新紀錄用 dim 算分，舊紀錄用星等對照
     const ss=stars?'⭐'.repeat(stars):'—';
     const dt=r.savedAt?new Date(r.savedAt).toLocaleDateString('zh-TW'):'';
     const gc=GENRE_CONFIGS[r.genre];
