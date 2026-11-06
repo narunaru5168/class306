@@ -292,52 +292,22 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     </div>
   </div>
 
-  <!-- 評分維度 -->
-  <div class="card">
-    <div class="card-ttl">📊 評分維度</div>
-    <div class="dim-grid">
-      <div class="dim-item">
-        <label>內容主題</label>
-        <select class="dim-sel" id="dim_內容主題">
-          <option value="1">1 — 空洞</option><option value="2">2 — 單薄</option>
-          <option value="3" selected>3 — 達標</option><option value="4">4 — 豐富有條理</option>
-          <option value="5">5 — 創意深刻</option>
-        </select>
-      </div>
-      <div class="dim-item">
-        <label>結構段落</label>
-        <select class="dim-sel" id="dim_結構段落">
-          <option value="1">1 — 混亂</option><option value="2">2 — 不清</option>
-          <option value="3" selected>3 — 段落分明</option><option value="4">4 — 嚴謹首尾呼應</option>
-          <option value="5">5 — 佈局精彩</option>
-        </select>
-      </div>
-      <div class="dim-item">
-        <label>語意流暢</label>
-        <select class="dim-sel" id="dim_語意流暢">
-          <option value="1">1 — 難懂</option><option value="2">2 — 不順</option>
-          <option value="3" selected>3 — 通順清楚</option><option value="4">4 — 生動自然</option>
-          <option value="5">5 — 優美精準</option>
-        </select>
-      </div>
-      <div class="dim-item">
-        <label>標點符號</label>
-        <select class="dim-sel" id="dim_標點符號">
-          <option value="1">1 — 幾乎不用</option><option value="2">2 — 偶爾誤用</option>
-          <option value="3" selected>3 — 大致正確</option><option value="4">4 — 正確得當</option>
-          <option value="5">5 — 靈活增強語氣</option>
-        </select>
-      </div>
-      <div class="dim-item" style="grid-column:1/-1">
-        <label>修辭詞句（成語 / 修辭 / 佳句）</label>
-        <select class="dim-sel" id="dim_修辭詞句">
-          <option value="1">1 — 貧乏</option><option value="2">2 — 單調</option>
-          <option value="3" selected>3 — 偶有美句</option>
-          <option value="4">4 — 有成語或修辭手法 ⭐</option>
-          <option value="5">5 — 多處成語修辭佳句 ⭐⭐</option>
-        </select>
-      </div>
+  <!-- 文體評分標準（可展開給學生看） -->
+  <div class="card" id="rubricCard" style="background:#f0fdf4;border:1.5px solid #bbf7d0;padding:14px 18px;">
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleRubric()">
+      <span id="genrePill" style="background:#16a34a;color:#fff;border-radius:20px;padding:3px 12px;font-size:.82rem;font-weight:800;">📖 記敘文</span>
+      <span style="font-size:.88rem;font-weight:800;color:#166534;flex:1;">文體偵測 · 評分標準</span>
+      <span style="font-size:.8rem;color:#6b7280;" id="rubricToggleHint">▼ 展開（可給學生看）</span>
     </div>
+    <div id="rubricBody" style="display:none;margin-top:12px;"></div>
+  </div>
+
+  <!-- 評分維度（動態，依文體切換） -->
+  <div class="card">
+    <div class="card-ttl">📊 評分維度
+      <span id="genreTagInDim" style="margin-left:6px;background:#dcfce7;color:#166534;border-radius:12px;padding:2px 8px;font-size:.72rem;font-weight:800;"></span>
+    </div>
+    <div id="dimGrid" class="dim-grid"></div>
 
     <!-- 優點 -->
     <div class="chk-ttl">✅ 優點勾選</div>
@@ -406,9 +376,65 @@ const ESSAY_SERIES = [
   {num:3, label:'第三篇', hint:'我去…旅遊'},
 ];
 
+// ── 文體評分設定 ──
+const GENRE_CONFIGS = {
+  '記敘文':{
+    icon:'📖', desc:'以敘述為主，描寫人、事、時、地、物，呈現事件經過',
+    dims:[
+      {key:'內容情節',desc:'人事時地物是否具體，情節是否生動',levels:['空洞','單薄','具體清楚','生動豐富','精彩感人']},
+      {key:'結構層次',desc:'開頭、發展、結尾清楚，層次分明',levels:['混亂','不清','段落分明','嚴謹首尾呼應','佈局精彩']},
+      {key:'語意流暢',desc:'句子通順，敘述自然連貫',levels:['難懂','不順','通順清楚','生動自然','優美精準']},
+      {key:'標點符號',desc:'標點使用是否正確得當',levels:['幾乎不用','偶爾誤用','大致正確','正確得當','靈活增強語氣']},
+      {key:'修辭詞句',desc:'成語、比喻、擬人等修辭的運用',levels:['貧乏','單調','偶有佳句','有成語或修辭','多處成語修辭']},
+    ]
+  },
+  '新詩':{
+    icon:'🎵', desc:'以詩的形式書寫，重視意象創意、情感表達與音韻節奏，不強調標點',
+    dims:[
+      {key:'意象貼切',desc:'描述內容是否符合喻體，意象是否鮮明新穎',levels:['無意象','平淡','有基本畫面','意象鮮明貼切','創意突出動人']},
+      {key:'音韻節奏',desc:'詩句是否有節奏感，押韻或排比是否整齊',levels:['完全無節奏','偶有節奏','大致有節奏','節奏明顯','音韻和諧優美']},
+      {key:'情感表達',desc:'情感是否真摯自然，讀來有感',levels:['空洞','薄弱','有情感','真摯感人','動人深刻']},
+      {key:'修辭技巧',desc:'比喻、擬人、排比、反覆等修辭手法',levels:['未使用','僅一種','適當使用','活用多種','靈活精彩']},
+      {key:'語意流暢',desc:'詩句是否流暢易懂，語意通順',levels:['難懂','不順','通順','流暢自然','優美精準']},
+    ]
+  },
+  '仿寫':{
+    icon:'✏️', desc:'依範文格式仿寫，在相似結構中展現個人創意',
+    dims:[
+      {key:'符合格式',desc:'是否符合仿寫的格式、句式或結構要求',levels:['完全不符','部分符合','大致符合','完全符合','靈活運用格式']},
+      {key:'意象貼切',desc:'描述是否符合喻體，內容是否切題',levels:['無意象','平淡','有基本畫面','意象鮮明貼切','創意突出動人']},
+      {key:'語意流暢',desc:'句子通順，意思清楚易懂',levels:['難懂','不順','通順','生動自然','優美精準']},
+      {key:'修辭詞句',desc:'是否使用恰當的修辭或佳句',levels:['貧乏','單調','偶有佳句','有成語或修辭','多處成語修辭']},
+      {key:'創意發揮',desc:'在格式內是否有自己的想法或創意',levels:['無創意','完全照抄','有些自己想法','創意豐富','突出精彩']},
+    ]
+  },
+  '說明文':{
+    icon:'📋', desc:'條理清晰地介紹事物、現象或知識，以說明為主',
+    dims:[
+      {key:'內容正確',desc:'說明內容是否正確、充實，資訊無誤',levels:['錯誤','不足','大致正確','充實正確','豐富深入']},
+      {key:'說明條理',desc:'說明順序是否有條不紊，層次清楚',levels:['雜亂','不清','有條理','層次分明','邏輯嚴密']},
+      {key:'結構段落',desc:'是否有明確引言、主體、結尾',levels:['無結構','不清','段落分明','完整清楚','佈局精彩']},
+      {key:'語言清晰',desc:'語言是否簡明易懂，讀者能理解',levels:['難懂','模糊','清楚','簡明易懂','生動清晰']},
+      {key:'標點符號',desc:'標點使用是否正確得當',levels:['幾乎不用','偶爾誤用','大致正確','正確得當','靈活增強語氣']},
+    ]
+  },
+  '抒情文':{
+    icon:'💭', desc:'以抒發情感為主，融合景物描寫與內心感受',
+    dims:[
+      {key:'情感真摯',desc:'情感是否真實自然，發自內心',levels:['空洞','薄弱','有情感','真摯感人','動人深刻']},
+      {key:'情景交融',desc:'景物描寫與情感是否自然融合',levels:['景情分離','偶有結合','大致融合','自然交融','渾然天成']},
+      {key:'結構段落',desc:'文章層次是否清晰，起伏有序',levels:['混亂','不清','層次分明','嚴謹有序','佈局精彩']},
+      {key:'語言優美',desc:'語言是否優美流暢，詞句有美感',levels:['粗糙','平淡','通順','生動優美','極具美感']},
+      {key:'修辭詞句',desc:'成語、比喻、擬人等修辭的運用',levels:['貧乏','單調','偶有佳句','有成語或修辭','多處成語修辭']},
+    ]
+  },
+};
+const GENRE_LIST=Object.keys(GENRE_CONFIGS);
+
 let db=null, students=[], essays={}, editId=null;
 let extractedFullText='';
 let currentParagraphFeedback=[];  // 儲存當前批改的段落資料
+let currentGenre='記敘文';        // 目前批改的文體
 
 // ── 自訂資料夾（存在 localStorage）──
 function getFolders(){
@@ -491,6 +517,53 @@ function buildChecks(){
 function chkStyle(id){
   const el=document.getElementById(id),lb=document.getElementById('lb_'+id);
   if(lb) lb.classList.toggle('chk-on',el.checked);
+}
+
+// ── 文體評分 UI ──
+function buildDimUI(genre){
+  currentGenre=genre||'記敘文';
+  const cfg=GENRE_CONFIGS[currentGenre]||GENRE_CONFIGS['記敘文'];
+  // 更新 pill + tag
+  const pill=document.getElementById('genrePill');
+  if(pill) pill.textContent=cfg.icon+' '+currentGenre;
+  const tag=document.getElementById('genreTagInDim');
+  if(tag) tag.textContent=cfg.icon+' '+currentGenre;
+  // 建立 dim selects
+  const grid=document.getElementById('dimGrid');
+  if(!grid) return;
+  grid.innerHTML=cfg.dims.map((d,i)=>{
+    const isLast=(i===cfg.dims.length-1)&&(cfg.dims.length%2===1);
+    const opts=d.levels.map((lv,vi)=>`<option value="${vi+1}"${vi===2?' selected':''}>${vi+1} — ${lv}</option>`).join('');
+    return`<div class="dim-item"${isLast?' style="grid-column:1/-1"':''}>
+      <label title="${esc(d.desc)}">${esc(d.key)}</label>
+      <select class="dim-sel" id="dim_${esc(d.key)}">${opts}</select>
+    </div>`;
+  }).join('');
+  // 建立評分標準內容
+  renderRubricBody(cfg);
+}
+
+function renderRubricBody(cfg){
+  const body=document.getElementById('rubricBody');
+  if(!body) return;
+  body.innerHTML=`<div style="font-size:.78rem;color:#4b7c59;margin-bottom:10px;">${esc(cfg.desc)}</div>`+
+  `<div style="display:flex;flex-direction:column;gap:8px;">` +
+  cfg.dims.map(d=>`
+    <div style="background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #bbf7d0;">
+      <div style="font-size:.82rem;font-weight:800;color:#166534;margin-bottom:4px;">${esc(d.key)}<span style="font-weight:400;color:#6b7280;margin-left:6px;font-size:.75rem;">${esc(d.desc)}</span></div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${d.levels.map((lv,i)=>`<span style="background:${['#fee2e2','#fef9c3','#dcfce7','#dbeafe','#ede9fe'][i]};color:${['#991b1b','#713f12','#166534','#1e40af','#5b21b6'][i]};border-radius:8px;padding:2px 7px;font-size:.72rem;font-weight:700;">${i+1}★ ${lv}</span>`).join('')}
+      </div>
+    </div>`).join('') + `</div>`;
+}
+
+function toggleRubric(){
+  const body=document.getElementById('rubricBody');
+  const hint=document.getElementById('rubricToggleHint');
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  if(hint) hint.textContent=open?'▼ 展開（可給學生看）':'▲ 收起';
 }
 
 // ── Stars ──
@@ -607,7 +680,14 @@ async function step2Grade(){
   gradeBtn.disabled=true;
   gradeBtn.textContent='⏳ 批改中，請稍候...';
   setStep(2);
-  document.getElementById('step2Status').innerHTML='🤖 AI 正在進行逐段批改（約 20–40 秒）...';
+  buildDimUI('記敘文'); // 先顯示預設，AI 完成後再更新
+  document.getElementById('step2Status').innerHTML='🤖 AI 正在偵測文體並逐段批改（約 20–40 秒）...';
+
+  // 建立文體的評分向度說明字串（供 AI 使用）
+  const genreDimGuide=GENRE_LIST.map(g=>{
+    const cfg=GENRE_CONFIGS[g];
+    return `■【${g}】${cfg.dims.map(d=>`${d.key}：${d.levels.join('→')}`).join('；')}`;
+  }).join('\n');
 
   const prompt=`你是國小三年級作文批改老師。以下是學生的作文原文，請仔細批改。只輸出JSON，不加任何說明文字。
 
@@ -615,55 +695,60 @@ async function step2Grade(){
 【作文原文】
 ${text}
 
-【批改任務】
-1. 將作文分成自然段落（最多5段），每段逐一分析
-2. 找出成語、修辭、優美詞句（佳言美句）
-3. 給出建議調整方向（2–3點）
-4. 給出整體評語與評分
+【第一步：偵測文體】
+請先判斷這篇作文的文體，只能從以下選項選一個：${GENRE_LIST.join('、')}
+- 記敘文：敘述人事時地物的故事或經歷
+- 新詩：以詩的形式書寫，分行排列，重視意象與節奏
+- 仿寫：依照範文格式仿寫（如「X是什麼？X是……」這類格式）
+- 說明文：說明介紹事物知識
+- 抒情文：抒發情感為主，景物描寫與感受融合
 
-【paragraphFeedback——每段必須填寫】
-- paragraph：逐字照抄原文該段（不改字）
-- analysis：用15字以內分析該段優缺點（如：開頭好但動詞平淡）
-- improved：示範改善後的寫法（符合三年級程度，改善1–2處即可，其餘保留原意）
-- grade：這段評價 "優" / "良" / "待加強"
-若某段已經很好（無需改善）則improved可以填"這段寫得很好，無需修改！"
+【文體對應評分向度】
+${genreDimGuide}
+
+【批改任務】
+1. 判斷文體，以該文體的評分向度為準
+2. 將作文分成自然段落（詩歌以每節為一段，最多6段），每段逐一分析
+3. 找出佳言美句（詩歌重視意象、比喻；記敘文重視成語修辭）
+4. 給出建議調整方向（針對該文體特性，2–3點）
+5. 給出整體評語與評分
+
+【paragraphFeedback——每段/節必須填寫】
+- paragraph：逐字照抄原文（詩歌保留換行\\n）
+- analysis：用15字以內分析（詩歌：意象是否鮮明、喻體是否貼切；記敘文：情節是否清楚）
+- improved：示範改善寫法（詩歌若已很好可說"這節意象優美，無需修改！"）
+- grade："優" / "良" / "待加強"
 
 【highlights】
-找出全文中的成語、比喻句、擬人句、排比句、精彩用詞，逐字照抄，填入陣列。無則填[]。
+詩歌：摘錄意象鮮明的句子或比喻；記敘文：摘錄成語或修辭佳句。無則填[]。
 
-【direction】
-給老師的教學建議（針對這篇），2–3點具體可執行的建議，例如「下次可以多練習用比喻句描寫感受」
+【direction】給老師2–3點具體建議（符合該文體特性）
 
-輸出格式（只輸出JSON，paragraphFeedback必須放最前面優先生成）：
+輸出格式（只輸出JSON）：
 {
-  "paragraphFeedback":[
-    {"paragraph":"原文段落逐字照抄","analysis":"分析15字內","improved":"改善示範","grade":"良"}
-  ],
-  "dimScores":{"內容主題":3,"結構段落":3,"語意流暢":3,"標點符號":3,"修辭詞句":3},
-  "strengths":["詞句通順流暢"],
-  "suggestions":["修辭要適時加入"],
-  "highlights":["成語或佳句逐字照抄"],
+  "genre":"偵測到的文體（記敘文/新詩/仿寫/說明文/抒情文）",
+  "paragraphFeedback":[{"paragraph":"...","analysis":"...","improved":"...","grade":"良"}],
+  "dimScores":{"第一個向度key":3,"第二個向度key":3,"第三個向度key":3,"第四個向度key":3,"第五個向度key":3},
+  "strengths":["只能選：${STRS.join('、')}"],
+  "suggestions":["只能選：${SUGS.join('、')}"],
+  "highlights":["佳言美句逐字照抄"],
   "direction":"1. 建議一\\n2. 建議二",
   "comment":"40–50字整體評語：肯定優點→指出改進→鼓勵結語",
   "starsAwarded":3
 }
 
-【評分標準（3分=達標≈80分）】
-■內容主題：1空洞 2單薄 3清楚符合年級 4豐富有條理 5創意深刻
-■結構段落：1混亂 2不清 3段落分明 4嚴謹首尾呼應 5佈局精彩
-■語意流暢：1難懂 2不順 3通順清楚 4生動自然 5優美精準
-■標點符號：1幾乎不用 2偶爾誤用 3大致正確 4正確得當 5靈活增強語氣
-■修辭詞句：1貧乏 2單調 3偶有美句 4有成語或修辭 5多處成語修辭佳句
-優點只能選：${STRS.join('、')}
-建議只能選：${SUGS.join('、')}
-starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82分 3=85分 4=90分 5=95分
-【分數規則】最低給1顆星（80分）。三年級學生只要認真完成作文就有80分，不可低於80分。
-【校準】三年級以鼓勵為主，預設3分。使用成語/修辭→修辭詞句至少4分+starsAwarded+1（不超5）。`;
+【dimScores 說明】key 必須完全對應偵測到的文體向度名稱，分數 1–5，3分=達標。
+【評分校準】三年級以鼓勵為主，最低1顆星（80分）。認真完成就有80分。有成語/修辭/意象鮮明→相關向度至少4分，starsAwarded可+1（不超5）。
+【詩歌特別提醒】新詩和仿寫不考核標點，不要在analysis中扣標點分。`;
 
   try{
     const result=await callClaude({prompt,proxy,key,maxTokens:3500});
     const r=parseJSON(result);
     if(!r) throw new Error('AI 未回傳有效結果，請重試');
+
+    // ── 文體偵測 & 建立對應 UI ──
+    const detectedGenre=r.genre&&GENRE_CONFIGS[r.genre]?r.genre:'記敘文';
+    buildDimUI(detectedGenre);
 
     // 儲存段落資料供後續 save 使用
     currentParagraphFeedback=r.paragraphFeedback||[];
@@ -684,11 +769,13 @@ starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82
       tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">無段落分析資料</td></tr>';
     }
 
-    // 填維度
-    DIMS.forEach(d=>{
-      const el=document.getElementById('dim_'+d);
-      if(el&&r.dimScores&&r.dimScores[d]) el.value=r.dimScores[d];
-    });
+    // 填維度（依偵測文體的 key 填入）
+    if(r.dimScores){
+      Object.entries(r.dimScores).forEach(([k,v])=>{
+        const el=document.getElementById('dim_'+k);
+        if(el) el.value=v;
+      });
+    }
 
     // 填勾選
     STRS.forEach(s=>{
@@ -709,7 +796,7 @@ starsAwarded：0=未批（禁止使用，只在完全空白時用）1=80分 2=82
       updateStar(r.starsAwarded);
     }
 
-    document.getElementById('step2Status').innerHTML='<span style="color:#22c55e;font-weight:700">✅ 批改完成！請確認後按儲存</span>';
+    document.getElementById('step2Status').innerHTML=`<span style="color:#22c55e;font-weight:700">✅ 批改完成！偵測文體：${esc(detectedGenre)} — 請確認後按儲存</span>`;
     setStep(3);
   }catch(e){
     document.getElementById('step2Status').innerHTML=`<span style="color:#ef4444">❌ ${e.message}</span>`;
@@ -846,14 +933,17 @@ async function saveEssay(){
   if(!student){toast('⚠️ 請選擇學生');return;}
   if(!title){toast('⚠️ 請填入作文題目');return;}
 
+  // 收集動態維度（依目前 currentGenre 的 cfg.dims）
   const dimScores={};
-  DIMS.forEach(d=>{const el=document.getElementById('dim_'+d);dimScores[d]=el?parseInt(el.value)||3:3;});
+  const cfg=GENRE_CONFIGS[currentGenre]||GENRE_CONFIGS['記敘文'];
+  cfg.dims.forEach(d=>{const el=document.getElementById('dim_'+d.key);dimScores[d.key]=el?parseInt(el.value)||3:3;});
   const strengths=STRS.filter(s=>{const el=document.getElementById('str_'+s);return el&&el.checked;});
   const suggestions=SUGS.filter(s=>{const el=document.getElementById('sug_'+s);return el&&el.checked;});
 
   const rec={
     studentName:student, title,
     folderLabel: folderVal,
+    genre: currentGenre,
     essayText: document.getElementById('extractedText').value.trim(),
     paragraphFeedback: currentParagraphFeedback,
     dimScores, strengths, suggestions,
@@ -899,9 +989,11 @@ function renderRecs(){
     const score=STAR_SCORE[stars];
     const ss=stars?'⭐'.repeat(stars):'—';
     const dt=r.savedAt?new Date(r.savedAt).toLocaleDateString('zh-TW'):'';
+    const gc=GENRE_CONFIGS[r.genre];
+    const genreBadge=gc?`<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:10px;padding:1px 7px;font-size:.72rem;font-weight:700;margin-left:4px">${gc.icon} ${r.genre}</span>`:'';
     return`<div class="rec-item" onclick="loadRec('${id}')">
       <div class="rec-info">
-        <div class="rec-name">${esc(r.studentName||'')} — ${esc(r.title||'')}</div>
+        <div class="rec-name">${esc(r.studentName||'')} — ${esc(r.title||'')}${genreBadge}</div>
         <div class="rec-meta">${dt}　${STAR_LB[stars]||''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -990,7 +1082,15 @@ function loadRec(id){
   const et=document.getElementById('editTitleInput');
   if(et) et.value=r.title||'';
 
-  DIMS.forEach(d=>{const el=document.getElementById('dim_'+d);if(el)el.value=(r.dimScores&&r.dimScores[d])||3;});
+  // 恢復文體 & 動態維度
+  const savedGenre=r.genre&&GENRE_CONFIGS[r.genre]?r.genre:'記敘文';
+  buildDimUI(savedGenre);
+  if(r.dimScores){
+    Object.entries(r.dimScores).forEach(([k,v])=>{
+      const el=document.getElementById('dim_'+k);
+      if(el) el.value=v;
+    });
+  }
   STRS.forEach(s=>{const el=document.getElementById('str_'+s);if(el){el.checked=!!(r.strengths&&r.strengths.includes(s));chkStyle('str_'+s);}});
   SUGS.forEach(s=>{const el=document.getElementById('sug_'+s);if(el){el.checked=!!(r.suggestions&&r.suggestions.includes(s));chkStyle('sug_'+s);}});
 
