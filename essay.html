@@ -1121,8 +1121,9 @@ function renderRecs(){
     else if(lbl){folderMap[lbl]=[...( folderMap[lbl]||[]),[id,r]];}  // 自訂資料夾
     else uncategorized.push([id,r]);
   });
-  // 每組依姓名排序
-  Object.values(folderMap).forEach(arr=>arr.sort((a,b)=>(a[1].studentName||'').localeCompare(b[1].studentName||'')));
+  // 每組依座號由小到大排序（找不到座號的排最後）
+  function getSeatNo(name){const s=students.find(x=>x.name===name);return s?(parseInt(s.seatNo||s.sid)||999):999;}
+  Object.values(folderMap).forEach(arr=>arr.sort((a,b)=>getSeatNo(a[1].studentName)-getSeatNo(b[1].studentName)));
 
   function recRow(id,r){
     const stars=r.starsAwarded||0;
