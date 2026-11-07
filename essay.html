@@ -751,25 +751,29 @@ async function step1Extract(input){
     const mime='image/jpeg';
     const preTitle=(document.getElementById('titleInput').value||'').trim();
 
-    const prompt=`你是手寫繁體中文辨識工具（OCR）。你的唯一任務是將照片中的手寫漢字「一字不差」地抄寫出來。
+    const prompt=`這是一張台灣國小學生的手寫繁體中文作文照片，請幫我辨識出完整的作文內容。
 
-【最重要的規則】
-- 嚴格禁止自己發明、改寫、補充、猜測任何內容
-- 只輸出照片中真實存在的漢字，一個字都不能多，一個字都不能少
-- 如果某個字看不清楚，用「□」代替，絕對不能猜測或替換成其他字
-- 這是直式手寫作文，從右到左、從上到下閱讀
-- 不需要判斷文章好壞，只需要把看到的漢字抄出來
+【閱讀方式】
+- 直式作文紙，從右到左、從上到下閱讀
+- 就算照片稍微傾斜或角度偏斜，仍請全力辨識，不要放棄
 
-【關於注音符號】
-- 學生可能在漢字旁邊標注了注音符號（ㄅㄆㄇㄈ、ㄉㄊㄋㄌ、一ㄨㄩ等）
-- 注音符號通常寫在漢字右側或上方，字體較小
-- 請完全忽略所有注音符號，不要將注音符號包含在 fullText 中
-- fullText 只需要包含漢字正文，不含注音
+【注音符號處理——重要】
+- 學生在漢字旁邊（右側或上方）標注了注音符號（ㄅㄆㄇㄈ等）
+- 注音符號是輔助工具，請善用它們來推算對應的漢字
+- 例如：看到「ㄒㄩㄝ」就是「學」，「ㄅㄨ」就是「不」
+- fullText 只輸出漢字，不輸出注音符號本身
+- 千萬不要因為有注音符號就放棄辨識
 
-${preTitle?`題目已知為「${preTitle}」，不需再辨識題目欄。`:`請辨識直式作文紙最右側第一欄「題目：」後面的文字。若看不清楚則title填""。`}
+【辨識策略】
+- 優先辨識漢字字形
+- 若漢字字形模糊，用旁邊的注音符號推算正確漢字
+- 若兩者都看不清楚，根據上下文語意推測最合理的字
+- 只有真的完全無法判斷才用「?」，不要大量使用
 
-你的回應必須「只有」以下格式的 JSON，第一個字就是 {，最後一個字就是 }，中間不加任何其他文字：
-{"title":"作文題目","fullText":"照片中的手寫正文逐字照抄，段落之間用\\n\\n分隔，保留原文一字不改，不含題目、姓名、日期，不含注音符號"}`;
+${preTitle?`題目已知為「${preTitle}」，不需再辨識題目欄。`:`請辨識直式作文紙最右側第一欄「題目：」後面的文字，若看不清楚則title填""。`}
+
+請直接輸出 JSON（第一個字是 {，最後一個字是 }，不加任何說明）：
+{"title":"作文題目","fullText":"正文漢字逐字照抄，段落間用\\n\\n，不含題目姓名日期，不含注音符號"}`;
 
     const ocrSystem='你是OCR工具，只輸出JSON，不說明，不解釋，不思考，第一個字必須是{。';
     const result=await callClaude({prompt,b64,mime,proxy,key,maxTokens:2500,systemPrompt:ocrSystem});
@@ -777,6 +781,12 @@ ${preTitle?`題目已知為「${preTitle}」，不需再辨識題目欄。`:`請
     if(!extracted||!extracted.fullText){
       const preview=result?result.slice(0,120):'（空回應）';
       throw new Error('辨識失敗｜Claude 回傳：'+preview);
+    }
+    // 偵測辨識結果幾乎全是問號或空方塊（辨識品質太差）
+    const totalChars=extracted.fullText.replace(/\s/g,'').length;
+    const badChars=(extracted.fullText.match(/[□?？]/g)||[]).length;
+    if(totalChars>5&&badChars/totalChars>0.5){
+      extracted.fullText='⚠️ 照片辨識品質不佳（可能角度過斜或模糊），以下為部分辨識結果，請手動修正後再批改：\n\n'+extracted.fullText;
     }
 
     extractedFullText=extracted.fullText;
