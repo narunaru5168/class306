@@ -219,7 +219,11 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     <div class="card-ttl" style="justify-content:center">📷 第一步：上傳作文照片</div>
     <p style="font-size:.85rem;color:var(--sub);margin-bottom:16px">AI 會先把照片轉成文字，讓你確認是否正確</p>
     <input type="file" id="photoInput" accept="image/*" onchange="step1Extract(this)">
-    <label for="photoInput" class="upload-lbl">📷 上傳作文照片</label>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <button onclick="openScanMode()" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:12px 20px;font-size:.95rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;">📷 掃描拍照</button>
+      <label for="photoInput" style="background:linear-gradient(135deg,#64748b,#475569);color:#fff;padding:12px 20px;font-size:.95rem;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px;border-radius:10px;font-family:'Nunito',sans-serif;">🖼️ 選擇相簿</label>
+    </div>
+    <div style="font-size:.75rem;color:#94a3b8;margin-top:6px">📌 建議用「掃描拍照」對準文件後拍攝，辨識更準確</div>
     <div id="step1Status"></div>
 
     <!-- 辨識出來的文字 -->
@@ -742,19 +746,25 @@ async function step1Extract(input){
   document.getElementById('step1Status').innerHTML='🔄 AI 正在辨識手寫文字...';
   document.getElementById('extractedBox').style.display='none';
   try{
-    const compressed=await compressImg(file);
+    const compressed=await compressImg(file,3000,0.92);
     const b64=await toB64(compressed);
     const mime='image/jpeg';
     const preTitle=(document.getElementById('titleInput').value||'').trim();
 
-    const prompt=`你是手寫文字辨識工具（OCR）。你的唯一任務是將照片中的手寫文字「一字不差」地抄寫出來。
+    const prompt=`你是手寫繁體中文辨識工具（OCR）。你的唯一任務是將照片中的手寫漢字「一字不差」地抄寫出來。
 
 【最重要的規則】
 - 嚴格禁止自己發明、改寫、補充、猜測任何內容
-- 只輸出照片中真實存在的文字，一個字都不能多，一個字都不能少
+- 只輸出照片中真實存在的漢字，一個字都不能多，一個字都不能少
 - 如果某個字看不清楚，用「□」代替，絕對不能猜測或替換成其他字
 - 這是直式手寫作文，從右到左、從上到下閱讀
-- 不需要判斷文章好壞，只需要把看到的字抄出來
+- 不需要判斷文章好壞，只需要把看到的漢字抄出來
+
+【關於注音符號】
+- 學生可能在漢字旁邊標注了注音符號（ㄅㄆㄇㄈ、ㄉㄊㄋㄌ、一ㄨㄩ等）
+- 注音符號通常寫在漢字右側或上方，字體較小
+- 請完全忽略所有注音符號，不要將注音符號包含在 fullText 中
+- fullText 只需要包含漢字正文，不含注音
 
 ${preTitle?`題目已知為「${preTitle}」，不需再辨識題目欄。`:`請辨識直式作文紙最右側第一欄「題目：」後面的文字。若看不清楚則title填""。`}
 
@@ -983,6 +993,80 @@ function parseJSON(raw){
     const m=s.match(/\{[\s\S]*\}/);
     return m?JSON.parse(m[0]):null;
   }catch{return null;}
+}
+
+// ── 掃描模式 ──
+function openScanMode(){
+  // 建立全螢幕掃描 overlay
+  const ov=document.createElement('div');
+  ov.id='scanOv';
+  ov.style.cssText='position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+
+  const topBar=document.createElement('div');
+  topBar.style.cssText='position:absolute;top:0;left:0;right:0;padding:16px;display:flex;align-items:center;justify-content:space-between;z-index:2;background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent)';
+  topBar.innerHTML='<span style="color:#fff;font-weight:800;font-size:1rem;">📷 掃描作文</span>';
+  const closeBtn=document.createElement('button');
+  closeBtn.textContent='✕ 取消';
+  closeBtn.style.cssText='background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;';
+  closeBtn.onclick=()=>closeScan(ov,null);
+  topBar.appendChild(closeBtn);
+
+  const video=document.createElement('video');
+  video.autoplay=true; video.playsInline=true;
+  video.style.cssText='width:100%;height:100%;object-fit:cover;position:absolute;inset:0;';
+
+  // 文件定位框
+  const frameWrap=document.createElement('div');
+  frameWrap.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2;';
+  const frame=document.createElement('div');
+  frame.style.cssText='width:88%;aspect-ratio:3/4;border:3px solid #22c55e;border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);position:relative;';
+  // 四角標記
+  ['top:0;left:0;border-top:4px solid #fff;border-left:4px solid #fff;border-radius:4px 0 0 0',
+   'top:0;right:0;border-top:4px solid #fff;border-right:4px solid #fff;border-radius:0 4px 0 0',
+   'bottom:0;left:0;border-bottom:4px solid #fff;border-left:4px solid #fff;border-radius:0 0 0 4px',
+   'bottom:0;right:0;border-bottom:4px solid #fff;border-right:4px solid #fff;border-radius:0 0 4px 0'
+  ].forEach(s=>{const c=document.createElement('div');c.style.cssText='position:absolute;width:24px;height:24px;'+s;frame.appendChild(c);});
+  frameWrap.appendChild(frame);
+
+  const hint=document.createElement('div');
+  hint.style.cssText='position:absolute;bottom:120px;left:0;right:0;text-align:center;color:#fff;font-size:.85rem;font-weight:700;z-index:3;text-shadow:0 1px 4px rgba(0,0,0,.8);pointer-events:none;';
+  hint.textContent='將作文紙對齊框框內，再按下拍照';
+
+  const capBtn=document.createElement('button');
+  capBtn.style.cssText='position:absolute;bottom:36px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.5);cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;font-size:1.8rem;';
+  capBtn.textContent='📸';
+  capBtn.onclick=()=>{
+    capBtn.style.opacity='.5';
+    const c=document.createElement('canvas');
+    c.width=video.videoWidth; c.height=video.videoHeight;
+    c.getContext('2d').drawImage(video,0,0);
+    c.toBlob(blob=>{closeScan(ov,video._stream); processScannedBlob(blob);},'image/jpeg',0.95);
+  };
+
+  ov.appendChild(video); ov.appendChild(topBar); ov.appendChild(frameWrap);
+  ov.appendChild(hint); ov.appendChild(capBtn);
+  document.body.appendChild(ov);
+
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:3840},height:{ideal:2160}}})
+    .then(stream=>{video.srcObject=stream; video._stream=stream;})
+    .catch(e=>{
+      closeScan(ov,null);
+      // fallback: 用原本的 file input
+      document.getElementById('photoInput').click();
+    });
+}
+function closeScan(ov,stream){
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  if(ov&&ov.parentNode) ov.remove();
+}
+function processScannedBlob(blob){
+  document.getElementById('step1Status').innerHTML='🔄 AI 正在辨識手寫文字...';
+  document.getElementById('extractedBox').style.display='none';
+  const {proxy,key}=getApiCreds();
+  if(!key){document.getElementById('step1Status').innerHTML='<span style="color:#ef4444">❌ 請先設定 Claude API 金鑰</span>';return;}
+  // 建立一個假 input.files[0] 物件（直接用 blob）
+  const fakeInput={files:[new File([blob],'scan.jpg',{type:'image/jpeg'})]};
+  step1Extract(fakeInput);
 }
 
 function compressImg(file,maxPx=2000,q=0.90){
