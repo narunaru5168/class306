@@ -308,6 +308,7 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
     </div>
   </div>
 
+
   <!-- 文體評分標準（可展開給學生看） -->
   <div class="card" id="rubricCard" style="background:#f0fdf4;border:1.5px solid #bbf7d0;padding:14px 18px;">
     <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleRubric()">
@@ -358,6 +359,12 @@ body{font-family:'Nunito',sans-serif;background:#f0fdf4;color:var(--text);min-he
   <div class="card">
     <div class="card-ttl">🎯 整體評語</div>
     <textarea id="essayComment" rows="3" placeholder="40–50 字的整體評語" style="border:2px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:.9rem;width:100%;outline:none;resize:vertical;"></textarea>
+  </div>
+
+  <!-- 修辭標注（整體評語後） -->
+  <div class="card" id="rhetoricCard" style="display:none;background:#fafaf9;border:1.5px solid #e7e5e4;">
+    <div class="card-ttl">🎨 使用修辭</div>
+    <div id="rhetoricList" style="display:flex;flex-direction:column;gap:7px;margin-top:4px;"></div>
   </div>
 
   <!-- 星等 + 分數 -->
@@ -575,6 +582,39 @@ function chkStyle(id){
 }
 
 // ── 文體評分 UI ──
+// 修辭類型顏色對照
+const RHETORIC_COLOR={
+  '譬喻':'#fef3c7:#92400e','比喻':'#fef3c7:#92400e',
+  '擬人':'#dcfce7:#166534','轉化':'#dcfce7:#166534',
+  '排比':'#dbeafe:#1e40af','類疊':'#e0e7ff:#3730a3',
+  '設問':'#fce7f3:#9d174d','誇飾':'#fee2e2:#991b1b',
+  '映襯':'#f3e8ff:#6b21a8','借代':'#ffedd5:#9a3412',
+  '頂真':'#ecfdf5:#065f46','對偶':'#f0f9ff:#0c4a6e',
+  '呼告':'#fff7ed:#9a3412',
+};
+function getRhetoricStyle(type){
+  const v=RHETORIC_COLOR[type]||'#f1f5f9:#475569';
+  const [bg,color]=v.split(':');
+  return`background:${bg};color:${color}`;
+}
+function renderRhetoric(list){
+  window._currentRhetoric=list||[];
+  const card=document.getElementById('rhetoricCard');
+  const container=document.getElementById('rhetoricList');
+  if(!list||!list.length){if(card)card.style.display='none';return;}
+  if(card) card.style.display='block';
+  container.innerHTML=list.map(item=>{
+    const style=getRhetoricStyle(item.type||'');
+    return`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;">
+      <span style="flex-shrink:0;border-radius:14px;padding:2px 9px;font-size:.75rem;font-weight:800;${style}">${esc(item.type||'修辭')}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:.88rem;color:#1e293b;font-weight:600;">「${esc(item.quote||'')}」</div>
+        ${item.note?`<div style="font-size:.76rem;color:#64748b;margin-top:2px;">${esc(item.note)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function buildDimUI(genre){
   currentGenre=genre||'記敘文';
   const cfg=GENRE_CONFIGS[currentGenre]||GENRE_CONFIGS['記敘文'];
@@ -820,6 +860,10 @@ ${dimGuideForGenre}
   "strengths":["只能選：${STRS.join('、')}"],
   "suggestions":["只能選：${SUGS.join('、')}"],
   "highlights":["佳言美句逐字照抄"],
+  "rhetoricAnnotations":[
+    {"type":"譬喻","quote":"逐字照抄原文句子","note":"簡短說明為何是此修辭"},
+    {"type":"擬人","quote":"...","note":"..."}
+  ],
   "direction":"1. 建議一\\n2. 建議二",
   "comment":"40–50字整體評語：肯定優點→指出改進→鼓勵結語",
   "starsAwarded":3
@@ -827,7 +871,8 @@ ${dimGuideForGenre}
 
 【dimScores 說明】key 必須完全對應使用文體的向度名稱，分數 1–5，3分=達標。
 【評分校準】三年級以鼓勵為主，最低1顆星（80分）。認真完成就有80分。有成語/修辭/意象鮮明→相關向度至少4分，starsAwarded可+1（不超5）。
-【詩歌特別提醒】新詩和仿寫不考核標點，不要在analysis中扣標點分。`;
+【詩歌特別提醒】新詩和仿寫不考核標點，不要在analysis中扣標點分。
+【rhetoricAnnotations 說明】逐字照抄原文中有使用修辭的句子，標出類型（譬喻、擬人、轉化、排比、類疊、設問、誇飾、映襯、借代、頂真、對偶等），並用一句話解釋。若無修辭則填[]。`;
 
   try{
     const result=await callClaude({prompt,proxy,key,maxTokens:3500});
@@ -877,6 +922,7 @@ ${dimGuideForGenre}
 
     // 填其他欄位
     if(r.highlights&&r.highlights.length) document.getElementById('essayHL').value=r.highlights.join('、');
+    renderRhetoric(r.rhetoricAnnotations||[]);
     if(r.direction) document.getElementById('essayDir').value=r.direction;
     if(r.comment) document.getElementById('essayComment').value=r.comment;
     if(r.starsAwarded!=null){
@@ -999,6 +1045,7 @@ function resetAll(){
   if(ebc) ebc.style.display='none';
   document.getElementById('pfBody').innerHTML='';
   document.getElementById('essayHL').value='';
+  renderRhetoric([]);
   document.getElementById('essayDir').value='';
   document.getElementById('essayComment').value='';
   DIMS.forEach(d=>{const el=document.getElementById('dim_'+d);if(el)el.value='3';});
@@ -1043,6 +1090,7 @@ async function saveEssay(){
     comment:    (document.getElementById('essayComment').value||'').trim(),
     starsAwarded: parseInt(document.getElementById('starsSlider').value)||3,
     score: calcScore(), // 由維度計算的細分數
+    rhetoricAnnotations: (()=>{const c=document.getElementById('rhetoricCard');return(c&&c.style.display!=='none')?window._currentRhetoric||[]:[];})(),
     savedAt: Date.now()
   };
 
@@ -1085,7 +1133,7 @@ function renderRecs(){
     const genreBadge=gc?`<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:10px;padding:1px 7px;font-size:.72rem;font-weight:700;margin-left:4px">${gc.icon} ${r.genre}</span>`:'';
     return`<div class="rec-item" onclick="loadRec('${id}')">
       <div class="rec-info">
-        <div class="rec-name">${esc(r.studentName||'')} — ${esc(r.title||'')}${genreBadge}</div>
+        <div class="rec-name">${(()=>{const s=students.find(x=>x.name===r.studentName);const no=s&&(s.seatNo||s.sid);return no?`<span style="font-size:.78rem;color:#6b7280;font-weight:600;margin-right:4px">${no}號</span>`:'';})()}${esc(r.studentName||'')} — ${esc(r.title||'')}${genreBadge}</div>
         <div class="rec-meta">${dt}　${STAR_LB[stars]||''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -1198,6 +1246,7 @@ function loadRec(id){
     }).join('');
   }else{tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px">此紀錄無段落分析（批改時未儲存）</td></tr>';}
   document.getElementById('essayHL').value=r.highlights||'';
+  renderRhetoric(r.rhetoricAnnotations||[]);
   document.getElementById('essayDir').value=r.direction||'';
   document.getElementById('essayComment').value=r.comment||'';
   document.getElementById('starsSlider').value=r.starsAwarded||3;
