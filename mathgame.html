@@ -115,6 +115,16 @@ select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:va
   .memory-grid{grid-template-columns:repeat(3,1fr);}
 }
 
+/* ── Toast ── */
+#toastBox{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  background:#1e3a5f;color:#fff;border-radius:50px;
+  padding:12px 28px;font-weight:800;font-size:.95rem;
+  box-shadow:0 6px 24px rgba(0,0,0,.25);z-index:9999;
+  opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;
+}
+#toastBox.show{opacity:1;}
+
 /* ── 星星挑戰 Banner ── */
 #challengeBanner{
   display:none;position:sticky;top:64px;z-index:90;
@@ -170,6 +180,9 @@ firebase.initializeApp({
   <a href="index.html">← 回主頁</a>
 </header>
 
+<!-- Toast -->
+<div id="toastBox"></div>
+
 <!-- 星星挑戰 Banner -->
 <div id="challengeBanner"></div>
 
@@ -180,6 +193,15 @@ firebase.initializeApp({
 </div>
 
 <div class="wrap">
+
+  <!-- 你是誰？ -->
+  <div class="card">
+    <div class="section-title">🧑 你是誰？</div>
+    <div class="lead">選了自己的名字，最高紀錄就會存在雲端，換哪一台電腦或平板都看得到；不選也可以玩，紀錄只留在這台裝置。</div>
+    <div class="controls-row">
+      <select id="playerSelect" onchange="onPlayerSelectChange()"><option value="">-- 不選也可以玩 --</option></select>
+    </div>
+  </div>
 
   <!-- 單元選擇 -->
   <div class="card">
@@ -519,6 +541,12 @@ const MATH_UNITS = {
 // ═══════════════════════════════════════════════════════
 // 工具
 // ═══════════════════════════════════════════════════════
+function showToast(msg,ms=2800){
+  const el=document.getElementById('toastBox');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
 function shuffle(arr){
   const a=[...arr];
   for(let i=a.length-1;i>0;i--){
@@ -535,6 +563,85 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
 // ═══════════════════════════════════════════════════════
 let CU='u1'; // current unit
 let currentMode='quiz';
+
+// 玩家身分
+let gamePlayerId   = '';
+let gamePlayerName = '';
+try{
+  gamePlayerId   = localStorage.getItem('mathgame_playerId')  || '';
+  gamePlayerName = localStorage.getItem('mathgame_playerName')|| '';
+}catch(e){}
+
+function firebaseReady(){
+  try{return typeof firebase!=='undefined'&&firebase.apps&&firebase.apps.length>0;}catch(e){return false;}
+}
+
+// 載入學生清單
+function populatePlayerSelect(){
+  const sel=document.getElementById('playerSelect');
+  if(!sel||!firebaseReady()) return;
+  firebase.database().ref('class306/students').get().then(snap=>{
+    const raw=snap.exists()?snap.val():[];
+    const arr=Array.isArray(raw)?raw:Object.values(raw||{});
+    const sorted=arr.filter(Boolean).sort((a,b)=>parseInt(a.seatNo||99)-parseInt(b.seatNo||99));
+    sel.innerHTML='<option value="">-- 不選也可以玩 --</option>';
+    sorted.forEach(s=>{
+      const opt=document.createElement('option');
+      opt.value=s.id;
+      opt.textContent=`${s.seatNo?s.seatNo+'號 ':''}${s.name}`;
+      if(String(s.id)===String(gamePlayerId)) opt.selected=true;
+      sel.appendChild(opt);
+    });
+  }).catch(()=>{});
+}
+
+function onPlayerSelectChange(){
+  const sel=document.getElementById('playerSelect');
+  const opt=sel.options[sel.selectedIndex];
+  gamePlayerId=sel.value;
+  gamePlayerName=gamePlayerId?opt.textContent.replace(/^\d+號\s*/,''):'';
+  try{
+    localStorage.setItem('mathgame_playerId',  gamePlayerId);
+    localStorage.setItem('mathgame_playerName',gamePlayerName);
+  }catch(e){}
+  showToast(gamePlayerId?`👋 嗨，${gamePlayerName}！你的最高紀錄會自動保留囉`:'目前是匿名模式，紀錄只留在這台裝置');
+  reloadAllBests();
+}
+
+// 雲端最高紀錄路徑
+function mathScorePath(mode,key){
+  return `class306/gameScores/${gamePlayerId}/math_${mode}/${key}`;
+}
+
+// 把最高紀錄寫進雲端（選了自己才寫）
+function pushMathBestToCloud(mode,key,value){
+  if(!gamePlayerId||!firebaseReady()) return;
+  firebase.database().ref(mathScorePath(mode,key)).transaction(cur=>(cur===null||value>cur)?value:undefined).catch(()=>{});
+}
+
+// 讀雲端最高紀錄後更新畫面
+function loadCloudBest(mode,key,elId,fmt){
+  if(!gamePlayerId||!firebaseReady()){return;}
+  firebase.database().ref(mathScorePath(mode,key)).get().then(snap=>{
+    if(snap.exists()){
+      const v=snap.val();
+      document.getElementById(elId).textContent=fmt?fmt(v):v;
+    }
+  }).catch(()=>{});
+}
+
+// 重新載入三種模式的最高紀錄（切換玩家時用）
+function reloadAllBests(){
+  // Quiz
+  const qb=lsGet('mq_best_'+(gamePlayerId||'anon')+'_'+CU)||0;
+  qzBest=qb; document.getElementById('qzBest').textContent=qb;
+  loadCloudBest('quiz',CU,'qzBest',null);
+  // Sprint
+  const sb=lsGet('ms_best_'+(gamePlayerId||'anon')+'_'+CU)||0;
+  spBest=sb; document.getElementById('spBest').textContent=sb;
+  loadCloudBest('sprint',CU,'spBest',null);
+  // Memory best 不另外拉，因為組數不同不方便統一顯示
+}
 
 // Quiz
 let qzQs=[],qzIdx=0,qzScore=0,qzCombo=0,qzBest=0,qzRunning=false;
@@ -553,6 +660,7 @@ function onUnitChange(){
   CU=document.getElementById('unitSel').value;
   document.getElementById('unitBadge').textContent='📝 '+MATH_UNITS[CU].qs.length+' 題・🃏 '+MATH_UNITS[CU].pairs.length+' 配對組';
   resetAll();
+  reloadAllBests();
 }
 function switchMode(mode){
   currentMode=mode;
@@ -571,7 +679,7 @@ function resetAll(){resetQuiz();resetSprint();}
 function startQuiz(){
   qzQs=shuffle(MATH_UNITS[CU].qs);
   qzIdx=0;qzScore=0;qzCombo=0;
-  qzBest=lsGet('mq_best_'+CU)||0;
+  qzBest=lsGet('mq_best_'+(gamePlayerId||'anon')+'_'+CU)||0;
   document.getElementById('qzBest').textContent=qzBest;
   document.getElementById('qzScore').textContent=0;
   document.getElementById('qzCombo').textContent=0;
@@ -620,7 +728,7 @@ function answerQuiz(btn,chosen,correct){
   document.querySelectorAll('#qzGrid .quiz-opt').forEach(b=>b.classList.add('disabled'));
   document.getElementById('qzScore').textContent=qzScore;
   document.getElementById('qzCombo').textContent=qzCombo;
-  if(qzScore>qzBest){qzBest=qzScore;lsSet('mq_best_'+CU,qzBest);document.getElementById('qzBest').textContent=qzBest;}
+  if(qzScore>qzBest){qzBest=qzScore;lsSet('mq_best_'+(gamePlayerId||'anon')+'_'+CU,qzBest);document.getElementById('qzBest').textContent=qzBest;pushMathBestToCloud('quiz',CU,qzBest);}
   if(challengeMode&&!challengeDone&&qzScore>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(qzScore);
   qzIdx++;
   setTimeout(showQzQ,ok?850:1600);
@@ -632,7 +740,7 @@ function answerQuiz(btn,chosen,correct){
 function startSprint(){
   spQs=shuffle(MATH_UNITS[CU].qs);
   spIdx=0;spScore=0;spCombo=0;
-  spBest=lsGet('ms_best_'+CU)||0;
+  spBest=lsGet('ms_best_'+(gamePlayerId||'anon')+'_'+CU)||0;
   document.getElementById('spBest').textContent=spBest;
   document.getElementById('spScore').textContent=0;
   document.getElementById('spCombo').textContent=0;
@@ -711,7 +819,7 @@ function answerSprint(btn,chosen,correct){
   document.querySelectorAll('#spGrid .quiz-opt').forEach(b=>b.classList.add('disabled'));
   document.getElementById('spScore').textContent=spScore;
   document.getElementById('spCombo').textContent=spCombo;
-  if(spScore>spBest){spBest=spScore;lsSet('ms_best_'+CU,spBest);document.getElementById('spBest').textContent=spBest;}
+  if(spScore>spBest){spBest=spScore;lsSet('ms_best_'+(gamePlayerId||'anon')+'_'+CU,spBest);document.getElementById('spBest').textContent=spBest;pushMathBestToCloud('sprint',CU,spBest);}
   if(challengeMode&&!challengeDone&&spScore>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(spScore);
   spIdx++;
   setTimeout(showSpQ,ok?800:1500);
@@ -733,7 +841,7 @@ function startMemory(){
   renderMemGrid();
   document.getElementById('memTries').textContent=0;
   document.getElementById('memMatched').textContent=0;
-  const best=lsGet('mm_best_'+CU)||{};
+  const best=lsGet('mm_best_'+(gamePlayerId||'anon')+'_'+CU)||{};
   document.getElementById('memBest').textContent=best[n]?(best[n]+' 次'):'—';
   document.getElementById('memWin').innerHTML='';
 }
@@ -770,9 +878,9 @@ function flipCard(idx){
       if(challengeMode&&!challengeDone&&memMatchCount*10>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(memMatchCount*10);
       if(memMatchCount===memCards.length/2){
         const n=parseInt(document.getElementById('memPairs').value);
-        const best=lsGet('mm_best_'+CU)||{};
+        const best=lsGet('mm_best_'+(gamePlayerId||'anon')+'_'+CU)||{};
         const isRecord=!best[n]||memTryCount<best[n];
-        if(isRecord){best[n]=memTryCount;lsSet('mm_best_'+CU,best);document.getElementById('memBest').textContent=memTryCount+' 次';}
+        if(isRecord){best[n]=memTryCount;lsSet('mm_best_'+(gamePlayerId||'anon')+'_'+CU,best);document.getElementById('memBest').textContent=memTryCount+' 次';}
         document.getElementById('memWin').innerHTML=`
           <div class="win-banner">
             🎉 全部配對完成！共翻了 ${memTryCount} 次！
@@ -946,6 +1054,12 @@ function clearPendingChallenge(){
 // ═══════════════════════════════════════════════════════
 onUnitChange();
 
+// 等 Firebase 載完再撈學生清單
+setTimeout(()=>{
+  populatePlayerSelect();
+  reloadAllBests();
+},600);
+
 // 從幸運轉盤網址帶入挑戰參數
 (function initChallengeFromUrl(){
   try{
@@ -955,6 +1069,19 @@ onUnitChange();
       challengeStudentId   = params.get('sid')  || '';
       challengeStudentName = params.get('name') || '這位小朋友';
       challengePendingCid  = params.get('cid')  || '';
+      // 把身分帶入玩家選擇（這樣最高紀錄也算這位學生的）
+      if(challengeStudentId){
+        gamePlayerId   = challengeStudentId;
+        gamePlayerName = challengeStudentName;
+        try{
+          localStorage.setItem('mathgame_playerId',  gamePlayerId);
+          localStorage.setItem('mathgame_playerName',gamePlayerName);
+        }catch(e){}
+        setTimeout(()=>{
+          populatePlayerSelect();
+          reloadAllBests();
+        },700);
+      }
       showChallengeBanner();
       startChallengeTimers();
     }
