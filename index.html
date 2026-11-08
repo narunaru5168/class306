@@ -997,6 +997,7 @@
   <div class="nav-row nav-row-full">
     <button onclick="location.href='vote.html'" style="background:rgba(255,255,255,.32);font-weight:800;">🗳️ 投票箱</button>
     <button onclick="location.href='wordgame.html'" style="background:rgba(255,255,255,.32);font-weight:800;">🐍 語詞貪食蛇</button>
+    <button onclick="window.open('https://suuuuuhaooooo.github.io/math-Illustration/','_blank')" style="background:rgba(255,255,255,.32);font-weight:800;">🔢 數光島數學</button>
   </div>
 </header>
 
@@ -1730,6 +1731,7 @@
       <div style="padding:14px 16px;">
         <div style="font-size:.78rem;font-weight:900;color:#059669;letter-spacing:2px;margin-bottom:10px;">🔢 數學</div>
         <div id="examAvgMath" style="display:flex;flex-direction:column;gap:7px;"></div>
+        <div id="examRangeMath" style="margin-top:10px;display:flex;flex-direction:column;gap:4px;"></div>
       </div>
     </div>
     <div style="padding:8px 16px 12px;border-top:1px solid #f1f5f9;font-size:.7rem;color:#94a3b8;text-align:center;">
@@ -10333,6 +10335,48 @@ function renderExamAvgPanel(){
 
   renderAvgList(chineseItems(), 'examAvgChinese', '#2563eb');
   renderAvgList(mathItems(),    'examAvgMath',    '#059669');
+
+  // ── 數學期中考 成績級距人數 ──
+  function gradeRangeItems(sheetName, keyword){
+    const {h, r} = getData(sheetName);
+    const idx = h.findIndex((v,i)=>i>=START_COL&&v&&new RegExp(keyword).test(v));
+    if(idx<0) return null;
+    const vals = r.map(row=>parseFloat(row[idx])).filter(v=>!isNaN(v)&&v>=0&&v<=100);
+    if(!vals.length) return null;
+    const defs = [
+      {label:'100分', min:100, max:100, color:'#059669'},
+      {label:'90–99', min:90,  max:99,  color:'#2563eb'},
+      {label:'80–89', min:80,  max:89,  color:'#7c3aed'},
+      {label:'70–79', min:70,  max:79,  color:'#d97706'},
+      {label:'60–69', min:60,  max:69,  color:'#dc2626'},
+      {label:'60以下', min:0,  max:59,  color:'#94a3b8'},
+    ];
+    return defs.map(d=>({...d, cnt: vals.filter(v=>v>=d.min&&v<=d.max).length, total: vals.length}));
+  }
+
+  function renderRangeList(ranges, containerId){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    if(!ranges){ el.innerHTML=''; return; }
+    const maxCnt = Math.max(...ranges.map(r=>r.cnt), 1);
+    const hasAny = ranges.some(r=>r.cnt>0);
+    if(!hasAny){ el.innerHTML=''; return; }
+    // 標題
+    const titleHtml = `<div style="font-size:.68rem;font-weight:900;color:#94a3b8;letter-spacing:1px;margin-bottom:3px;border-top:1px dashed #e2e8f0;padding-top:7px;">📊 期中考 成績分布</div>`;
+    el.innerHTML = titleHtml + ranges.map(d=>{
+      const barW = Math.round(d.cnt/maxCnt*100);
+      const col = d.cnt>0?d.color:'#e2e8f0';
+      return `<div style="display:flex;align-items:center;gap:5px;">
+        <div style="width:36px;font-size:.68rem;font-weight:800;color:#374151;text-align:right;flex-shrink:0;">${d.label}</div>
+        <div style="flex:1;height:12px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${barW}%;background:${col};border-radius:3px;transition:width .6s;"></div>
+        </div>
+        <div style="width:26px;font-size:.72rem;font-weight:900;color:${d.cnt>0?d.color:'#cbd5e1'};text-align:right;flex-shrink:0;">${d.cnt}人</div>
+      </div>`;
+    }).join('');
+  }
+
+  renderRangeList(gradeRangeItems('306數學', '期中考'), 'examRangeMath');
 }
 
 function renderGradeSheet(){
