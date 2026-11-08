@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔢 數學練習遊戲｜三年六班</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#3B82F6;--blue-d:#1D4ED8;--orange:#F97316;--green:#22C55E;
+  --yellow:#FCD34D;--red:#EF4444;--purple:#8B5CF6;
+  --bg:#EFF6FF;--card:#FFFEF7;--dark:#1E3A5F;--mid:#64748B;
+  --shadow:0 8px 32px rgba(29,78,216,.12);--radius:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Nunito',sans-serif;
+  background:linear-gradient(160deg,#dbeafe 0%,#fef9c3 50%,#dcfce7 100%);
+  min-height:100vh;color:var(--dark);
+}
+h1,h2,.baloo{font-family:'Baloo 2',cursive;}
+.topbar{
+  background:linear-gradient(90deg,#1D4ED8,#3B82F6,#8B5CF6);
+  padding:10px 28px;min-height:64px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;flex-wrap:wrap;
+  box-shadow:0 4px 20px rgba(29,78,216,.35);position:sticky;top:0;z-index:100;
+}
+.topbar .logo{font-family:'Baloo 2',cursive;font-size:1.4rem;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;}
+.topbar a{background:rgba(255,255,255,.22);border-radius:50px;color:#fff;font-weight:700;font-size:.88rem;padding:8px 18px;text-decoration:none;transition:.2s;}
+.topbar a:hover{background:rgba(255,255,255,.35);}
+.wrap{max-width:960px;margin:0 auto;padding:20px 14px 60px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px;}
+.section-title{font-family:'Baloo 2',cursive;font-size:1.25rem;font-weight:800;color:var(--dark);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.lead{color:#5a6680;font-size:.88rem;margin-bottom:10px;line-height:1.6;}
+.btn{border:none;border-radius:50px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s;display:inline-flex;align-items:center;gap:6px;font-size:.92rem;padding:10px 22px;}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.15);}
+.btn:active{transform:scale(.96);}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;}
+.btn-success{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff;}
+.btn-flat{background:#eef2f7;color:var(--dark);}
+.mode-tab{background:#eef2f7;color:var(--dark);}
+.mode-tab.active{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;}
+select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:var(--dark);border:2px solid #e2e8f0;border-radius:12px;padding:10px 14px;background:#fff;outline:none;}
+.controls-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+.stat-pill{background:#eef2f7;border-radius:999px;padding:6px 16px;font-weight:800;font-size:.9rem;display:flex;align-items:center;gap:6px;}
+.hidden{display:none!important;}
+.mode-panel.hidden{display:none!important;}
+
+/* Question banner */
+.question-banner{
+  background:linear-gradient(135deg,#1D4ED8,#3B82F6);
+  color:#fff;border-radius:16px;padding:20px 24px;
+  font-family:'Baloo 2',cursive;font-size:1.5rem;font-weight:800;
+  text-align:center;min-height:76px;display:flex;align-items:center;
+  justify-content:center;margin-bottom:14px;line-height:1.5;
+}
+/* Timer bar */
+.timer-bar-wrap{background:#e2e8f0;border-radius:999px;height:10px;margin-bottom:14px;overflow:hidden;}
+.timer-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--orange),var(--red));border-radius:999px;transition:width .1s linear;}
+
+/* Quiz grid */
+.quiz-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.quiz-opt{
+  background:linear-gradient(135deg,#f8faff,#e8f0fe);
+  border:3px solid #bfdbfe;border-radius:16px;
+  padding:20px 14px;font-family:'Baloo 2',cursive;
+  font-size:1.2rem;font-weight:800;text-align:center;
+  cursor:pointer;transition:all .15s;color:var(--dark);
+  min-height:80px;display:flex;align-items:center;justify-content:center;
+  line-height:1.3;
+}
+.quiz-opt:hover:not(.disabled){transform:scale(1.03);border-color:var(--blue);}
+.quiz-opt.correct{background:linear-gradient(135deg,#dcfce7,#bbf7d0)!important;border-color:var(--green)!important;color:#15803d!important;}
+.quiz-opt.wrong{background:linear-gradient(135deg,#fee2e2,#fecaca)!important;border-color:var(--red)!important;color:#b91c1c!important;}
+.quiz-opt.disabled{pointer-events:none;opacity:.85;}
+
+/* Sprint timer mode specific */
+.sprint-info{text-align:center;padding:8px;color:var(--mid);font-size:.85rem;margin-bottom:8px;}
+.combo-flash{
+  font-family:'Baloo 2',cursive;font-size:1.8rem;font-weight:900;
+  text-align:center;color:var(--orange);animation:popIn .4s ease;
+}
+@keyframes popIn{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+/* Memory grid */
+.memory-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px;}
+.mem-card{
+  aspect-ratio:7/5;cursor:pointer;position:relative;border-radius:14px;
+  transform-style:preserve-3d;transition:transform .35s;
+}
+.mem-card:hover .front{box-shadow:0 0 0 3px var(--blue);}
+.mem-card.flipped{transform:rotateY(180deg);}
+.mem-card.matched{transform:rotateY(180deg);}
+.mem-card .front,.mem-card .back{
+  position:absolute;inset:0;border-radius:14px;
+  backface-visibility:hidden;display:flex;align-items:center;justify-content:center;
+  font-family:'Baloo 2',cursive;font-weight:800;padding:6px;text-align:center;
+}
+.mem-card .front{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-size:2rem;}
+.mem-card .back{background:#fff;border:3px solid #bfdbfe;color:var(--dark);font-size:.9rem;transform:rotateY(180deg);}
+.mem-card.matched .back{background:linear-gradient(135deg,#dcfce7,#bbf7d0);border-color:var(--green);color:#15803d;}
+
+/* Win banner */
+.win-banner{
+  background:linear-gradient(135deg,#FCD34D,#F97316);
+  color:#fff;border-radius:16px;padding:16px 24px;
+  font-family:'Baloo 2',cursive;font-size:1.3rem;font-weight:800;
+  text-align:center;margin-top:14px;
+}
+
+@media(max-width:600px){
+  .quiz-grid{grid-template-columns:1fr;}
+  .quiz-opt{font-size:1rem;min-height:62px;}
+  .question-banner{font-size:1.15rem;}
+  .memory-grid{grid-template-columns:repeat(3,1fr);}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">🔢 數學練習・三年六班</div>
+  <a href="index.html">← 回主頁</a>
+</header>
+
+<div class="wrap">
+
+  <!-- 單元選擇 -->
+  <div class="card">
+    <div class="section-title">📚 選擇單元</div>
+    <div class="controls-row">
+      <select id="unitSel" onchange="onUnitChange()">
+        <option value="u1">第一單元・10000以內的數</option>
+        <option value="u2">第二單元・四位數的加減</option>
+        <option value="u3">第三單元・毫米</option>
+        <option value="u4">第四單元・乘法</option>
+        <option value="u5">第五單元・角</option>
+        <option value="u6">第六單元・面積</option>
+        <option value="u7">第七單元・除法</option>
+        <option value="u8">第八單元・公升和毫升</option>
+        <option value="u9">第九單元・分數</option>
+      </select>
+      <span id="unitBadge" class="stat-pill" style="background:#dbeafe;"></span>
+    </div>
+  </div>
+
+  <!-- 模式選擇 -->
+  <div class="card">
+    <div class="section-title">🎮 選擇遊戲模式</div>
+    <div class="controls-row">
+      <button class="btn mode-tab active" data-mode="quiz" onclick="switchMode('quiz')">🎯 選擇搶答</button>
+      <button class="btn mode-tab" data-mode="sprint" onclick="switchMode('sprint')">⚡ 計時衝刺</button>
+      <button class="btn mode-tab" data-mode="memory" onclick="switchMode('memory')">🃏 配對翻牌</button>
+    </div>
+  </div>
+
+  <!-- ══ 選擇搶答 ══ -->
+  <div class="card mode-panel" id="modeQuiz">
+    <div class="lead">看題目選出正確答案，答對越多連續題分數越高！適合電子白板讓學生上台點選。</div>
+    <div class="controls-row" style="margin-bottom:14px">
+      <button class="btn btn-primary" onclick="startQuiz()">▶️ 開始搶答</button>
+      <button class="btn btn-flat" onclick="resetQuiz()">🔄 重置</button>
+      <span class="stat-pill">⭐ <span id="qzScore">0</span></span>
+      <span class="stat-pill">🔥 連續 <span id="qzCombo">0</span></span>
+      <span class="stat-pill">🏆 最高 <span id="qzBest">0</span></span>
+    </div>
+    <div class="question-banner" id="qzBanner">選好單元後按「開始搶答」🎯</div>
+    <div class="quiz-grid" id="qzGrid"></div>
+    <div id="qzComboFlash" style="min-height:50px;margin-top:8px;"></div>
+  </div>
+
+  <!-- ══ 計時衝刺 ══ -->
+  <div class="card mode-panel hidden" id="modeSprint">
+    <div class="lead">每題限時 5 秒！在時間倒數到 0 前點出正確答案。越快作答分數越高，要搶先！</div>
+    <div class="controls-row" style="margin-bottom:14px">
+      <button class="btn btn-primary" onclick="startSprint()">▶️ 開始衝刺</button>
+      <button class="btn btn-flat" onclick="resetSprint()">🔄 重置</button>
+      <span class="stat-pill">⭐ <span id="spScore">0</span></span>
+      <span class="stat-pill">🔥 連續 <span id="spCombo">0</span></span>
+      <span class="stat-pill">🏆 最高 <span id="spBest">0</span></span>
+    </div>
+    <div class="question-banner" id="spBanner">選好單元後按「開始衝刺」⚡</div>
+    <div class="timer-bar-wrap" id="spTimerWrap" style="display:none">
+      <div class="timer-bar" id="spTimerBar" style="width:100%"></div>
+    </div>
+    <div class="sprint-info" id="spTimerText"></div>
+    <div class="quiz-grid" id="spGrid"></div>
+    <div id="spComboFlash" style="min-height:50px;margin-top:8px;"></div>
+  </div>
+
+  <!-- ══ 配對翻牌 ══ -->
+  <div class="card mode-panel hidden" id="modeMemory">
+    <div class="lead">翻開卡片，把算式和答案配對！翻的次數越少越厲害。</div>
+    <div class="controls-row" style="margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:.9rem;">
+        🧩 組數
+        <select id="memPairs">
+          <option value="4">4 組（快速）</option>
+          <option value="6" selected>6 組</option>
+          <option value="8">8 組（挑戰）</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" onclick="startMemory()">▶️ 開始翻牌</button>
+      <span class="stat-pill">👆 翻了 <span id="memTries">0</span> 次</span>
+      <span class="stat-pill">✅ 配到 <span id="memMatched">0</span> 組</span>
+      <span class="stat-pill">🏆 最少 <span id="memBest">—</span></span>
+    </div>
+    <div class="memory-grid" id="memGrid"></div>
+    <div id="memWin"></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// 題庫：115學年度 康軒三年級數學（共9單元）
+// qs: { q:題目, a:正確答案, opts:[4個選項] }
+// pairs: { left:算式側, right:答案側 }（翻牌配對用）
+// ═══════════════════════════════════════════════════════
+const MATH_UNITS = {
+  u1:{
+    title:'第一單元・10000以內的數',
+    qs:[
+      {q:'2365 裡面的「3」代表多少？',a:'300',opts:['3','30','300','3000']},
+      {q:'七千八百九十，用數字怎麼寫？',a:'7890',opts:['7809','7890','7980','7098']},
+      {q:'9999 再加 1 是多少？',a:'10000',opts:['9910','10000','1000','10001']},
+      {q:'4056 裡面有幾個千？',a:'4',opts:['40','4','400','0']},
+      {q:'5000＋400＋60＋8 ＝ ？',a:'5468',opts:['5048','5408','5468','5486']},
+      {q:'下面哪個數最大？',a:'6391',opts:['3916','6319','6391','6193']},
+      {q:'八千零七十二，用數字怎麼寫？',a:'8072',opts:['8720','8027','8072','8702']},
+      {q:'哪個數在 5000 和 6000 之間？',a:'5308',opts:['4998','5308','6002','4500']},
+      {q:'10000 以一千為單位，可以分成幾個千？',a:'10',opts:['1','10','100','1000']},
+      {q:'□ ＝ 3000＋700＋20，□ 是多少？',a:'3720',opts:['370','3720','3072','3702']},
+      {q:'6830 比 6803 大多少？',a:'27',opts:['27','30','270','300']},
+      {q:'哪個數有「6個百」？',a:'2638',opts:['6238','2063','2638','3680']},
+    ],
+    pairs:[
+      {left:'三千六百',right:'3600'},
+      {left:'八千零五十',right:'8050'},
+      {left:'一萬',right:'10000'},
+      {left:'六千七百八十九',right:'6789'},
+      {left:'四千零八',right:'4008'},
+      {left:'九千九百九十九',right:'9999'},
+      {left:'七千零七十',right:'7070'},
+      {left:'二千五百',right:'2500'},
+    ]
+  },
+  u2:{
+    title:'第二單元・四位數的加減',
+    qs:[
+      {q:'2345 ＋ 1234 ＝ ？',a:'3579',opts:['3479','3569','3579','3689']},
+      {q:'5678 ＋ 2143 ＝ ？',a:'7821',opts:['7721','7821','7831','7921']},
+      {q:'4000 ＋ 2500 ＝ ？',a:'6500',opts:['6050','6500','6505','6550']},
+      {q:'8000 － 3000 ＝ ？',a:'5000',opts:['4000','5000','6000','11000']},
+      {q:'6543 － 2210 ＝ ？',a:'4333',opts:['4233','4323','4333','4433']},
+      {q:'3176 ＋ 2824 ＝ ？',a:'6000',opts:['5900','5990','6000','6100']},
+      {q:'估算 4987 ＋ 2033 大約是多少？',a:'7000',opts:['6000','7000','8000','9000']},
+      {q:'9000 － 4567 ＝ ？',a:'4433',opts:['4333','4423','4433','5433']},
+      {q:'1826 ＋ 3174 ＝ ？',a:'5000',opts:['4000','4900','5000','5100']},
+      {q:'估算 7863 － 2049 大約是多少？',a:'6000',opts:['4000','5000','6000','7000']},
+      {q:'甲有 2340 元，乙有 1660 元，共有幾元？',a:'4000 元',opts:['3000 元','4000 元','4100 元','5000 元']},
+      {q:'一共有 5000 顆糖，發出 2348 顆，還剩幾顆？',a:'2652 顆',opts:['2548 顆','2642 顆','2652 顆','2752 顆']},
+    ],
+    pairs:[
+      {left:'2345＋1234',right:'3579'},
+      {left:'5000－2000',right:'3000'},
+      {left:'4000＋3500',right:'7500'},
+      {left:'9000－4000',right:'5000'},
+      {left:'1500＋1500',right:'3000'},
+      {left:'6000－2500',right:'3500'},
+      {left:'3000＋4000',right:'7000'},
+      {left:'8000－3000',right:'5000'},
+    ]
+  },
+  u3:{
+    title:'第三單元・毫米',
+    qs:[
+      {q:'1 公分等於幾毫米？',a:'10 毫米',opts:['1 毫米','5 毫米','10 毫米','100 毫米']},
+      {q:'30 毫米等於幾公分？',a:'3 公分',opts:['0.3 公分','3 公分','30 公分','300 公分']},
+      {q:'2 公分 5 毫米等於幾毫米？',a:'25 毫米',opts:['7 毫米','205 毫米','25 毫米','2.5 毫米']},
+      {q:'1 公尺等於幾毫米？',a:'1000 毫米',opts:['10 毫米','100 毫米','1000 毫米','10000 毫米']},
+      {q:'47 毫米等於幾公分幾毫米？',a:'4 公分 7 毫米',opts:['40 公分 7 毫米','4 公分 7 毫米','47 公分','4.7 公分']},
+      {q:'4 公分等於幾毫米？',a:'40 毫米',opts:['4 毫米','14 毫米','40 毫米','400 毫米']},
+      {q:'下面哪個最長？',a:'3 公分',opts:['25 毫米','3 公分','18 毫米','2 公分 8 毫米']},
+      {q:'1 公分 8 毫米等於幾毫米？',a:'18 毫米',opts:['8 毫米','18 毫米','108 毫米','180 毫米']},
+      {q:'鉛筆長 85 毫米，等於幾公分幾毫米？',a:'8 公分 5 毫米',opts:['85 公分','80 公分 5 毫米','8 公分 5 毫米','8.5 公分']},
+      {q:'毫米（mm）比公分（cm）還⋯⋯',a:'小',opts:['大','小','一樣','無法比較']},
+    ],
+    pairs:[
+      {left:'1 公分',right:'10 毫米'},
+      {left:'1 公尺',right:'1000 毫米'},
+      {left:'50 毫米',right:'5 公分'},
+      {left:'3 公分',right:'30 毫米'},
+      {left:'2 公分 5 毫米',right:'25 毫米'},
+      {left:'100 毫米',right:'10 公分'},
+      {left:'4 公分 2 毫米',right:'42 毫米'},
+      {left:'80 毫米',right:'8 公分'},
+    ]
+  },
+  u4:{
+    title:'第四單元・乘法',
+    qs:[
+      {q:'23 × 4 ＝ ？',a:'92',opts:['82','88','92','96']},
+      {q:'56 × 3 ＝ ？',a:'168',opts:['158','162','168','178']},
+      {q:'125 × 4 ＝ ？',a:'500',opts:['450','490','500','520']},
+      {q:'308 × 6 ＝ ？',a:'1848',opts:['1808','1838','1848','1858']},
+      {q:'估算 48 × 3 大約是多少？',a:'150',opts:['100','120','150','180']},
+      {q:'一包有 24 個糖果，5 包共有幾個？',a:'120 個',opts:['100 個','110 個','120 個','125 個']},
+      {q:'73 × 7 ＝ ？',a:'511',opts:['491','501','511','521']},
+      {q:'250 × 8 ＝ ？',a:'2000',opts:['1800','1900','2000','2100']},
+      {q:'每班 36 人，4 個班共有幾人？',a:'144 人',opts:['124 人','134 人','144 人','154 人']},
+      {q:'估算 197 × 5 大約是多少？',a:'1000',opts:['800','900','1000','1200']},
+      {q:'45 × 9 ＝ ？',a:'405',opts:['385','395','405','415']},
+      {q:'100 × 7 ＝ ？',a:'700',opts:['700','707','770','7000']},
+    ],
+    pairs:[
+      {left:'23×4',right:'92'},
+      {left:'56×3',right:'168'},
+      {left:'125×4',right:'500'},
+      {left:'73×7',right:'511'},
+      {left:'250×8',right:'2000'},
+      {left:'45×9',right:'405'},
+      {left:'100×7',right:'700'},
+      {left:'38×5',right:'190'},
+    ]
+  },
+  u5:{
+    title:'第五單元・角',
+    qs:[
+      {q:'直角是幾度？',a:'90度',opts:['45度','90度','120度','180度']},
+      {q:'比直角小的角叫做什麼？',a:'銳角',opts:['直角','銳角','鈍角','平角']},
+      {q:'比直角大的角叫做什麼？',a:'鈍角',opts:['直角','銳角','鈍角','平角']},
+      {q:'一個正方形有幾個直角？',a:'4 個',opts:['1 個','2 個','3 個','4 個']},
+      {q:'長方形的四個角都是什麼角？',a:'直角',opts:['直角','銳角','鈍角','都不同']},
+      {q:'下面哪個角最大？',a:'鈍角',opts:['銳角','直角','鈍角','都一樣']},
+      {q:'三角板上有幾個直角？',a:'1 個',opts:['0 個','1 個','2 個','3 個']},
+      {q:'一個角是由幾條射線組成的？',a:'2 條',opts:['1 條','2 條','3 條','4 條']},
+      {q:'下面哪個圖形有 4 個直角？',a:'長方形',opts:['三角形','圓形','長方形','菱形']},
+      {q:'「銳角」大小範圍是？',a:'比 90 度小',opts:['比 90 度小','等於 90 度','比 90 度大','等於 180 度']},
+    ],
+    pairs:[
+      {left:'比直角小',right:'銳角'},
+      {left:'等於直角',right:'直角'},
+      {left:'比直角大',right:'鈍角'},
+      {left:'正方形的角',right:'直角'},
+      {left:'長方形的角',right:'直角'},
+      {left:'90 度的角',right:'直角'},
+      {left:'小於 90 度',right:'銳角'},
+      {left:'大於 90 度',right:'鈍角'},
+    ]
+  },
+  u6:{
+    title:'第六單元・面積',
+    qs:[
+      {q:'面積的單位是什麼？',a:'平方公分',opts:['公分','公尺','平方公分','毫米']},
+      {q:'一個圖形由 8 個 1 平方公分方格排成，面積是多少？',a:'8 平方公分',opts:['4 平方公分','6 平方公分','8 平方公分','10 平方公分']},
+      {q:'一個圖形由 12 個 1 平方公分方格排成，面積是多少？',a:'12 平方公分',opts:['10 平方公分','11 平方公分','12 平方公分','14 平方公分']},
+      {q:'1 平方公分是什麼大小？',a:'邊長 1 公分的正方形',opts:['長 1 公分的線段','邊長 1 公分的正方形','邊長 1 公尺的正方形','邊長 1 毫米的正方形']},
+      {q:'甲圖形有 9 格，乙圖形有 6 格，哪個面積比較大？',a:'甲圖形',opts:['甲圖形','乙圖形','一樣大','無法比較']},
+      {q:'把一個圖形剪開重拼，面積會怎樣？',a:'不會改變',opts:['變大','變小','不會改變','無法確定']},
+      {q:'下面哪個面積最大：5格、8格、4格、7格？',a:'8 格',opts:['5 格','8 格','4 格','7 格']},
+      {q:'一個圖形面積是 15 平方公分，共有幾個 1 平方公分的方格？',a:'15 個',opts:['1 個','5 個','15 個','150 個']},
+      {q:'估算圖形面積，可以用什麼方法？',a:'數方格',opts:['用尺量長度','數方格','計算重量','比較顏色']},
+      {q:'哪個比 1 平方公分大？',a:'10 元硬幣',opts:['小鈕扣','10 元硬幣','一粒芝麻','1 公分的線段']},
+      {q:'甲圖形：3行4列方格，面積是幾平方公分？',a:'12 平方公分',opts:['7 平方公分','10 平方公分','12 平方公分','16 平方公分']},
+      {q:'面積 20 格的圖形比面積 15 格的圖形⋯⋯',a:'大',opts:['大','小','一樣大','不能比']},
+    ],
+    pairs:[
+      {left:'1平方公分',right:'邊長1公分正方形'},
+      {left:'9個方格',right:'9平方公分'},
+      {left:'面積比較方法',right:'數方格'},
+      {left:'6個方格圖',right:'6平方公分'},
+      {left:'12個方格',right:'12平方公分'},
+      {left:'面積不變原則',right:'剪拼後不變'},
+      {left:'面積最小',right:'方格數最少'},
+      {left:'面積最大',right:'方格數最多'},
+    ]
+  },
+  u7:{
+    title:'第七單元・除法',
+    qs:[
+      {q:'12 ÷ 4 ＝ ？',a:'3',opts:['2','3','4','6']},
+      {q:'36 ÷ 6 ＝ ？',a:'6',opts:['4','5','6','7']},
+      {q:'25 ÷ 4 ＝ 幾餘幾？',a:'6 餘 1',opts:['5 餘 5','6 餘 1','7 餘 3','4 餘 9']},
+      {q:'30 個蘋果，6 人平分，每人幾個？',a:'5 個',opts:['4 個','5 個','6 個','7 個']},
+      {q:'29 ÷ 5 ＝ ？ 餘幾？',a:'餘 4',opts:['餘 1','餘 2','餘 4','餘 5']},
+      {q:'56 ÷ 8 ＝ ？',a:'7',opts:['5','6','7','8']},
+      {q:'除法中，「餘數」一定比⋯⋯',a:'除數小',opts:['被除數小','除數大','除數小','商小']},
+      {q:'23 ÷ 3 ＝ 7 餘⋯⋯',a:'2',opts:['0','1','2','3']},
+      {q:'48 ÷ 7 ＝ 6 餘⋯⋯',a:'6',opts:['1','4','6','7']},
+      {q:'一盒有 8 個蛋，35 個蛋最少要幾盒才能裝完？',a:'5 盒',opts:['4 盒','5 盒','6 盒','7 盒']},
+      {q:'54 ÷ 9 ＝ ？',a:'6',opts:['4','5','6','7']},
+      {q:'18 ÷ 5 ＝ 3 餘⋯⋯',a:'3',opts:['1','2','3','4']},
+    ],
+    pairs:[
+      {left:'12÷4',right:'3'},
+      {left:'36÷6',right:'6'},
+      {left:'56÷8',right:'7'},
+      {left:'25÷4',right:'6餘1'},
+      {left:'29÷5',right:'5餘4'},
+      {left:'54÷9',right:'6'},
+      {left:'23÷3',right:'7餘2'},
+      {left:'48÷7',right:'6餘6'},
+    ]
+  },
+  u8:{
+    title:'第八單元・公升和毫升',
+    qs:[
+      {q:'1 公升等於幾毫升？',a:'1000 毫升',opts:['10 毫升','100 毫升','1000 毫升','10000 毫升']},
+      {q:'500 毫升等於多少公升？',a:'半公升',opts:['半公升','1 公升','2 公升','5 公升']},
+      {q:'2 公升等於幾毫升？',a:'2000 毫升',opts:['200 毫升','1000 毫升','2000 毫升','2500 毫升']},
+      {q:'1500 毫升等於幾公升幾毫升？',a:'1 公升 500 毫升',opts:['1 公升 5 毫升','1 公升 500 毫升','2 公升 500 毫升','15 公升']},
+      {q:'下面哪個最多？',a:'1500 毫升',opts:['1 公升','800 毫升','1500 毫升','999 毫升']},
+      {q:'鮮奶盒裝 250 毫升，4 盒共幾毫升？',a:'1000 毫升',opts:['500 毫升','750 毫升','1000 毫升','1200 毫升']},
+      {q:'一瓶水 600 毫升，喝掉 250 毫升，剩多少毫升？',a:'350 毫升',opts:['250 毫升','300 毫升','350 毫升','400 毫升']},
+      {q:'毫升（mL）和公升（L）哪個比較大？',a:'公升（L）',opts:['毫升（mL）','公升（L）','一樣大','無法比較']},
+      {q:'3 公升 400 毫升，共有幾毫升？',a:'3400 毫升',opts:['340 毫升','3040 毫升','3400 毫升','3440 毫升']},
+      {q:'4000 毫升等於幾公升？',a:'4 公升',opts:['0.4 公升','4 公升','40 公升','400 公升']},
+    ],
+    pairs:[
+      {left:'1 公升',right:'1000 毫升'},
+      {left:'半公升',right:'500 毫升'},
+      {left:'2 公升',right:'2000 毫升'},
+      {left:'1500 毫升',right:'1公升500毫升'},
+      {left:'3000 毫升',right:'3 公升'},
+      {left:'250毫升×4',right:'1000毫升'},
+      {left:'4公升',right:'4000毫升'},
+      {left:'100毫升×10',right:'1公升'},
+    ]
+  },
+  u9:{
+    title:'第九單元・分數',
+    qs:[
+      {q:'把一個圓餅切成 4 等份，每份是幾分之幾？',a:'四分之一',opts:['四分之一','四分之二','四分之三','四分之四']},
+      {q:'「四分之三」用分數符號怎麼寫？',a:'3/4',opts:['4/3','3/4','1/4','3/3']},
+      {q:'以下哪個分數最大？',a:'3/4',opts:['1/4','2/4','3/4','0/4']},
+      {q:'把一條繩子切成 5 等份，取走 2 份，拿走幾分之幾？',a:'五分之二',opts:['五分之一','五分之二','五分之三','二分之五']},
+      {q:'「六分之五」比「六分之三」大還是小？',a:'大',opts:['大','小','一樣大','無法比較']},
+      {q:'哪個分數等於一個整體？（分母為 3）',a:'三分之三',opts:['三分之一','三分之二','三分之三','一分之三']},
+      {q:'以下哪個分數最小？',a:'1/6',opts:['4/6','3/6','2/6','1/6']},
+      {q:'把長方形切成 6 等份，塗色 4 份，塗色部分是幾分之幾？',a:'六分之四',opts:['六分之二','六分之四','四分之六','六分之一']},
+      {q:'分母相同時，分子越大，分數越⋯⋯',a:'大',opts:['大','小','一樣','不確定']},
+      {q:'「八分之三」和「八分之五」哪個大？',a:'八分之五',opts:['八分之三','八分之五','一樣大','無法比較']},
+      {q:'吃掉巧克力的 2/5，剩下幾分之幾？',a:'五分之三',opts:['五分之一','五分之二','五分之三','五分之四']},
+      {q:'以下哪個分數等於一整個？',a:'5/5',opts:['1/5','2/5','3/5','5/5']},
+    ],
+    pairs:[
+      {left:'四分之一',right:'1/4'},
+      {left:'三分之二',right:'2/3'},
+      {left:'五分之三',right:'3/5'},
+      {left:'六分之五',right:'5/6'},
+      {left:'四個四等份',right:'1(整體)'},
+      {left:'八分之七',right:'7/8'},
+      {left:'二分之一',right:'1/2'},
+      {left:'六分之三',right:'3/6'},
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// 工具
+// ═══════════════════════════════════════════════════════
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch{return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+
+// ═══════════════════════════════════════════════════════
+// 全域狀態
+// ═══════════════════════════════════════════════════════
+let CU='u1'; // current unit
+let currentMode='quiz';
+
+// Quiz
+let qzQs=[],qzIdx=0,qzScore=0,qzCombo=0,qzBest=0,qzRunning=false;
+
+// Sprint
+let spQs=[],spIdx=0,spScore=0,spCombo=0,spBest=0,spRunning=false;
+let spInterval=null,spStartTime=0,spTime=5000; // 5 seconds
+
+// Memory
+let memCards=[],memFlipped=[],memMatchCount=0,memTryCount=0,memCanFlip=true;
+
+// ═══════════════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════════════
+function onUnitChange(){
+  CU=document.getElementById('unitSel').value;
+  document.getElementById('unitBadge').textContent='📝 '+MATH_UNITS[CU].qs.length+' 題・🃏 '+MATH_UNITS[CU].pairs.length+' 配對組';
+  resetAll();
+}
+function switchMode(mode){
+  currentMode=mode;
+  document.querySelectorAll('.mode-tab').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  document.getElementById('modeQuiz').classList.toggle('hidden',mode!=='quiz');
+  document.getElementById('modeSprint').classList.toggle('hidden',mode!=='sprint');
+  document.getElementById('modeMemory').classList.toggle('hidden',mode!=='memory');
+  resetAll();
+}
+function resetAll(){resetQuiz();resetSprint();}
+
+// ═══════════════════════════════════════════════════════
+// 🎯 選擇搶答
+// ═══════════════════════════════════════════════════════
+function startQuiz(){
+  qzQs=shuffle(MATH_UNITS[CU].qs);
+  qzIdx=0;qzScore=0;qzCombo=0;
+  qzBest=lsGet('mq_best_'+CU)||0;
+  document.getElementById('qzBest').textContent=qzBest;
+  document.getElementById('qzScore').textContent=0;
+  document.getElementById('qzCombo').textContent=0;
+  qzRunning=true;
+  showQzQ();
+}
+function resetQuiz(){
+  qzRunning=false;
+  document.getElementById('qzBanner').textContent='選好單元後按「開始搶答」🎯';
+  document.getElementById('qzGrid').innerHTML='';
+  document.getElementById('qzComboFlash').innerHTML='';
+}
+function showQzQ(){
+  if(!qzRunning)return;
+  if(qzIdx>=qzQs.length){qzQs=shuffle(MATH_UNITS[CU].qs);qzIdx=0;}
+  const q=qzQs[qzIdx];
+  document.getElementById('qzBanner').textContent=q.q;
+  renderOpts('qzGrid',shuffle(q.opts),q.a,answerQuiz);
+}
+function renderOpts(gridId,opts,correct,cb){
+  const grid=document.getElementById(gridId);
+  grid.innerHTML='';
+  opts.forEach(o=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-opt';
+    btn.textContent=o;
+    btn.addEventListener('click',()=>cb(btn,o,correct,opts));
+    grid.appendChild(btn);
+  });
+}
+function answerQuiz(btn,chosen,correct){
+  if(!qzRunning)return;
+  const ok=chosen===correct;
+  if(ok){
+    qzCombo++;
+    qzScore+=10+Math.min(qzCombo-1,5)*5;
+    btn.classList.add('correct');
+    if(qzCombo>=3) showComboFlash('qzComboFlash','🔥 '+qzCombo+' 連！+'+Math.min(qzCombo-1,5)*5);
+  }else{
+    qzCombo=0;
+    btn.classList.add('wrong');
+    document.querySelectorAll('#qzGrid .quiz-opt').forEach(b=>{
+      if(b.textContent===correct)b.classList.add('correct');
+    });
+  }
+  document.querySelectorAll('#qzGrid .quiz-opt').forEach(b=>b.classList.add('disabled'));
+  document.getElementById('qzScore').textContent=qzScore;
+  document.getElementById('qzCombo').textContent=qzCombo;
+  if(qzScore>qzBest){qzBest=qzScore;lsSet('mq_best_'+CU,qzBest);document.getElementById('qzBest').textContent=qzBest;}
+  qzIdx++;
+  setTimeout(showQzQ,ok?850:1600);
+}
+
+// ═══════════════════════════════════════════════════════
+// ⚡ 計時衝刺
+// ═══════════════════════════════════════════════════════
+function startSprint(){
+  spQs=shuffle(MATH_UNITS[CU].qs);
+  spIdx=0;spScore=0;spCombo=0;
+  spBest=lsGet('ms_best_'+CU)||0;
+  document.getElementById('spBest').textContent=spBest;
+  document.getElementById('spScore').textContent=0;
+  document.getElementById('spCombo').textContent=0;
+  spRunning=true;
+  document.getElementById('spTimerWrap').style.display='block';
+  showSpQ();
+}
+function resetSprint(){
+  spRunning=false;
+  if(spInterval){clearInterval(spInterval);spInterval=null;}
+  document.getElementById('spBanner').textContent='選好單元後按「開始衝刺」⚡';
+  document.getElementById('spGrid').innerHTML='';
+  document.getElementById('spComboFlash').innerHTML='';
+  document.getElementById('spTimerWrap').style.display='none';
+  document.getElementById('spTimerText').textContent='';
+}
+function showSpQ(){
+  if(!spRunning)return;
+  if(spIdx>=spQs.length){spQs=shuffle(MATH_UNITS[CU].qs);spIdx=0;}
+  const q=spQs[spIdx];
+  document.getElementById('spBanner').textContent=q.q;
+  renderOpts('spGrid',shuffle(q.opts),q.a,answerSprint);
+  // start timer
+  if(spInterval)clearInterval(spInterval);
+  spStartTime=Date.now();
+  spInterval=setInterval(updateSpTimer,50);
+  document.getElementById('spTimerBar').style.width='100%';
+}
+function updateSpTimer(){
+  if(!spRunning){clearInterval(spInterval);return;}
+  const elapsed=Date.now()-spStartTime;
+  const pct=Math.max(0,(1-elapsed/spTime)*100);
+  document.getElementById('spTimerBar').style.width=pct+'%';
+  const rem=Math.ceil((spTime-elapsed)/1000);
+  document.getElementById('spTimerText').textContent='剩餘 '+Math.max(0,rem)+' 秒';
+  if(elapsed>=spTime){
+    // time out
+    clearInterval(spInterval);
+    spInterval=null;
+    spCombo=0;
+    document.getElementById('spCombo').textContent=0;
+    // show correct answer
+    const q=spQs[spIdx%spQs.length];
+    document.querySelectorAll('#spGrid .quiz-opt').forEach(b=>{
+      if(b.textContent===q.a)b.classList.add('correct');
+      b.classList.add('disabled');
+    });
+    document.getElementById('spBanner').textContent='⏰ 時間到！正確答案：'+q.a;
+    spIdx++;
+    setTimeout(showSpQ,1500);
+  }
+}
+function answerSprint(btn,chosen,correct){
+  if(!spRunning)return;
+  if(spInterval){clearInterval(spInterval);spInterval=null;}
+  document.getElementById('spTimerBar').style.width='0%';
+  const elapsed=Date.now()-spStartTime;
+  const ok=chosen===correct;
+  if(ok){
+    // Score by speed: faster = more points
+    let pts=elapsed<1500?20:elapsed<2500?15:elapsed<3500?10:5;
+    spCombo++;
+    pts+=Math.min(spCombo-1,4)*3;
+    spScore+=pts;
+    btn.classList.add('correct');
+    document.getElementById('spBanner').textContent='✅ 答對了！+'+pts+' 分';
+    if(spCombo>=3) showComboFlash('spComboFlash','🔥 '+spCombo+' 連！');
+  }else{
+    spCombo=0;
+    btn.classList.add('wrong');
+    document.querySelectorAll('#spGrid .quiz-opt').forEach(b=>{
+      if(b.textContent===correct)b.classList.add('correct');
+    });
+    document.getElementById('spBanner').textContent='❌ 正確答案是：'+correct;
+  }
+  document.querySelectorAll('#spGrid .quiz-opt').forEach(b=>b.classList.add('disabled'));
+  document.getElementById('spScore').textContent=spScore;
+  document.getElementById('spCombo').textContent=spCombo;
+  if(spScore>spBest){spBest=spScore;lsSet('ms_best_'+CU,spBest);document.getElementById('spBest').textContent=spBest;}
+  spIdx++;
+  setTimeout(showSpQ,ok?800:1500);
+}
+
+// ═══════════════════════════════════════════════════════
+// 🃏 配對翻牌
+// ═══════════════════════════════════════════════════════
+function startMemory(){
+  const n=parseInt(document.getElementById('memPairs').value);
+  const pool=shuffle(MATH_UNITS[CU].pairs).slice(0,n);
+  memCards=[];
+  pool.forEach((p,i)=>{
+    memCards.push({pairId:i,side:'L',text:p.left,matched:false});
+    memCards.push({pairId:i,side:'R',text:p.right,matched:false});
+  });
+  memCards=shuffle(memCards);
+  memFlipped=[];memMatchCount=0;memTryCount=0;memCanFlip=true;
+  renderMemGrid();
+  document.getElementById('memTries').textContent=0;
+  document.getElementById('memMatched').textContent=0;
+  const best=lsGet('mm_best_'+CU)||{};
+  document.getElementById('memBest').textContent=best[n]?(best[n]+' 次'):'—';
+  document.getElementById('memWin').innerHTML='';
+}
+function renderMemGrid(){
+  const grid=document.getElementById('memGrid');
+  const cols=memCards.length<=8?4:4;
+  grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  grid.innerHTML=memCards.map((c,i)=>`
+    <div class="mem-card" id="mc${i}" onclick="flipCard(${i})">
+      <div class="front">🔢</div>
+      <div class="back">${c.text}</div>
+    </div>
+  `).join('');
+}
+function flipCard(idx){
+  if(!memCanFlip)return;
+  const c=memCards[idx];
+  if(c.matched||memFlipped.includes(idx))return;
+  document.getElementById('mc'+idx).classList.add('flipped');
+  memFlipped.push(idx);
+  if(memFlipped.length===2){
+    memTryCount++;
+    document.getElementById('memTries').textContent=memTryCount;
+    memCanFlip=false;
+    const [a,b]=memFlipped;
+    if(memCards[a].pairId===memCards[b].pairId&&memCards[a].side!==memCards[b].side){
+      // 配對成功！
+      memCards[a].matched=memCards[b].matched=true;
+      document.getElementById('mc'+a).classList.add('matched');
+      document.getElementById('mc'+b).classList.add('matched');
+      memMatchCount++;
+      document.getElementById('memMatched').textContent=memMatchCount;
+      memFlipped=[];memCanFlip=true;
+      if(memMatchCount===memCards.length/2){
+        const n=parseInt(document.getElementById('memPairs').value);
+        const best=lsGet('mm_best_'+CU)||{};
+        const isRecord=!best[n]||memTryCount<best[n];
+        if(isRecord){best[n]=memTryCount;lsSet('mm_best_'+CU,best);document.getElementById('memBest').textContent=memTryCount+' 次';}
+        document.getElementById('memWin').innerHTML=`
+          <div class="win-banner">
+            🎉 全部配對完成！共翻了 ${memTryCount} 次！
+            ${isRecord?'🏆 新紀錄！':''}
+            ${memTryCount<=memCards.length?'⭐ 超厲害！':'繼續加油！'}
+          </div>`;
+      }
+    }else{
+      setTimeout(()=>{
+        document.getElementById('mc'+a).classList.remove('flipped');
+        document.getElementById('mc'+b).classList.remove('flipped');
+        memFlipped=[];memCanFlip=true;
+      },900);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 共用：Combo 閃現
+// ═══════════════════════════════════════════════════════
+function showComboFlash(elId,msg){
+  const el=document.getElementById(elId);
+  el.innerHTML='<div class="combo-flash">'+msg+'</div>';
+  setTimeout(()=>{if(el)el.innerHTML='';},1000);
+}
+
+// ═══════════════════════════════════════════════════════
+// 初始化
+// ═══════════════════════════════════════════════════════
+onUnitChange();
+</script>
+</body>
+</html>
