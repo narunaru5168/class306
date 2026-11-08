@@ -114,13 +114,70 @@ select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:va
   .question-banner{font-size:1.15rem;}
   .memory-grid{grid-template-columns:repeat(3,1fr);}
 }
+
+/* ── 星星挑戰 Banner ── */
+#challengeBanner{
+  display:none;position:sticky;top:64px;z-index:90;
+  background:linear-gradient(90deg,#7c3aed,#a855f7,#ec4899);
+  color:#fff;padding:10px 20px;font-family:'Baloo 2',cursive;
+  font-size:1rem;font-weight:800;text-align:center;
+  box-shadow:0 4px 16px rgba(124,58,237,.4);
+  transition:background .5s;
+}
+#challengeBanner.challenge-success{background:linear-gradient(90deg,#16a34a,#22c55e,#84cc16);}
+#challengeBanner.challenge-timeup{background:linear-gradient(90deg,#b91c1c,#ef4444,#f97316);}
+.challenge-time-pill{
+  display:none;background:rgba(124,58,237,.12);border:2px solid #a855f7;
+  border-radius:999px;padding:4px 14px;font-weight:800;font-size:.85rem;
+  color:#7c3aed;
+}
+.challenge-time-pill.visible{display:inline-flex;align-items:center;gap:5px;}
+.challenge-time-pill .tval{font-size:1rem;}
+
+/* ── 鎖定 Overlay ── */
+#challengeLockOverlay{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(15,10,40,.82);backdrop-filter:blur(6px);
+  flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+#challengeLockOverlay.show{display:flex;}
+#challengeLockMsg{
+  background:#fff;border-radius:24px;padding:36px 40px;
+  font-family:'Baloo 2',cursive;font-size:1.3rem;font-weight:800;
+  text-align:center;color:#1e3a5f;max-width:360px;line-height:1.6;
+  box-shadow:0 12px 48px rgba(0,0,0,.3);
+}
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+  authDomain:"tpedusso-257723.firebaseapp.com",
+  databaseURL:"https://tpedusso-257723-default-rtdb.firebaseio.com",
+  projectId:"tpedusso-257723",
+  storageBucket:"tpedusso-257723.appspot.com",
+  messagingSenderId:"105193372361",
+  appId:"1:105193372361:web:5591b76255cb86cf566b18"
+});
+</script>
 </head>
 <body>
 <header class="topbar">
   <div class="logo">🔢 數學練習・三年六班</div>
   <a href="index.html">← 回主頁</a>
 </header>
+
+<!-- 星星挑戰 Banner -->
+<div id="challengeBanner"></div>
+
+<!-- 鎖定 Overlay（時間到） -->
+<div id="challengeLockOverlay">
+  <div id="challengeLockMsg"></div>
+  <button class="btn btn-primary" onclick="challengeLockContinue()" style="font-size:1.1rem;padding:14px 32px;">確定</button>
+</div>
 
 <div class="wrap">
 
@@ -162,6 +219,7 @@ select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:va
       <span class="stat-pill">⭐ <span id="qzScore">0</span></span>
       <span class="stat-pill">🔥 連續 <span id="qzCombo">0</span></span>
       <span class="stat-pill">🏆 最高 <span id="qzBest">0</span></span>
+      <span class="challenge-time-pill" id="quizTimePill">⏱ <span class="tval" id="quizTimeVal">90</span>s</span>
     </div>
     <div class="question-banner" id="qzBanner">選好單元後按「開始搶答」🎯</div>
     <div class="quiz-grid" id="qzGrid"></div>
@@ -177,6 +235,7 @@ select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:va
       <span class="stat-pill">⭐ <span id="spScore">0</span></span>
       <span class="stat-pill">🔥 連續 <span id="spCombo">0</span></span>
       <span class="stat-pill">🏆 最高 <span id="spBest">0</span></span>
+      <span class="challenge-time-pill" id="sprintTimePill">⏱ <span class="tval" id="sprintTimeVal">90</span>s</span>
     </div>
     <div class="question-banner" id="spBanner">選好單元後按「開始衝刺」⚡</div>
     <div class="timer-bar-wrap" id="spTimerWrap" style="display:none">
@@ -203,6 +262,7 @@ select{font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;color:va
       <span class="stat-pill">👆 翻了 <span id="memTries">0</span> 次</span>
       <span class="stat-pill">✅ 配到 <span id="memMatched">0</span> 組</span>
       <span class="stat-pill">🏆 最少 <span id="memBest">—</span></span>
+      <span class="challenge-time-pill" id="memoryTimePill">⏱ <span class="tval" id="memoryTimeVal">90</span>s</span>
     </div>
     <div class="memory-grid" id="memGrid"></div>
     <div id="memWin"></div>
@@ -501,6 +561,7 @@ function switchMode(mode){
   document.getElementById('modeSprint').classList.toggle('hidden',mode!=='sprint');
   document.getElementById('modeMemory').classList.toggle('hidden',mode!=='memory');
   resetAll();
+  if(challengeMode) showCurrentTimePill(); // 更新計時膠囊顯示
 }
 function resetAll(){resetQuiz();resetSprint();}
 
@@ -560,6 +621,7 @@ function answerQuiz(btn,chosen,correct){
   document.getElementById('qzScore').textContent=qzScore;
   document.getElementById('qzCombo').textContent=qzCombo;
   if(qzScore>qzBest){qzBest=qzScore;lsSet('mq_best_'+CU,qzBest);document.getElementById('qzBest').textContent=qzBest;}
+  if(challengeMode&&!challengeDone&&qzScore>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(qzScore);
   qzIdx++;
   setTimeout(showQzQ,ok?850:1600);
 }
@@ -650,6 +712,7 @@ function answerSprint(btn,chosen,correct){
   document.getElementById('spScore').textContent=spScore;
   document.getElementById('spCombo').textContent=spCombo;
   if(spScore>spBest){spBest=spScore;lsSet('ms_best_'+CU,spBest);document.getElementById('spBest').textContent=spBest;}
+  if(challengeMode&&!challengeDone&&spScore>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(spScore);
   spIdx++;
   setTimeout(showSpQ,ok?800:1500);
 }
@@ -704,6 +767,7 @@ function flipCard(idx){
       memMatchCount++;
       document.getElementById('memMatched').textContent=memMatchCount;
       memFlipped=[];memCanFlip=true;
+      if(challengeMode&&!challengeDone&&memMatchCount*10>=CHALLENGE_TARGET_SCORE) completeChallengeSuccess(memMatchCount*10);
       if(memMatchCount===memCards.length/2){
         const n=parseInt(document.getElementById('memPairs').value);
         const best=lsGet('mm_best_'+CU)||{};
@@ -736,9 +800,166 @@ function showComboFlash(elId,msg){
 }
 
 // ═══════════════════════════════════════════════════════
+// 星星挑戰（抽抽樂）
+// ═══════════════════════════════════════════════════════
+const CHALLENGE_TARGET_SCORE = 50;   // 挑戰目標分數
+const CHALLENGE_TIME_LIMIT   = 90;   // 挑戰限時（秒）
+const CHALLENGE_STAR_REWARD  = 3;    // 達標獲得星星數
+
+let challengeMode        = false;
+let challengeStudentId   = '';
+let challengeStudentName = '這位小朋友';
+let challengePendingCid  = '';
+let challengeEndAt       = 0;        // timestamp-based, handles tab switch
+let challengeTimerIntvl  = null;
+let challengeDone        = false;    // 防止重複觸發
+
+// 取得目前模式的分數
+function getCurrentChallengeScore(){
+  if(currentMode==='quiz')   return qzScore;
+  if(currentMode==='sprint') return spScore;
+  if(currentMode==='memory') return memMatchCount*10; // 每配一對＝10分
+  return 0;
+}
+
+// 顯示 Banner（挑戰開始時呼叫）
+function showChallengeBanner(){
+  const el=document.getElementById('challengeBanner');
+  el.style.display='block';
+  updateChallengeBannerText();
+  // 顯示目前模式的計時膠囊
+  showCurrentTimePill();
+}
+
+// 更新 Banner 文字
+function updateChallengeBannerText(){
+  if(!challengeMode) return;
+  const score=getCurrentChallengeScore();
+  const secsLeft=challengeEndAt>0?Math.max(0,Math.ceil((challengeEndAt-Date.now())/1000)):CHALLENGE_TIME_LIMIT;
+  const el=document.getElementById('challengeBanner');
+  el.textContent=`🌟 ${challengeStudentName} 的挑戰！目標 ${CHALLENGE_TARGET_SCORE} 分・目前 ${score} 分・剩 ${secsLeft} 秒`;
+}
+
+// 只顯示目前模式的計時膠囊
+function showCurrentTimePill(){
+  ['quiz','sprint','memory'].forEach(m=>{
+    const pill=document.getElementById(m==='quiz'?'quizTimePill':m==='sprint'?'sprintTimePill':'memoryTimePill');
+    if(pill) pill.classList.toggle('visible', m===currentMode && challengeMode);
+  });
+}
+
+// 更新所有計時膠囊數值
+function updateTimePills(secsLeft){
+  document.getElementById('quizTimeVal').textContent   = secsLeft;
+  document.getElementById('sprintTimeVal').textContent = secsLeft;
+  document.getElementById('memoryTimeVal').textContent = secsLeft;
+}
+
+// 開始計時器（呼叫一次即可，用 timestamp 計算剩餘）
+function startChallengeTimers(){
+  if(challengeTimerIntvl) clearInterval(challengeTimerIntvl);
+  challengeEndAt = Date.now() + CHALLENGE_TIME_LIMIT*1000;
+  challengeTimerIntvl = setInterval(tickChallengeTimer, 500);
+}
+
+function tickChallengeTimer(){
+  if(!challengeMode||challengeDone) return;
+  const secsLeft=Math.max(0,Math.ceil((challengeEndAt-Date.now())/1000));
+  updateTimePills(secsLeft);
+  updateChallengeBannerText();
+
+  // 檢查是否達標
+  if(getCurrentChallengeScore()>=CHALLENGE_TARGET_SCORE){
+    completeChallengeSuccess(getCurrentChallengeScore());
+    return;
+  }
+  // 時間到
+  if(secsLeft<=0){
+    challengeTimeUp();
+  }
+}
+
+// 達標！
+function completeChallengeSuccess(finalScore){
+  if(challengeDone) return;
+  challengeDone=true;
+  clearInterval(challengeTimerIntvl);
+  const el=document.getElementById('challengeBanner');
+  el.classList.add('challenge-success');
+  el.textContent=`🎉 太棒了！${challengeStudentName} 達標 ${finalScore} 分，獲得 ${CHALLENGE_STAR_REWARD} 顆星星！`;
+  sendChallengeStarAward(finalScore);
+  clearPendingChallenge();
+}
+
+// 時間到！
+function challengeTimeUp(){
+  if(challengeDone) return;
+  challengeDone=true;
+  clearInterval(challengeTimerIntvl);
+  updateTimePills(0);
+  const el=document.getElementById('challengeBanner');
+  el.classList.add('challenge-timeup');
+  el.textContent=`⏰ 時間到！${challengeStudentName} 本次獲得 ${getCurrentChallengeScore()} 分，繼續加油！`;
+  challengeLockAllGames();
+  const overlay=document.getElementById('challengeLockOverlay');
+  document.getElementById('challengeLockMsg').innerHTML=
+    `⏰ 時間到！<br>本次得到 <b>${getCurrentChallengeScore()}</b> 分<br>目標是 <b>${CHALLENGE_TARGET_SCORE}</b> 分<br><br>繼續練習，下次加油！💪`;
+  overlay.classList.add('show');
+}
+
+// 鎖定所有遊戲（讓按鈕無法互動）
+function challengeLockAllGames(){
+  qzRunning=false; spRunning=false;
+  if(spInterval) clearInterval(spInterval);
+  // 覆蓋整個 wrap 讓點擊無效（overlay 已遮住全頁）
+}
+
+// 關閉 overlay，清除 URL 參數
+function challengeLockContinue(){
+  document.getElementById('challengeLockOverlay').classList.remove('show');
+  location.href=location.pathname; // 清掉 URL 參數
+}
+
+// 寫入 Firebase：待發送星星
+function sendChallengeStarAward(finalScore){
+  try{
+    firebase.database().ref('class306/pendingStarAwards').push({
+      studentId:   challengeStudentId,
+      studentName: challengeStudentName,
+      amount:      CHALLENGE_STAR_REWARD,
+      reason:      '數學練習遊戲挑戰達標（'+finalScore+'分）',
+      timestamp:   Date.now()
+    });
+  }catch(e){console.error('sendChallengeStarAward error',e);}
+}
+
+// 清除 Firebase 中的待接受挑戰紀錄
+function clearPendingChallenge(){
+  if(!challengePendingCid) return;
+  try{
+    firebase.database().ref('class306/pendingChallenges/'+challengePendingCid).remove();
+  }catch(e){console.error('clearPendingChallenge error',e);}
+}
+
+// ═══════════════════════════════════════════════════════
 // 初始化
 // ═══════════════════════════════════════════════════════
 onUnitChange();
+
+// 從幸運轉盤網址帶入挑戰參數
+(function initChallengeFromUrl(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(params.get('challenge')==='1'){
+      challengeMode        = true;
+      challengeStudentId   = params.get('sid')  || '';
+      challengeStudentName = params.get('name') || '這位小朋友';
+      challengePendingCid  = params.get('cid')  || '';
+      showChallengeBanner();
+      startChallengeTimers();
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
