@@ -4964,6 +4964,7 @@ const GROUP_COLORS = ['#f97316','#eab308','#22c55e','#3b82f6','#a855f7','#ec4899
 // 歸零前會把當天的勾選人數累加進 teamScores[].scores 的累計總分。如果某個項目「當天全組都打勾」，
 // 當下立刻幫全組每位學生各自的個人星星 +1（一天最多四個項目、每項最多 +1，不等到結算才發）。
 let teamDailyChecks = { date: null, checks: {}, starsAwarded: {} };
+let teamDataLoaded = false; // 防止資料未載入前誤觸重置
 // checks: { studentId: { 項目名稱: true } }　starsAwarded: { teamId: { 項目名稱: true } } 防止同一天同一組同一項目重複加星
 // ─── 小組競賽「課堂秩序」自動抓違規：掃描學生今天的扣星紀錄，關鍵字對到的話就提醒老師、預設不給勾 ───
 const DISCIPLINE_KEYWORDS_DEFAULT = ['秩序','吵','鬧','喧嘩','聊天','講話','插話','頂嘴','不雅','奔跑','搗蛋','違規','罵','講不雅字','大聲','吵架','打架'];
@@ -5271,6 +5272,11 @@ async function loadData() {
   // fortuneSlips 第一次使用（雲端跟本機都還沒存過）就帶入預設的那組詩籤內容，
   // 之後只要存過一次（就算全部刪光變成空陣列），就尊重老師自己管理的內容，不會再被預設內容蓋回去。
   if(!Array.isArray(fortuneSlips)) fortuneSlips = FORTUNE_SLIPS_DEFAULT.map(s=>({...s}));
+
+  // 資料已全部載入，解鎖每日加星重置機制
+  teamDataLoaded = true;
+  // 資料載入後立即確認日期是否需要換日
+  ensureTeamDailyChecksFresh();
 }
 
 
@@ -7015,10 +7021,13 @@ function finalizeTeamDailyChecks(){
   });
 }
 function ensureTeamDailyChecksFresh(){
+  if(!teamDataLoaded) return; // 資料尚未從 Firebase 載入，不能重置
   const key = todayKey();
   if(teamDailyChecks.date === key) return;
   finalizeTeamDailyChecks();
   teamDailyChecks = { date: key, checks: {}, starsAwarded: {} };
+  // 自動換日後立即存回 Firebase
+  saveField('class306/teamDailyChecks', teamDailyChecks, 'cls_teamDailyChecks');
 }
 // 這個項目「今天」勾選的人數（還沒摺進累計總分之前）
 function teamCategoryTodayCount(teamIdx, cat){
@@ -11471,6 +11480,11 @@ async function initApp() {
   try { setupMainDataListeners(); } catch(e) { console.warn('即時同步監聽啟動失敗', e); }
   // 載入非洲海報任務
   try { loadAfricaTasks(); } catch(e) { console.warn('Africa tasks init failed', e); }
+
+  // 每分鐘自動檢查是否需要換日（午夜時自動結算前一天的小組加星並重置）
+  setInterval(()=>{
+    if(teamDataLoaded) ensureTeamDailyChecksFresh();
+  }, 60000);
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';
