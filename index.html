@@ -10342,7 +10342,7 @@ function renderAfricaRoleSlots(){
       // 有選同學且此格已被該同學佔據也要能換
       const isMySlot=asgn&&String(asgn.sid)===africaSelSid;
       html+=`<div style="padding:9px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid ${gc}1a;cursor:${canAssign?'pointer':'default'};background:${canAssign?gc+'18':'transparent'};"
-        onclick="${canAssign?`africaAssignRole('${key}')`:''}>`;
+        onclick="${canAssign?`africaAssignRole('${key}')`:''}">`;
       html+=`<span style="font-size:.85rem;">${role.icon}</span>`;
       html+=`<div style="flex:1;min-width:0;">`;
       html+=`<div style="font-size:.78rem;font-weight:800;${done?'color:#94a3b8;text-decoration:line-through;':''}">${role.title}</div>`;
