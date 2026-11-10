@@ -1294,6 +1294,19 @@
     </div>
   </div>
 
+  <!-- 🌍 非洲美食海報任務追蹤 -->
+  <div id="africaPanelWrap" style="margin-top:16px;display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 14px;background:linear-gradient(135deg,#fff3e0,#ffe0c2);border-radius:14px;border-left:5px solid #d94e1a;"
+         onclick="toggleAfricaPanel()">
+      <div>
+        <div style="font-weight:800;font-size:.95rem;">🌍 非洲美食海報任務</div>
+        <div id="africaProgressText" style="font-size:.74rem;color:#8b6240;margin-top:2px;"></div>
+      </div>
+      <span id="africaToggleArrow" style="font-size:1.1rem;transition:transform .2s;">▼</span>
+    </div>
+    <div id="africaPanel" style="display:none;margin-top:8px;"></div>
+  </div>
+
   <div id="chanceReminderBanner" style="display:none;margin-top:14px;padding:12px 16px;border-radius:14px;background:linear-gradient(135deg,#fee2e2,#fecaca);border-left:6px solid var(--coral);cursor:pointer;"
        onclick="showPage('students');">
     <div style="font-weight:800;font-size:.95rem;color:#991b1b;">⚠️ <span id="chanceReminderText"></span>（點我前往學生列表）</div>
@@ -1876,6 +1889,10 @@
   <div class="section-title" style="margin-top:24px;">🎮 語詞遊戲高手榜</div>
   <div class="lead">學生在語詞練習遊戲頁面選了自己的名字之後，紀錄就會同步到這裡（貪食蛇／選擇搶答／跑酷比最高分，記憶配對比最少翻牌次數）。</div>
   <div id="gameLeaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;margin-top:10px;"></div>
+
+  <div class="section-title" style="margin-top:28px;">🔢 數學遊戲高手榜</div>
+  <div class="lead">學生在數學練習遊戲頁面選了自己的名字之後，紀錄就會同步到這裡（選擇搶答／計時衝刺比各單元最高分）。</div>
+  <div id="mathGameLeaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;margin-top:10px;"></div>
 </div>
 
 <!-- ─────────────── CORRECTION TRACKER ─────────────── -->
@@ -5339,7 +5356,7 @@ function showPage(name) {
   document.querySelectorAll('.topbar .nav-row button').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   event && event.target.classList.add('active');
-  if(name==='rank') { renderLeaderboard(); renderGameLeaderboard(); }
+  if(name==='rank') { renderLeaderboard(); renderGameLeaderboard(); renderMathLeaderboard(); }
   if(name==='grades') populateGradeSelect();
   if(name==='reward') { populateWheelSelect(); populateDartSelect(); }
   if(name==='home') { updateStats(); renderRecognitionFeed(); }
@@ -6473,6 +6490,7 @@ function updateStats(){
   const king=students.sort((a,b)=>b.stars-a.stars)[0];
   document.getElementById('statKing').textContent=king?king.name+' '+king.avatar:'-';
   students.sort((a,b)=>a.sid.localeCompare(b.sid));
+  document.getElementById('statMissions').textContent=Object.keys(africaDone||{}).length;
 
   // 提醒：已達抽選次數上限、卻還在累積星星進度的學生（正在浪費機會）
   const waiting = students.filter(s => (s.spinChances||0) >= MAX_STORED_CHANCES && (s.chanceProgress||0) > 0);
@@ -9480,6 +9498,44 @@ function renderGameLeaderboard(){
   });
 }
 
+// 數學練習遊戲的最高紀錄榜：
+// 選擇搶答（math_quiz）和計時衝刺（math_sprint）取各單元最高分，
+// 再取全部單元中的最高分作為代表分數，分數越高越前面。
+function renderMathLeaderboard(){
+  const container = document.getElementById('mathGameLeaderboard');
+  if(!container) return;
+  if(!(useCloud && db)){
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">雲端連線未啟用，暫時看不到數學紀錄</div>';
+    return;
+  }
+  db.ref('class306/gameScores').get().then(snap=>{
+    const data = snap.exists() ? (snap.val()||{}) : {};
+    const rows = students.map(s=>{
+      const rec = data[s.id] || {};
+      let bestScore = 0;
+      // 取 math_quiz 和 math_sprint 中各單元最高分的最大值
+      ['math_quiz','math_sprint'].forEach(mode=>{
+        Object.values(rec[mode]||{}).forEach(v=>{ if(typeof v==='number' && v>bestScore) bestScore=v; });
+      });
+      return { s, bestScore };
+    }).filter(r => r.bestScore > 0)
+      .sort((a,b)=> b.bestScore - a.bestScore);
+
+    container.innerHTML = '';
+    rows.forEach((r,i)=>{
+      const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const rankIcon  = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+      const div = document.createElement('div');
+      div.className = 'lb-row';
+      div.innerHTML = `<div class="lb-rank ${rankClass}">${rankIcon}</div><div style="font-size:1rem;flex-shrink:0;">${r.s.avatar||'🙂'}</div><div class="lb-name">${r.s.name}</div><div class="lb-stars"><span class="s">🔢</span>${r.bestScore}</div>`;
+      container.appendChild(div);
+    });
+    if(!rows.length) container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">還沒有人玩過數學練習遊戲喔！</div>';
+  }).catch(()=>{
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-weight:700;">讀取失敗，稍後再試</div>';
+  });
+}
+
 // ─── WHEEL ───
 // 顏色對應下方「獎勵清單說明」的四大類，方便老師和學生一眼對照
 // ─── 鼓勵小卡內容庫 ───
@@ -10044,6 +10100,120 @@ function undoLastDartThrow(){
   toast(`↩️ 已撤銷「${lastDartRecord.studentName}」的這次飛鏢挑戰`);
   lastDartRecord = null;
 }
+
+// ─── 🌍 非洲美食海報任務 ─────────────────────────────
+const AFRICA_ROLES=[
+  {g:1,m:1,icon:'📐',title:'版面規劃師'},
+  {g:1,m:2,icon:'✍️',title:'標題書法家'},
+  {g:1,m:3,icon:'🗺️',title:'非洲地圖師'},
+  {g:1,m:4,icon:'🏷️',title:'班級小名牌'},
+  {g:2,m:1,icon:'📍',title:'地理小達人'},
+  {g:2,m:2,icon:'🍽️',title:'飲食文化作家'},
+  {g:2,m:3,icon:'🦁',title:'非洲動物畫家'},
+  {g:2,m:4,icon:'💡',title:'趣聞收集員'},
+  {g:3,m:1,icon:'🌾',title:'庫斯庫斯介紹員'},
+  {g:3,m:2,icon:'🍅',title:'傑洛夫飯介紹員'},
+  {g:3,m:3,icon:'🫓',title:'因吉拉介紹員'},
+  {g:3,m:4,icon:'🌽',title:'烏嘎利介紹員'},
+  {g:3,m:5,icon:'📌',title:'第三組排版長'},
+  {g:4,m:1,icon:'🫕',title:'塔吉鍋介紹員'},
+  {g:4,m:2,icon:'🍢',title:'蘇亞烤肉介紹員'},
+  {g:4,m:3,icon:'🫘',title:'富爾豆泥介紹員'},
+  {g:4,m:4,icon:'🍩',title:'普弗圖介紹員'},
+  {g:4,m:5,icon:'📌',title:'第四組排版長'},
+  {g:5,m:1,icon:'🌶️',title:'香料介紹師'},
+  {g:5,m:2,icon:'🌱',title:'食材介紹師'},
+  {g:5,m:3,icon:'📝',title:'料理特色作家'},
+  {g:5,m:4,icon:'🔍',title:'台非對照員'},
+  {g:6,m:1,icon:'🎨',title:'花紋邊框師'},
+  {g:6,m:2,icon:'🖍️',title:'插圖上色師'},
+  {g:6,m:3,icon:'🏷️',title:'標題卡片師'},
+  {g:6,m:4,icon:'📌',title:'海報組裝長'},
+];
+const AFRICA_GC={1:'#d94e1a',2:'#c09000',3:'#257a46',4:'#1a62a8',5:'#7a228a',6:'#b03030'};
+const AFRICA_GN={1:'版面設計',2:'非洲介紹',3:'主食料理',4:'特色料理',5:'食材香料',6:'裝飾美化'};
+let africaAssign={}, africaDone={}, africaPanelOpen=false;
+
+async function loadAfricaTasks(){
+  if(!useCloud||!db) return;
+  try{
+    const [as,ds]=await Promise.all([
+      db.ref('class306/posterTasks/africa').once('value'),
+      db.ref('class306/posterTasks/africaDone').once('value'),
+    ]);
+    if(as.exists()) africaAssign=as.val()||{};
+    if(ds.exists()) africaDone=ds.val()||{};
+  }catch(e){ console.warn('Africa tasks load failed',e); }
+  const wrap=document.getElementById('africaPanelWrap');
+  if(wrap) wrap.style.display=Object.keys(africaAssign).length?'':'none';
+  renderAfricaPanel();
+  updateStats();
+}
+
+function toggleAfricaPanel(){
+  africaPanelOpen=!africaPanelOpen;
+  const panel=document.getElementById('africaPanel');
+  const arrow=document.getElementById('africaToggleArrow');
+  if(panel) panel.style.display=africaPanelOpen?'':'none';
+  if(arrow) arrow.style.transform=africaPanelOpen?'rotate(180deg)':'';
+  if(africaPanelOpen) renderAfricaPanel();
+}
+
+function toggleAfricaDone(key,e){
+  if(e) e.stopPropagation();
+  if(africaDone[key]) delete africaDone[key];
+  else africaDone[key]={done:true,at:new Date().toLocaleDateString('zh-TW')};
+  if(useCloud&&db){
+    Object.keys(africaDone).length>0
+      ? db.ref('class306/posterTasks/africaDone').set(africaDone)
+      : db.ref('class306/posterTasks/africaDone').remove();
+  }
+  renderAfricaPanel();
+  updateStats();
+  if(africaDone[key]) try{confetti();}catch(err){}
+}
+
+function renderAfricaPanel(){
+  const panel=document.getElementById('africaPanel');
+  const progText=document.getElementById('africaProgressText');
+  if(!panel) return;
+  const totalAssigned=Object.keys(africaAssign).length;
+  const totalDone=Object.keys(africaDone).length;
+  if(progText) progText.textContent=totalAssigned>0
+    ?`已完成 ${totalDone} / ${totalAssigned} 個任務`
+    :'尚未在海報派任工具派任同學';
+  if(!africaPanelOpen){panel.innerHTML='';return;}
+  const byGrp={};
+  for(let g=1;g<=6;g++) byGrp[g]=AFRICA_ROLES.filter(r=>r.g===g);
+  let html='<div style="display:flex;flex-direction:column;gap:6px;">';
+  for(let g=1;g<=6;g++){
+    const gc=AFRICA_GC[g];
+    html+=`<div style="background:${gc}0d;border-radius:10px;overflow:hidden;border:1.5px solid ${gc}33;">`;
+    html+=`<div style="padding:6px 12px;background:${gc}22;font-weight:800;font-size:.78rem;color:${gc};">第${g}組・${AFRICA_GN[g]}</div>`;
+    byGrp[g].forEach(role=>{
+      const key=role.g+'-'+role.m;
+      const asgn=africaAssign[key];
+      const done=!!africaDone[key];
+      html+=`<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;border-top:1px solid ${gc}1a;">`;
+      html+=`<span style="font-size:.8rem;">${role.icon}</span>`;
+      html+=`<div style="flex:1;min-width:0;">`;
+      html+=`<div style="font-size:.76rem;font-weight:800;${done?'color:#94a3b8;text-decoration:line-through;':''}">${role.title}</div>`;
+      html+=`<div style="font-size:.68rem;font-weight:700;color:${done?'#94a3b8':asgn?gc:'#cbd5e1'};">${asgn?asgn.name:'未派任'}</div>`;
+      html+='</div>';
+      if(asgn){
+        html+=`<button onclick="toggleAfricaDone('${key}',event)" style="padding:3px 9px;border-radius:50px;border:1.5px solid ${done?'#6ee7b7':'#cbd5e1'};cursor:pointer;font-family:inherit;font-size:.68rem;font-weight:800;background:${done?'#d1fae5':'#fff'};color:${done?'#065f46':'#94a3b8'};">${done?'✅ 完成':'○ 標記完成'}</button>`;
+      }else{
+        html+=`<div style="font-size:.7rem;color:#e2e8f0;">—</div>`;
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  panel.innerHTML=html;
+}
+// ─────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dartCanvas').addEventListener('click',function(e){
     if(dartsLeft<=0) return;
@@ -11137,6 +11307,8 @@ async function initApp() {
   try { setupPendingChallengesListener(); } catch(e) { console.warn(e); }
   // 開始即時監聽主要資料（學生、組別評分、互助小組），讓跨裝置修改能自動同步
   try { setupMainDataListeners(); } catch(e) { console.warn('即時同步監聽啟動失敗', e); }
+  // 載入非洲海報任務
+  try { loadAfricaTasks(); } catch(e) { console.warn('Africa tasks init failed', e); }
 
   // 一定要隱藏載入畫面
   document.getElementById('loadingOverlay').style.display = 'none';
