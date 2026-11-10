@@ -1,493 +1,272 @@
-<!doctype html>
-<title>非洲美食海報版面圖</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>非洲美食海報 · 版面配置圖</title>
 <style>
-:root {
-  --bg: #f5ede0; --fg: #2c1a0e; --muted: #8b6240; --card: #fff8ef;
-  --g1: #d94e1a; --g1a: rgba(217,78,26,.13); --g1b: rgba(217,78,26,.26);
-  --g2: #c09000; --g2a: rgba(192,144,0,.13); --g2b: rgba(192,144,0,.26);
-  --g3: #257a46; --g3a: rgba(37,122,70,.13); --g3b: rgba(37,122,70,.26);
-  --g4: #1a62a8; --g4a: rgba(26,98,168,.13); --g4b: rgba(26,98,168,.26);
-  --g5: #7a228a; --g5a: rgba(122,34,138,.13); --g5b: rgba(122,34,138,.26);
-  --g6: #b03030; --g6a: rgba(176,48,48,.13);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1a0f07; --fg: #f0e6d6; --muted: #c4a07a; --card: #221508;
-    --g1a: rgba(217,78,26,.22); --g1b: rgba(217,78,26,.38);
-    --g2a: rgba(192,144,0,.22); --g2b: rgba(192,144,0,.38);
-    --g3a: rgba(37,122,70,.22); --g3b: rgba(37,122,70,.38);
-    --g4a: rgba(26,98,168,.22); --g4b: rgba(26,98,168,.38);
-    --g5a: rgba(122,34,138,.22); --g5b: rgba(122,34,138,.38);
-    --g6a: rgba(176,48,48,.22);
-    color-scheme: dark;
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#f5f0e8;font-family:'Noto Sans TC',sans-serif;padding:20px 16px 40px;}
+  h1{text-align:center;font-size:1.3rem;color:#4a3520;margin-bottom:4px;letter-spacing:.05em;}
+  .subtitle{text-align:center;font-size:.82rem;color:#8a7060;margin-bottom:20px;}
+
+  /* ─── 展示板整體 ─── */
+  .board-wrap{max-width:720px;margin:0 auto;}
+  .board{
+    background:#e8e0d4;
+    border:3px solid #c8b89a;
+    border-radius:12px;
+    padding:14px;
+    box-shadow:0 4px 20px #0003;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    grid-template-rows:auto auto;
+    gap:10px;
   }
-}
-:root[data-theme="dark"] {
-  --bg: #1a0f07; --fg: #f0e6d6; --muted: #c4a07a; --card: #221508;
-  --g1a: rgba(217,78,26,.22); --g1b: rgba(217,78,26,.38);
-  --g2a: rgba(192,144,0,.22); --g2b: rgba(192,144,0,.38);
-  --g3a: rgba(37,122,70,.22); --g3b: rgba(37,122,70,.38);
-  --g4a: rgba(26,98,168,.22); --g4b: rgba(26,98,168,.38);
-  --g5a: rgba(122,34,138,.22); --g5b: rgba(122,34,138,.38);
-  --g6a: rgba(176,48,48,.22);
-  color-scheme: dark;
-}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg); color: var(--fg);
-  font-family: 'Noto Sans TC', sans-serif; font-size: 14px; line-height: 1.5;
-  padding-left: max(16px, env(safe-area-inset-left,0px));
-  padding-right: max(16px, env(safe-area-inset-right,0px));
-  padding-block: 0 32px;
-}
+  /* ─── 紙張卡片 ─── */
+  .paper{
+    border-radius:8px;
+    padding:14px 12px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    box-shadow:2px 3px 10px #0002, inset 0 1px 0 #fff3;
+    position:relative;
+    min-height:150px;
+  }
+  .paper-label{
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.08em;
+    opacity:.7;
+    text-transform:uppercase;
+    margin-bottom:2px;
+  }
+  .paper-group{
+    font-size:1.05rem;
+    font-weight:800;
+    line-height:1.2;
+  }
+  .paper-sub{
+    font-size:.78rem;
+    opacity:.85;
+    font-weight:600;
+  }
+  .paper-tasks{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+  }
+  .task-item{
+    font-size:.72rem;
+    display:flex;
+    align-items:flex-start;
+    gap:4px;
+    opacity:.88;
+    line-height:1.3;
+  }
+  .task-icon{font-size:.8rem;flex-shrink:0;line-height:1.2;}
+  .member-count{
+    position:absolute;
+    top:10px; right:10px;
+    font-size:.7rem;
+    font-weight:800;
+    background:#fff4;
+    border-radius:20px;
+    padding:2px 7px;
+  }
 
-/* ── PAGE HEADER ── */
-.page-header {
-  padding: 18px 0 14px; border-bottom: 2px solid color-mix(in srgb, var(--muted) 25%, transparent);
-  margin-bottom: 18px;
-}
-.page-eyebrow {
-  font-size: .72rem; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--g1); margin-bottom: 4px;
-}
-.page-title { font-size: 1.1rem; font-weight: 900; }
-.page-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+  /* ─── 深藍色紙 ─── */
+  .g1{background:linear-gradient(135deg,#1e3a6e,#2a4f8a);color:#e8f0ff;}
+  /* ─── 牛皮紙A ─── */
+  .g2{background:linear-gradient(135deg,#c4934a,#d4a860);color:#3a2010;}
+  /* ─── 淺藍色紙A ─── */
+  .g3{background:linear-gradient(135deg,#2b9eb3,#45b8cc);color:#f0faff;}
+  /* ─── 牛皮紙B ─── */
+  .g4{background:linear-gradient(135deg,#9b6a2a,#b87d3a);color:#fff8f0;}
+  /* ─── 牛皮紙C ─── */
+  .g5{background:linear-gradient(135deg,#b87828,#d49038);color:#fff8f0;}
+  /* ─── 淺藍色紙B ─── */
+  .g6{background:linear-gradient(135deg,#1f88a7,#38a0c0);color:#f0faff;}
 
-/* ── POSTER CONTAINER ── */
-.poster-wrap { max-width: 920px; margin: 0 auto 22px; }
+  /* ─── 人員條 ─── */
+  .member-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:3px;
+    margin-top:4px;
+  }
+  .chip{
+    font-size:.65rem;
+    font-weight:700;
+    background:#fff3;
+    border-radius:10px;
+    padding:2px 6px;
+    white-space:nowrap;
+  }
 
-/* The poster itself — white paper background always */
-.poster {
-  width: 100%;
-  /* landscape ratio A1 ≈ 841×594 → ~1.414:1 */
-  aspect-ratio: 141 / 100;
-  background: #ffffff;
-  border: 3px solid #333;
-  border-radius: 3px;
-  box-shadow: 0 6px 28px rgba(0,0,0,.22);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  overflow: hidden;
-  position: relative;
-  color: #2c1a0e; /* always dark text on white poster */
-}
+  /* ─── 圖例 ─── */
+  .legend{
+    max-width:720px;
+    margin:18px auto 0;
+    background:#fff;
+    border-radius:10px;
+    padding:14px 16px;
+    box-shadow:0 2px 8px #0001;
+  }
+  .legend h2{font-size:.85rem;color:#4a3520;margin-bottom:10px;font-weight:700;}
+  .legend-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:.75rem;}
+  .swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
 
-/* ── TITLE BAND ── */
-.p-title {
-  background: var(--g1b);
-  border-bottom: 2.5px solid var(--g1);
-  padding: clamp(5px,1.8%,18px) clamp(8px,2%,20px);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; text-align: center;
-}
-.p-title-main {
-  font-size: clamp(.9rem,4vw,2.2rem); font-weight: 900; color: var(--g1);
-}
-.p-title-sub {
-  font-size: clamp(.55rem,1.5vw,.85rem); font-weight: 700; color: #7a3a1e;
-}
-.p-title-tags {
-  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 2px;
-}
-.ptag {
-  font-size: clamp(.42rem,.95vw,.62rem); font-weight: 700;
-  padding: 1px 7px; border-radius: 50px;
-  background: var(--g1b); color: var(--g1); border: 1px solid var(--g1);
-}
+  /* ─── 標題橫幅裝飾 ─── */
+  .board-title{
+    grid-column: 1 / -1;
+    text-align:center;
+    font-size:.75rem;
+    color:#8a7060;
+    padding:4px 0 2px;
+    letter-spacing:.12em;
+    font-weight:600;
+  }
 
-/* ── MIDDLE CONTENT GRID ── */
-.p-body {
-  display: grid;
-  grid-template-columns: 27% 45% 28%;
-  overflow: hidden;
-  min-height: 0;
-}
-
-/* LEFT COL: Map + Intro */
-.p-left {
-  display: grid;
-  grid-template-rows: 36% 64%;
-  border-right: 2px solid #ccc;
-}
-.p-map {
-  background: var(--g1a);
-  border-bottom: 2px solid var(--g1);
-  padding: clamp(3px,1%,10px) clamp(4px,1.2%,12px);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-}
-.p-intro {
-  background: var(--g2a);
-  padding: clamp(3px,1%,10px) clamp(4px,1.2%,12px);
-  display: flex; flex-direction: column; gap: 3px;
-}
-
-/* CENTER COL: Main dishes / Special dishes */
-.p-center {
-  display: grid;
-  grid-template-rows: 50% 50%;
-  border-right: 2px solid #ccc;
-}
-.p-main {
-  background: var(--g3a);
-  border-bottom: 2px solid var(--g3);
-  padding: clamp(3px,1%,10px) clamp(4px,1.2%,12px);
-  display: flex; flex-direction: column; gap: 3px;
-}
-.p-special {
-  background: var(--g4a);
-  padding: clamp(3px,1%,10px) clamp(4px,1.2%,12px);
-  display: flex; flex-direction: column; gap: 3px;
-}
-
-/* RIGHT COL: Ingredients */
-.p-right {
-  background: var(--g5a);
-  padding: clamp(3px,1%,10px) clamp(4px,1.2%,12px);
-  display: flex; flex-direction: column; gap: 3px;
-}
-
-/* ── BORDER ANNOTATION ROW ── */
-.p-border-note {
-  background: var(--g6a);
-  border-top: 2px dashed var(--g6);
-  padding: 2px clamp(4px,1.2%,12px);
-  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-}
-.border-tag {
-  font-size: clamp(.38rem,.78vw,.58rem); font-weight: 700;
-  padding: 1px 6px; border-radius: 50px;
-  background: rgba(176,48,48,.2); color: var(--g6);
-}
-
-/* ── ZONE HEADER ── */
-.zh {
-  display: flex; align-items: center; gap: 4px; margin-bottom: 2px;
-}
-.zh-badge {
-  font-size: clamp(.45rem,.95vw,.65rem); font-weight: 900;
-  padding: 1px 6px; border-radius: 50px; color: white; white-space: nowrap;
-}
-.zh-title {
-  font-size: clamp(.52rem,1.1vw,.72rem); font-weight: 700; color: #2c1a0e;
-}
-
-/* ── SUB-ITEM GRID ── */
-.sgrid { display: grid; gap: 3px; flex: 1; }
-.sg-4 { grid-template-columns: repeat(4,1fr); }
-.sg-2 { grid-template-columns: repeat(2,1fr); }
-.sg-1 { grid-template-columns: 1fr; }
-
-.sitem {
-  border-radius: 4px; padding: clamp(2px,.7%,6px);
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px;
-  border: 1.5px solid currentColor;
-}
-.snum  { font-size: clamp(.4rem,.85vw,.6rem); font-weight: 900; }
-.sicon { font-size: clamp(.6rem,1.3vw,.95rem); line-height: 1.2; }
-.sname { font-size: clamp(.4rem,.85vw,.6rem); font-weight: 700; }
-.srole { font-size: clamp(.36rem,.75vw,.54rem); color: #5a4030; }
-
-.note-row {
-  font-size: clamp(.36rem,.72vw,.54rem); font-weight: 700; margin-top: 2px;
-}
-
-/* ── LEGEND GRID ── */
-.legend-wrap {
-  max-width: 920px; margin: 0 auto;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(135px,1fr)); gap: 10px;
-}
-.lcard {
-  border-radius: 10px; overflow: hidden;
-  border: 2px solid var(--lc);
-}
-.lhead {
-  padding: 5px 10px; color: white; font-size: .74rem; font-weight: 900;
-  background: var(--lc);
-}
-.lbody {
-  padding: 5px 10px; font-size: .68rem; line-height: 1.65;
-  background: var(--la);
-  color: #2c1a0e;
-}
-.li { display: flex; gap: 4px; }
-.ln { font-weight: 900; min-width: 16px; color: var(--lc); }
-
-/* G6 note bar */
-.g6-bar {
-  max-width: 920px; margin: 0 auto 16px;
-  padding: 10px 14px; border-radius: 10px;
-  background: var(--g6a); border: 1.5px dashed var(--g6);
-}
-.g6-title { font-weight: 900; color: var(--g6); font-size: .82rem; margin-bottom: 6px; }
-.g6-tags { display: flex; flex-wrap: wrap; gap: 7px; }
-.g6-tag {
-  font-size: .72rem; padding: 2px 10px; border-radius: 50px;
-  background: rgba(176,48,48,.18); color: var(--g6); font-weight: 700;
-}
+  @media(max-width:500px){
+    .board{grid-template-columns:1fr 1fr;gap:7px;}
+    .legend-grid{grid-template-columns:1fr 1fr;}
+    .paper{min-height:120px;padding:10px 9px 9px;}
+    .paper-group{font-size:.9rem;}
+  }
 </style>
+</head>
+<body>
 
-<div class="page-header">
-  <div class="page-eyebrow">🌍 環宇麗麗 × 海報分工</div>
-  <div class="page-title">非洲美食 · 海報版面圖</div>
-  <div class="page-sub">每個色塊代表一個組，色塊內的 ②-① 格式代表「第②組第①位同學」負責的區域</div>
-</div>
+<h1>🌍 非洲美食海報・版面配置圖</h1>
+<p class="subtitle">共 6 張海報紙 · 全班 26 人各司其職</p>
 
-<!-- ═══ POSTER ═══ -->
-<div class="poster-wrap">
-<div class="poster">
+<div class="board-wrap">
 
-  <!-- TITLE -->
-  <div class="p-title">
-    <div class="p-title-main">🌍 非洲美食</div>
-    <div class="p-title-sub">三年六班・環宇麗麗</div>
-    <div class="p-title-tags">
-      <span class="ptag">第一組-② 書寫並裝飾標題</span>
-      <span class="ptag">第一組-④ 製作班級小名牌</span>
-      <span class="ptag" style="background:rgba(32,112,0,.12);color:#206000;border-color:#206000">第一組-① 先用鉛筆打版面格線</span>
+  <!-- 展示板 3×2 格局 -->
+  <div class="board">
+
+    <!-- G1 深藍色紙 (標題設計) -->
+    <div class="paper g1">
+      <div class="paper-label">深藍色紙・No.1</div>
+      <div class="paper-group">🌍 標題設計</div>
+      <div class="paper-sub">海報封面・整體規劃</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🎨</span>版面規劃師</div>
+        <div class="task-item"><span class="task-icon">✍️</span>大標題書法家</div>
+        <div class="task-item"><span class="task-icon">🏷️</span>班級名牌設計師</div>
+        <div class="task-item"><span class="task-icon">🎯</span>整體風格統籌</div>
+      </div>
+      <div class="member-count">4人</div>
     </div>
-  </div>
 
-  <!-- BODY -->
-  <div class="p-body">
+    <!-- G2 牛皮紙A (地圖地理) -->
+    <div class="paper g2">
+      <div class="paper-label">牛皮紙・No.2</div>
+      <div class="paper-group">🗺️ 地圖地理</div>
+      <div class="paper-sub">非洲地理・位置統計</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🗺️</span>非洲地圖繪製師</div>
+        <div class="task-item"><span class="task-icon">📍</span>地名標示員</div>
+        <div class="task-item"><span class="task-icon">📊</span>地理統計員</div>
+        <div class="task-item"><span class="task-icon">🌍</span>地理小達人</div>
+      </div>
+      <div class="member-count">4人</div>
+    </div>
 
-    <!-- LEFT: Map + Intro -->
-    <div class="p-left">
-      <!-- Map -->
-      <div class="p-map">
-        <div class="zh">
-          <span class="zh-badge" style="background:var(--g1)">第一組-③</span>
-          <span class="zh-title">非洲地圖</span>
-        </div>
-        <div style="font-size:clamp(.42rem,.95vw,.62rem);color:#5a4030;text-align:center;line-height:1.5">
-          畫出非洲輪廓<br>標出3個國家位置
-        </div>
+    <!-- G3 淺藍色紙A (非洲文化) -->
+    <div class="paper g3">
+      <div class="paper-label">淺藍色紙・No.3</div>
+      <div class="paper-group">🦁 非洲文化</div>
+      <div class="paper-sub">飲食文化・動物趣聞</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🍽️</span>飲食文化作家</div>
+        <div class="task-item"><span class="task-icon">🦁</span>非洲動物插畫師</div>
+        <div class="task-item"><span class="task-icon">💡</span>趣聞收集員</div>
+        <div class="task-item"><span class="task-icon">🔍</span>台非對照員</div>
       </div>
-      <!-- Intro -->
-      <div class="p-intro">
-        <div class="zh">
-          <span class="zh-badge" style="background:var(--g2)">第二組</span>
-          <span class="zh-title">非洲介紹</span>
-        </div>
-        <div class="sgrid sg-2" style="flex:1">
-          <div class="sitem" style="color:var(--g2);background:var(--g2b)">
-            <div class="snum">②-①</div>
-            <div class="sicon">📍</div>
-            <div class="sname">地理介紹</div>
-            <div class="srole">寫3～4句</div>
-          </div>
-          <div class="sitem" style="color:var(--g2);background:var(--g2b)">
-            <div class="snum">②-②</div>
-            <div class="sicon">🍽️</div>
-            <div class="sname">飲食文化</div>
-            <div class="srole">寫3～4句</div>
-          </div>
-          <div class="sitem" style="color:var(--g2);background:var(--g2b)">
-            <div class="snum">②-③</div>
-            <div class="sicon">🦁</div>
-            <div class="sname">動物插圖</div>
-            <div class="srole">畫2種動物</div>
-          </div>
-          <div class="sitem" style="color:var(--g2);background:var(--g2b)">
-            <div class="snum">②-④</div>
-            <div class="sicon">💡</div>
-            <div class="sname">趣聞小百科</div>
-            <div class="srole">寫2條趣聞</div>
-          </div>
-        </div>
-      </div>
-    </div><!-- /p-left -->
+      <div class="member-count">4人</div>
+    </div>
 
-    <!-- CENTER: Main + Special -->
-    <div class="p-center">
-      <!-- Main Dishes -->
-      <div class="p-main">
-        <div class="zh">
-          <span class="zh-badge" style="background:var(--g3)">第三組</span>
-          <span class="zh-title">主食料理（各寫2句介紹＋畫插圖）</span>
-        </div>
-        <div class="sgrid sg-4" style="flex:1">
-          <div class="sitem" style="color:var(--g3);background:var(--g3b)">
-            <div class="snum">③-①</div>
-            <div class="sicon">🌾</div>
-            <div class="sname">庫斯庫斯</div>
-            <div class="srole">北非小米飯</div>
-          </div>
-          <div class="sitem" style="color:var(--g3);background:var(--g3b)">
-            <div class="snum">③-②</div>
-            <div class="sicon">🍅</div>
-            <div class="sname">傑洛夫飯</div>
-            <div class="srole">西非番茄飯</div>
-          </div>
-          <div class="sitem" style="color:var(--g3);background:var(--g3b)">
-            <div class="snum">③-③</div>
-            <div class="sicon">🫓</div>
-            <div class="sname">因吉拉</div>
-            <div class="srole">衣索比亞餅</div>
-          </div>
-          <div class="sitem" style="color:var(--g3);background:var(--g3b)">
-            <div class="snum">③-④</div>
-            <div class="sicon">🌽</div>
-            <div class="sname">烏嘎利</div>
-            <div class="srole">東非玉米糊</div>
-          </div>
-        </div>
-        <div class="note-row" style="color:var(--g3)">③-⑤ 排版統整長：剪貼①②③④作品，整齊黏貼到這個區塊</div>
+    <!-- G4 牛皮紙B (主食料理) -->
+    <div class="paper g4">
+      <div class="paper-label">牛皮紙・No.4</div>
+      <div class="paper-group">🍚 主食料理</div>
+      <div class="paper-sub">庫斯庫斯・傑洛夫飯・因吉拉・烏嘎利</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🌾</span>庫斯庫斯介紹員</div>
+        <div class="task-item"><span class="task-icon">🍅</span>傑洛夫飯介紹員</div>
+        <div class="task-item"><span class="task-icon">🫓</span>因吉拉介紹員</div>
+        <div class="task-item"><span class="task-icon">🌽</span>烏嘎利介紹員</div>
+        <div class="task-item"><span class="task-icon">📌</span>主食排版長</div>
       </div>
-      <!-- Special Dishes -->
-      <div class="p-special">
-        <div class="zh">
-          <span class="zh-badge" style="background:var(--g4)">第四組</span>
-          <span class="zh-title">特色料理（各寫2句介紹＋畫插圖）</span>
-        </div>
-        <div class="sgrid sg-4" style="flex:1">
-          <div class="sitem" style="color:var(--g4);background:var(--g4b)">
-            <div class="snum">④-①</div>
-            <div class="sicon">🫕</div>
-            <div class="sname">塔吉鍋</div>
-            <div class="srole">摩洛哥燉肉</div>
-          </div>
-          <div class="sitem" style="color:var(--g4);background:var(--g4b)">
-            <div class="snum">④-②</div>
-            <div class="sicon">🍢</div>
-            <div class="sname">蘇亞烤肉</div>
-            <div class="srole">西非烤肉串</div>
-          </div>
-          <div class="sitem" style="color:var(--g4);background:var(--g4b)">
-            <div class="snum">④-③</div>
-            <div class="sicon">🫘</div>
-            <div class="sname">富爾豆泥</div>
-            <div class="srole">埃及豆料理</div>
-          </div>
-          <div class="sitem" style="color:var(--g4);background:var(--g4b)">
-            <div class="snum">④-④</div>
-            <div class="sicon">🍩</div>
-            <div class="sname">普弗圖</div>
-            <div class="srole">西非甜甜圈</div>
-          </div>
-        </div>
-        <div class="note-row" style="color:var(--g4)">④-⑤ 排版統整長：剪貼①②③④作品，整齊黏貼到這個區塊</div>
-      </div>
-    </div><!-- /p-center -->
+      <div class="member-count">5人</div>
+    </div>
 
-    <!-- RIGHT: Ingredients -->
-    <div class="p-right">
-      <div class="zh">
-        <span class="zh-badge" style="background:var(--g5)">第五組</span>
-        <span class="zh-title">食材與香料</span>
+    <!-- G5 牛皮紙C (特色料理) -->
+    <div class="paper g5">
+      <div class="paper-label">牛皮紙・No.5</div>
+      <div class="paper-group">🍛 特色料理</div>
+      <div class="paper-sub">塔吉鍋・蘇亞・富爾豆泥・普弗圖</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🫕</span>塔吉鍋介紹員</div>
+        <div class="task-item"><span class="task-icon">🍢</span>蘇亞烤肉介紹員</div>
+        <div class="task-item"><span class="task-icon">🫘</span>富爾豆泥介紹員</div>
+        <div class="task-item"><span class="task-icon">🍩</span>普弗圖介紹員</div>
+        <div class="task-item"><span class="task-icon">📌</span>特色排版長</div>
       </div>
-      <div class="sgrid sg-1" style="flex:1">
-        <div class="sitem" style="color:var(--g5);background:var(--g5b)">
-          <div class="snum">⑤-①</div>
-          <div class="sicon">🌶️</div>
-          <div class="sname">香料圖鑑</div>
-          <div class="srole">畫3種香料＋各1句</div>
-        </div>
-        <div class="sitem" style="color:var(--g5);background:var(--g5b)">
-          <div class="snum">⑤-②</div>
-          <div class="sicon">🌱</div>
-          <div class="sname">食材圖鑑</div>
-          <div class="srole">畫3種食材＋各1句</div>
-        </div>
-        <div class="sitem" style="color:var(--g5);background:var(--g5b)">
-          <div class="snum">⑤-③</div>
-          <div class="sicon">📝</div>
-          <div class="sname">料理特色說明</div>
-          <div class="srole">寫3～4句特色</div>
-        </div>
-        <div class="sitem" style="color:var(--g5);background:var(--g5b)">
-          <div class="snum">⑤-④</div>
-          <div class="sicon">🔍</div>
-          <div class="sname">台非食材對照</div>
-          <div class="srole">找2～3種相似食材</div>
-        </div>
+      <div class="member-count">5人</div>
+    </div>
+
+    <!-- G6 淺藍色紙B (食材裝飾) -->
+    <div class="paper g6">
+      <div class="paper-label">淺藍色紙・No.6</div>
+      <div class="paper-group">🌶️ 食材裝飾</div>
+      <div class="paper-sub">香料食材・花紋邊框・美化插圖</div>
+      <div class="paper-tasks">
+        <div class="task-item"><span class="task-icon">🌶️</span>香料介紹師</div>
+        <div class="task-item"><span class="task-icon">🌱</span>食材介紹師</div>
+        <div class="task-item"><span class="task-icon">🎨</span>花紋邊框師</div>
+        <div class="task-item"><span class="task-icon">🖍️</span>插圖美化師</div>
+      </div>
+      <div class="member-count">4人</div>
+    </div>
+
+  </div><!-- .board -->
+
+  <!-- 圖例 & 說明 -->
+  <div class="legend">
+    <h2>📋 任務分配說明</h2>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <div class="swatch" style="background:#1e3a6e;"></div>
+        <span><b>深藍色紙 ×1</b>・標題版面（4人）</span>
+      </div>
+      <div class="legend-item">
+        <div class="swatch" style="background:#c4934a;"></div>
+        <span><b>牛皮紙 ×3</b>・地理/主食/特色</span>
+      </div>
+      <div class="legend-item">
+        <div class="swatch" style="background:#2b9eb3;"></div>
+        <span><b>淺藍色紙 ×2</b>・文化/食材裝飾</span>
+      </div>
+      <div class="legend-item" style="grid-column:1/-1;border-top:1px solid #eee;padding-top:8px;margin-top:4px;">
+        <span style="font-size:.8rem;color:#666;">共 <b>26 人</b>・6 組・每組 4–5 人，每張紙由一個小組負責製作</span>
       </div>
     </div>
 
-  </div><!-- /p-body -->
-
-  <!-- BORDER NOTE -->
-  <div class="p-border-note">
-    <span style="font-size:clamp(.38rem,.72vw,.54rem);font-weight:900;color:var(--g6)">第六組 · 裝飾美化（配合各組進度穿插進行）</span>
-    <span class="border-tag">⑥-① 四邊花紋邊框</span>
-    <span class="border-tag">⑥-② 所有插圖統一上色</span>
-    <span class="border-tag">⑥-③ 各區塊標題小卡</span>
-    <span class="border-tag">⑥-④ 最終黏貼組裝</span>
+    <div style="margin-top:12px;font-size:.75rem;color:#888;line-height:1.6;">
+      <b>建議貼法：</b>依照上方 3×2 格局，將6張紙並排貼在展示板上。<br>
+      深藍色（標題）貼左上角；牛皮紙（地理）貼中上；淺藍色（文化）貼右上；<br>
+      下排左到右：牛皮紙（主食）→ 牛皮紙（特色料理）→ 淺藍色（食材裝飾）。
+    </div>
   </div>
 
-</div><!-- /poster -->
-</div><!-- /poster-wrap -->
+</div><!-- .board-wrap -->
 
-<!-- G6 expanded note -->
-<div class="g6-bar">
-  <div class="g6-title">🎨 第六組・裝飾美化組 — 任務說明</div>
-  <div class="g6-tags">
-    <span class="g6-tag">⑥-① 在海報四個邊緣畫非洲幾何花紋邊框</span>
-    <span class="g6-tag">⑥-② 幫第三、四組的食物插圖上色，讓顏色鮮豔統一</span>
-    <span class="g6-tag">⑥-③ 為每個色塊區域剪一張造型標題小卡</span>
-    <span class="g6-tag">⑥-④ 最後一步：協助統整所有內容，確認位置整齊後黏貼完成</span>
-  </div>
-</div>
-
-<!-- LEGEND -->
-<div class="legend-wrap">
-  <div class="lcard" style="--lc:var(--g1);--la:var(--g1a)">
-    <div class="lhead">第一組・版面設計</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>版面規劃師（先打格線）</div>
-      <div class="li"><span class="ln">②</span>標題書法家</div>
-      <div class="li"><span class="ln">③</span>非洲地圖師</div>
-      <div class="li"><span class="ln">④</span>班級小名牌</div>
-    </div>
-  </div>
-  <div class="lcard" style="--lc:var(--g2);--la:var(--g2a)">
-    <div class="lhead">第二組・非洲介紹</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>地理小達人</div>
-      <div class="li"><span class="ln">②</span>飲食文化作家</div>
-      <div class="li"><span class="ln">③</span>非洲動物畫家</div>
-      <div class="li"><span class="ln">④</span>趣聞收集員</div>
-    </div>
-  </div>
-  <div class="lcard" style="--lc:var(--g3);--la:var(--g3a)">
-    <div class="lhead">第三組・主食料理</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>庫斯庫斯介紹員</div>
-      <div class="li"><span class="ln">②</span>傑洛夫飯介紹員</div>
-      <div class="li"><span class="ln">③</span>因吉拉介紹員</div>
-      <div class="li"><span class="ln">④</span>烏嘎利介紹員</div>
-      <div class="li"><span class="ln">⑤</span>排版統整長</div>
-    </div>
-  </div>
-  <div class="lcard" style="--lc:var(--g4);--la:var(--g4a)">
-    <div class="lhead">第四組・特色料理</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>塔吉鍋介紹員</div>
-      <div class="li"><span class="ln">②</span>蘇亞烤肉介紹員</div>
-      <div class="li"><span class="ln">③</span>富爾豆泥介紹員</div>
-      <div class="li"><span class="ln">④</span>普弗圖介紹員</div>
-      <div class="li"><span class="ln">⑤</span>排版統整長</div>
-    </div>
-  </div>
-  <div class="lcard" style="--lc:var(--g5);--la:var(--g5a)">
-    <div class="lhead">第五組・食材香料</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>香料介紹師</div>
-      <div class="li"><span class="ln">②</span>食材介紹師</div>
-      <div class="li"><span class="ln">③</span>料理特色作家</div>
-      <div class="li"><span class="ln">④</span>台非對照員</div>
-    </div>
-  </div>
-  <div class="lcard" style="--lc:var(--g6);--la:var(--g6a)">
-    <div class="lhead">第六組・裝飾美化</div>
-    <div class="lbody">
-      <div class="li"><span class="ln">①</span>花紋邊框師</div>
-      <div class="li"><span class="ln">②</span>插圖上色師</div>
-      <div class="li"><span class="ln">③</span>標題卡片師</div>
-      <div class="li"><span class="ln">④</span>海報組裝長</div>
-    </div>
-  </div>
-</div>
+</body>
+</html>

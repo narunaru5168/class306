@@ -10149,35 +10149,41 @@ function undoLastDartThrow(){
 
 // ─── 🌍 非洲美食海報任務 ─────────────────────────────
 const AFRICA_ROLES=[
-  {g:1,m:1,icon:'📐',title:'版面規劃師'},
-  {g:1,m:2,icon:'✍️',title:'標題書法家'},
-  {g:1,m:3,icon:'🗺️',title:'非洲地圖師'},
-  {g:1,m:4,icon:'🏷️',title:'班級小名牌'},
-  {g:2,m:1,icon:'📍',title:'地理小達人'},
-  {g:2,m:2,icon:'🍽️',title:'飲食文化作家'},
-  {g:2,m:3,icon:'🦁',title:'非洲動物畫家'},
-  {g:2,m:4,icon:'💡',title:'趣聞收集員'},
-  {g:3,m:1,icon:'🌾',title:'庫斯庫斯介紹員'},
-  {g:3,m:2,icon:'🍅',title:'傑洛夫飯介紹員'},
-  {g:3,m:3,icon:'🫓',title:'因吉拉介紹員'},
-  {g:3,m:4,icon:'🌽',title:'烏嘎利介紹員'},
-  {g:3,m:5,icon:'📌',title:'第三組排版長'},
-  {g:4,m:1,icon:'🫕',title:'塔吉鍋介紹員'},
-  {g:4,m:2,icon:'🍢',title:'蘇亞烤肉介紹員'},
-  {g:4,m:3,icon:'🫘',title:'富爾豆泥介紹員'},
-  {g:4,m:4,icon:'🍩',title:'普弗圖介紹員'},
-  {g:4,m:5,icon:'📌',title:'第四組排版長'},
-  {g:5,m:1,icon:'🌶️',title:'香料介紹師'},
-  {g:5,m:2,icon:'🌱',title:'食材介紹師'},
-  {g:5,m:3,icon:'📝',title:'料理特色作家'},
-  {g:5,m:4,icon:'🔍',title:'台非對照員'},
-  {g:6,m:1,icon:'🎨',title:'花紋邊框師'},
-  {g:6,m:2,icon:'🖍️',title:'插圖上色師'},
-  {g:6,m:3,icon:'🏷️',title:'標題卡片師'},
-  {g:6,m:4,icon:'📌',title:'海報組裝長'},
+  // 組1 深藍色紙：標題設計（4人）
+  {g:1,m:1,icon:'🎨',title:'版面規劃師',task:'決定6張紙的位置與整體排版佈局'},
+  {g:1,m:2,icon:'✍️',title:'大標題書法家',task:'設計並書寫「非洲美食之旅」大標題'},
+  {g:1,m:3,icon:'🏷️',title:'班級名牌設計師',task:'製作「三年六班」班級識別名牌'},
+  {g:1,m:4,icon:'🎯',title:'整體風格統籌',task:'確保各組顏色與風格協調一致'},
+  // 組2 牛皮紙A：地圖地理（4人）
+  {g:2,m:1,icon:'🗺️',title:'非洲地圖繪製師',task:'畫出非洲大陸輪廓地圖'},
+  {g:2,m:2,icon:'📍',title:'地名標示員',task:'標記重要國家與城市名稱'},
+  {g:2,m:3,icon:'📊',title:'地理統計員',task:'整理面積、人口、語言等有趣數據'},
+  {g:2,m:4,icon:'🌍',title:'地理小達人',task:'撰寫非洲地理特徵小百科'},
+  // 組3 淺藍色紙A：非洲文化（4人）
+  {g:3,m:1,icon:'🍽️',title:'飲食文化作家',task:'介紹非洲人的飲食習慣與傳統'},
+  {g:3,m:2,icon:'🦁',title:'非洲動物插畫師',task:'畫出非洲代表性動物插圖'},
+  {g:3,m:3,icon:'💡',title:'趣聞收集員',task:'整理3～5則非洲飲食有趣知識'},
+  {g:3,m:4,icon:'🔍',title:'台非對照員',task:'比較台灣和非洲的飲食文化差異'},
+  // 組4 牛皮紙B：主食料理（5人）
+  {g:4,m:1,icon:'🌾',title:'庫斯庫斯介紹員',task:'介紹北非小麥粉料理 Couscous'},
+  {g:4,m:2,icon:'🍅',title:'傑洛夫飯介紹員',task:'介紹西非番茄燉飯 Jollof Rice'},
+  {g:4,m:3,icon:'🫓',title:'因吉拉介紹員',task:'介紹衣索比亞酸餅 Injera'},
+  {g:4,m:4,icon:'🌽',title:'烏嘎利介紹員',task:'介紹東非玉米糊 Ugali'},
+  {g:4,m:5,icon:'📌',title:'主食排版長',task:'負責主食區塊的排版、美化與拼貼'},
+  // 組5 牛皮紙C：特色料理（5人）
+  {g:5,m:1,icon:'🫕',title:'塔吉鍋介紹員',task:'介紹摩洛哥燉鍋料理 Tagine'},
+  {g:5,m:2,icon:'🍢',title:'蘇亞烤肉介紹員',task:'介紹奈及利亞烤肉串 Suya'},
+  {g:5,m:3,icon:'🫘',title:'富爾豆泥介紹員',task:'介紹埃及豆泥料理 Ful Medames'},
+  {g:5,m:4,icon:'🍩',title:'普弗圖介紹員',task:'介紹西非炸甜甜圈 Puff Puff'},
+  {g:5,m:5,icon:'📌',title:'特色排版長',task:'負責特色料理區塊的排版、美化與拼貼'},
+  // 組6 淺藍色紙B：食材裝飾（4人）
+  {g:6,m:1,icon:'🌶️',title:'香料介紹師',task:'介紹非洲常用香料（薑黃、辣椒等）'},
+  {g:6,m:2,icon:'🌱',title:'食材介紹師',task:'介紹非洲特有食材（木薯、芭蕉等）'},
+  {g:6,m:3,icon:'🎨',title:'花紋邊框師',task:'設計並繪製全海報的非洲風花紋邊框'},
+  {g:6,m:4,icon:'🖍️',title:'插圖美化師',task:'為整張海報添加裝飾插圖與最終配色'},
 ];
-const AFRICA_GC={1:'#d94e1a',2:'#c09000',3:'#257a46',4:'#1a62a8',5:'#7a228a',6:'#b03030'};
-const AFRICA_GN={1:'版面設計',2:'非洲介紹',3:'主食料理',4:'特色料理',5:'食材香料',6:'裝飾美化'};
+const AFRICA_GC={1:'#1e3a6e',2:'#9b6830',3:'#2b9eb3',4:'#8a5a1e',5:'#b87828',6:'#1f88a7'};
+const AFRICA_GN={1:'深藍紙・標題設計',2:'牛皮紙・地圖地理',3:'淺藍紙・非洲文化',4:'牛皮紙・主食料理',5:'牛皮紙・特色料理',6:'淺藍紙・食材裝飾'};
 let africaAssign={}, africaDone={}, africaPanelOpen=false, africaSelSid=null;
 
 async function loadAfricaTasks(){
