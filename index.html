@@ -10280,10 +10280,10 @@ function africaSelectStudent(sid){
 
 function africaAssignRole(key){
   if(!africaSelSid){ toast('請先點選上方同學名字'); return; }
-  const student=students.find(s=>s.sid===africaSelSid);
-  if(!student) return;
+  const student=students.find(s=>String(s.id||s.sid)===africaSelSid);
+  if(!student){ toast('找不到同學資料，請重新整理'); return; }
   for(const k of Object.keys(africaAssign)){
-    if(africaAssign[k].sid===africaSelSid){ delete africaAssign[k]; break; }
+    if(String(africaAssign[k].sid)===africaSelSid){ delete africaAssign[k]; break; }
   }
   africaAssign[key]={sid:africaSelSid,name:student.name};
   africaSelSid=null;
@@ -10301,11 +10301,13 @@ function africaUnassignRole(key,e){
 function renderAfricaStudentChips(){
   const container=document.getElementById('africaStudentChips');
   if(!container) return;
-  const assignedSids=new Set(Object.values(africaAssign).map(v=>v.sid));
-  container.innerHTML=students.map(s=>{
-    const isAssigned=assignedSids.has(s.sid);
-    const isSel=africaSelSid===s.sid;
-    return `<div onclick="africaSelectStudent('${s.sid}')" style="padding:4px 10px;border-radius:50px;cursor:pointer;font-size:.74rem;font-weight:800;
+  const assignedIds=new Set(Object.values(africaAssign).map(v=>String(v.sid)));
+  const sorted=[...students].sort((a,b)=>parseInt(a.seatNo||a.sid||99)-parseInt(b.seatNo||b.sid||99));
+  container.innerHTML=sorted.map(s=>{
+    const key=String(s.id||s.sid);
+    const isAssigned=assignedIds.has(key);
+    const isSel=africaSelSid===key;
+    return `<div onclick="africaSelectStudent('${key}')" style="padding:4px 10px;border-radius:50px;cursor:pointer;font-size:.74rem;font-weight:800;
       background:${isSel?'#1a62a8':isAssigned?'#f1f5f9':'#fff'};
       color:${isSel?'#fff':isAssigned?'#94a3b8':'#374151'};
       border:1.5px solid ${isSel?'#1a62a8':isAssigned?'#cbd5e1':'#d1d5db'};
@@ -10328,6 +10330,8 @@ function renderAfricaRoleSlots(){
       const asgn=africaAssign[key];
       const done=!!africaDone[key];
       const canAssign=!!africaSelSid&&!asgn;
+      // 有選同學且此格已被該同學佔據也要能換
+      const isMySlot=asgn&&String(asgn.sid)===africaSelSid;
       html+=`<div style="padding:9px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid ${gc}1a;cursor:${canAssign?'pointer':'default'};background:${canAssign?gc+'18':'transparent'};"
         onclick="${canAssign?`africaAssignRole('${key}')`:''}>`;
       html+=`<span style="font-size:.85rem;">${role.icon}</span>`;
