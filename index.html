@@ -1302,7 +1302,10 @@
         <div style="font-weight:800;font-size:.95rem;">🌍 非洲美食海報任務</div>
         <div id="africaProgressText" style="font-size:.74rem;color:#8b6240;margin-top:2px;"></div>
       </div>
-      <span id="africaToggleArrow" style="font-size:1.1rem;transition:transform .2s;">▼</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="showPage('africa');event.stopPropagation();" style="padding:4px 12px;border-radius:50px;border:none;background:#d94e1a;color:#fff;font-family:inherit;font-size:.72rem;font-weight:800;cursor:pointer;">✏️ 派任</button>
+        <span id="africaToggleArrow" style="font-size:1.1rem;transition:transform .2s;">▼</span>
+      </div>
     </div>
     <div id="africaPanel" style="display:none;margin-top:8px;"></div>
   </div>
@@ -4692,6 +4695,26 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
   <div id="essayRecordsList"></div>
 </div>
 
+<!-- 🌍 非洲海報任務頁面 -->
+<div id="page-africa" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <span class="section-title" style="margin-bottom:0;">🌍 非洲美食海報任務</span>
+    <div id="africaAssignProgress" style="font-size:.78rem;color:#8b6240;font-weight:700;"></div>
+  </div>
+
+  <!-- 學生選擇列 -->
+  <div style="background:#fff8ef;border:1.5px solid #f5d5a0;border-radius:14px;padding:12px 14px;margin-bottom:14px;">
+    <div style="font-size:.74rem;font-weight:800;color:#8b6240;margin-bottom:8px;">
+      👤 點選同學 → 再點下方角色格子完成派任
+      <span id="africaSelHint" style="color:#1a62a8;"></span>
+    </div>
+    <div id="africaStudentChips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+  </div>
+
+  <!-- 角色格子 -->
+  <div id="africaRoleSlots" style="display:flex;flex-direction:column;gap:8px;"></div>
+</div>
+
 <!-- 作文批改 Modal -->
 <div id="essayModal" class="modal-overlay">
   <div class="modal" style="max-width:680px;width:96vw;max-height:90vh;overflow-y:auto;padding:24px;">
@@ -4984,11 +5007,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay','africa'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支', essay:'✍️ 作文批改'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支', essay:'✍️ 作文批改', africa:'🌍 海報任務'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -5369,6 +5392,7 @@ function showPage(name) {
   if(name==='mutualaid') renderMutualAidGroups();
   if(name==='officers') renderOfficers();
   if(name==='essay') { renderEssayList(); setTimeout(updateEssayApiKeyStatus, 50); }
+  if(name==='africa') renderAfricaAssignPage();
 }
 function confetti() {
   const colors = ['#FFD93D','#FF6B6B','#6BCB77','#5BB8F5','#A855F7','#FFB347','#4DD9AC'];
@@ -10132,7 +10156,7 @@ const AFRICA_ROLES=[
 ];
 const AFRICA_GC={1:'#d94e1a',2:'#c09000',3:'#257a46',4:'#1a62a8',5:'#7a228a',6:'#b03030'};
 const AFRICA_GN={1:'版面設計',2:'非洲介紹',3:'主食料理',4:'特色料理',5:'食材香料',6:'裝飾美化'};
-let africaAssign={}, africaDone={}, africaPanelOpen=false;
+let africaAssign={}, africaDone={}, africaPanelOpen=false, africaSelSid=null;
 
 async function loadAfricaTasks(){
   if(!useCloud||!db) return;
@@ -10171,6 +10195,10 @@ function toggleAfricaDone(key,e){
   renderAfricaPanel();
   updateStats();
   if(africaDone[key]) try{confetti();}catch(err){}
+  // 若目前在海報任務頁面，同步更新角色格
+  if(document.getElementById('page-africa')&&document.getElementById('page-africa').classList.contains('active')){
+    renderAfricaAssignPage();
+  }
 }
 
 function renderAfricaPanel(){
@@ -10211,6 +10239,114 @@ function renderAfricaPanel(){
   }
   html+='</div>';
   panel.innerHTML=html;
+}
+function saveAfricaAssign(){
+  if(useCloud&&db){
+    Object.keys(africaAssign).length>0
+      ? db.ref('class306/posterTasks/africa').set(africaAssign)
+      : db.ref('class306/posterTasks/africa').remove();
+  }
+  const wrap=document.getElementById('africaPanelWrap');
+  if(wrap) wrap.style.display=Object.keys(africaAssign).length?'':'none';
+  renderAfricaPanel();
+  updateStats();
+}
+
+function africaSelectStudent(sid){
+  africaSelSid=africaSelSid===sid?null:sid;
+  renderAfricaStudentChips();
+  renderAfricaRoleSlots();
+  const hint=document.getElementById('africaSelHint');
+  if(hint){
+    if(africaSelSid){
+      const s=students.find(x=>x.sid===africaSelSid);
+      hint.textContent=s?` 已選：${s.name}，請點下方角色`:'';
+    }else{ hint.textContent=''; }
+  }
+}
+
+function africaAssignRole(key){
+  if(!africaSelSid){ toast('請先點選上方同學名字'); return; }
+  const student=students.find(s=>s.sid===africaSelSid);
+  if(!student) return;
+  for(const k of Object.keys(africaAssign)){
+    if(africaAssign[k].sid===africaSelSid){ delete africaAssign[k]; break; }
+  }
+  africaAssign[key]={sid:africaSelSid,name:student.name};
+  africaSelSid=null;
+  saveAfricaAssign();
+  renderAfricaAssignPage();
+}
+
+function africaUnassignRole(key,e){
+  if(e) e.stopPropagation();
+  delete africaAssign[key];
+  saveAfricaAssign();
+  renderAfricaAssignPage();
+}
+
+function renderAfricaStudentChips(){
+  const container=document.getElementById('africaStudentChips');
+  if(!container) return;
+  const assignedSids=new Set(Object.values(africaAssign).map(v=>v.sid));
+  container.innerHTML=students.map(s=>{
+    const isAssigned=assignedSids.has(s.sid);
+    const isSel=africaSelSid===s.sid;
+    return `<div onclick="africaSelectStudent('${s.sid}')" style="padding:4px 10px;border-radius:50px;cursor:pointer;font-size:.74rem;font-weight:800;
+      background:${isSel?'#1a62a8':isAssigned?'#f1f5f9':'#fff'};
+      color:${isSel?'#fff':isAssigned?'#94a3b8':'#374151'};
+      border:1.5px solid ${isSel?'#1a62a8':isAssigned?'#cbd5e1':'#d1d5db'};
+      text-decoration:${isAssigned?'line-through':'none'};">${s.name}</div>`;
+  }).join('');
+}
+
+function renderAfricaRoleSlots(){
+  const container=document.getElementById('africaRoleSlots');
+  if(!container) return;
+  const byGrp={};
+  for(let g=1;g<=6;g++) byGrp[g]=AFRICA_ROLES.filter(r=>r.g===g);
+  let html='';
+  for(let g=1;g<=6;g++){
+    const gc=AFRICA_GC[g];
+    html+=`<div style="background:${gc}0d;border-radius:12px;overflow:hidden;border:1.5px solid ${gc}33;">`;
+    html+=`<div style="padding:8px 14px;background:${gc}22;font-weight:800;font-size:.8rem;color:${gc};">第${g}組・${AFRICA_GN[g]}</div>`;
+    byGrp[g].forEach(role=>{
+      const key=role.g+'-'+role.m;
+      const asgn=africaAssign[key];
+      const done=!!africaDone[key];
+      const canAssign=!!africaSelSid&&!asgn;
+      html+=`<div style="padding:9px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid ${gc}1a;cursor:${canAssign?'pointer':'default'};background:${canAssign?gc+'18':'transparent'};"
+        onclick="${canAssign?`africaAssignRole('${key}')`:''}>`;
+      html+=`<span style="font-size:.85rem;">${role.icon}</span>`;
+      html+=`<div style="flex:1;min-width:0;">`;
+      html+=`<div style="font-size:.78rem;font-weight:800;${done?'color:#94a3b8;text-decoration:line-through;':''}">${role.title}</div>`;
+      html+=`<div style="font-size:.68rem;color:#94a3b8;margin-top:1px;">${role.task||''}</div>`;
+      html+='</div>';
+      if(asgn){
+        html+=`<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">`;
+        html+=`<div style="padding:3px 10px;border-radius:50px;background:${gc}22;color:${gc};font-size:.72rem;font-weight:800;">${asgn.name}</div>`;
+        html+=`<button onclick="africaUnassignRole('${key}',event)" style="background:none;border:none;cursor:pointer;font-size:.75rem;color:#94a3b8;padding:2px 4px;" title="移除派任">✕</button>`;
+        html+=`<button onclick="toggleAfricaDone('${key}',event)" style="padding:3px 9px;border-radius:50px;border:1.5px solid ${done?'#6ee7b7':'#cbd5e1'};cursor:pointer;font-family:inherit;font-size:.68rem;font-weight:800;background:${done?'#d1fae5':'#fff'};color:${done?'#065f46':'#94a3b8'};">${done?'✅':'○'}</button>`;
+        html+='</div>';
+      }else if(canAssign){
+        html+=`<div style="font-size:.72rem;color:${gc};font-weight:800;flex-shrink:0;">← 點此派任</div>`;
+      }else{
+        html+=`<div style="font-size:.7rem;color:#cbd5e1;flex-shrink:0;">未派任</div>`;
+      }
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  container.innerHTML=html;
+}
+
+function renderAfricaAssignPage(){
+  renderAfricaStudentChips();
+  renderAfricaRoleSlots();
+  const total=Object.keys(africaAssign).length;
+  const done=Object.keys(africaDone).length;
+  const prog=document.getElementById('africaAssignProgress');
+  if(prog) prog.textContent=`已派任 ${total}/26・完成 ${done}/${total||26}`;
 }
 // ─────────────────────────────────────────────────────
 
