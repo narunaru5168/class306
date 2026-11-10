@@ -10294,7 +10294,7 @@ function africaAssignRole(key){
   for(const k of Object.keys(africaAssign)){
     if(String(africaAssign[k].sid)===africaSelSid){ delete africaAssign[k]; break; }
   }
-  africaAssign[key]={sid:africaSelSid,name:student.name};
+  africaAssign[key]={sid:africaSelSid,name:student.name,seatNo:student.seatNo||''};
   africaSelSid=null;
   saveAfricaAssign();
   renderAfricaAssignPage();
@@ -10320,7 +10320,7 @@ function renderAfricaStudentChips(){
       background:${isSel?'#1a62a8':isAssigned?'#f1f5f9':'#fff'};
       color:${isSel?'#fff':isAssigned?'#94a3b8':'#374151'};
       border:1.5px solid ${isSel?'#1a62a8':isAssigned?'#cbd5e1':'#d1d5db'};
-      text-decoration:${isAssigned?'line-through':'none'};">${s.name}</div>`;
+      text-decoration:${isAssigned?'line-through':'none'};">${s.seatNo?s.seatNo+'號 ':''}${s.name}</div>`;
   }).join('');
 }
 
@@ -10350,7 +10350,7 @@ function renderAfricaRoleSlots(){
       html+='</div>';
       if(asgn){
         html+=`<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">`;
-        html+=`<div style="padding:3px 10px;border-radius:50px;background:${gc}22;color:${gc};font-size:.72rem;font-weight:800;">${asgn.name}</div>`;
+        html+=`<div style="padding:3px 10px;border-radius:50px;background:${gc}22;color:${gc};font-size:.72rem;font-weight:800;">${asgn.seatNo?asgn.seatNo+'號 ':''}${asgn.name}</div>`;
         html+=`<button onclick="africaUnassignRole('${key}',event)" style="background:none;border:none;cursor:pointer;font-size:.75rem;color:#94a3b8;padding:2px 4px;" title="移除派任">✕</button>`;
         html+=`<button onclick="toggleAfricaDone('${key}',event)" style="padding:3px 9px;border-radius:50px;border:1.5px solid ${done?'#6ee7b7':'#cbd5e1'};cursor:pointer;font-family:inherit;font-size:.68rem;font-weight:800;background:${done?'#d1fae5':'#fff'};color:${done?'#065f46':'#94a3b8'};">${done?'✅':'○'}</button>`;
         html+='</div>';
