@@ -4697,22 +4697,35 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
 
 <!-- 🌍 非洲海報任務頁面 -->
 <div id="page-africa" class="page">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
     <span class="section-title" style="margin-bottom:0;">🌍 非洲美食海報任務</span>
     <div id="africaAssignProgress" style="font-size:.78rem;color:#8b6240;font-weight:700;"></div>
   </div>
 
-  <!-- 學生選擇列 -->
-  <div style="background:#fff8ef;border:1.5px solid #f5d5a0;border-radius:14px;padding:12px 14px;margin-bottom:14px;">
-    <div style="font-size:.74rem;font-weight:800;color:#8b6240;margin-bottom:8px;">
-      👤 點選同學 → 再點下方角色格子完成派任
-      <span id="africaSelHint" style="color:#1a62a8;"></span>
-    </div>
-    <div id="africaStudentChips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+  <!-- 分頁切換 -->
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button id="africaTab1" onclick="switchAfricaTab(1)" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#d94e1a;color:#fff;">📋 派任</button>
+    <button id="africaTab2" onclick="switchAfricaTab(2)" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#f1f5f9;color:#64748b;">🗺️ 版面圖</button>
   </div>
 
-  <!-- 角色格子 -->
-  <div id="africaRoleSlots" style="display:flex;flex-direction:column;gap:8px;"></div>
+  <!-- 分頁1：派任 -->
+  <div id="africaTabPane1">
+    <!-- 學生選擇列 -->
+    <div style="background:#fff8ef;border:1.5px solid #f5d5a0;border-radius:14px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:.74rem;font-weight:800;color:#8b6240;margin-bottom:8px;">
+        👤 點選同學 → 再點下方角色格子完成派任
+        <span id="africaSelHint" style="color:#1a62a8;"></span>
+      </div>
+      <div id="africaStudentChips" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+    <!-- 角色格子 -->
+    <div id="africaRoleSlots" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- 分頁2：版面圖 -->
+  <div id="africaTabPane2" style="display:none;">
+    <iframe src="poster_layout.html" style="width:100%;height:80vh;border:none;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.1);" loading="lazy"></iframe>
+  </div>
 </div>
 
 <!-- 作文批改 Modal -->
@@ -10347,6 +10360,15 @@ function renderAfricaAssignPage(){
   const done=Object.keys(africaDone).length;
   const prog=document.getElementById('africaAssignProgress');
   if(prog) prog.textContent=`已派任 ${total}/26・完成 ${done}/${total||26}`;
+}
+
+function switchAfricaTab(n){
+  document.getElementById('africaTabPane1').style.display=n===1?'':'none';
+  document.getElementById('africaTabPane2').style.display=n===2?'':'none';
+  const on='background:#d94e1a;color:#fff;';
+  const off='background:#f1f5f9;color:#64748b;';
+  document.getElementById('africaTab1').style.cssText='padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;'+(n===1?on:off);
+  document.getElementById('africaTab2').style.cssText='padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;'+(n===2?on:off);
 }
 // ─────────────────────────────────────────────────────
 
