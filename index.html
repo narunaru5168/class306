@@ -4703,9 +4703,10 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
   </div>
 
   <!-- 分頁切換 -->
-  <div style="display:flex;gap:6px;margin-bottom:14px;">
+  <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
     <button id="africaTab1" onclick="switchAfricaTab(1)" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#d94e1a;color:#fff;">📋 派任</button>
     <button id="africaTab2" onclick="switchAfricaTab(2)" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#f1f5f9;color:#64748b;">🗺️ 版面圖</button>
+    <button onclick="printAfricaTaskCards()" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#f1f5f9;color:#64748b;">🖨️ 列印任務卡</button>
   </div>
 
   <!-- 分頁1：派任 -->
@@ -10253,8 +10254,14 @@ function renderAfricaPanel(){
       html+=`<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;border-top:1px solid ${gc}1a;">`;
       html+=`<span style="font-size:.8rem;">${role.icon}</span>`;
       html+=`<div style="flex:1;min-width:0;">`;
-      html+=`<div style="font-size:.76rem;font-weight:800;${done?'color:#94a3b8;text-decoration:line-through;':''}">${role.title}</div>`;
-      html+=`<div style="font-size:.68rem;font-weight:700;color:${done?'#94a3b8':asgn?gc:'#cbd5e1'};">${asgn?asgn.name:'未派任'}</div>`;
+      html+=`<div style="font-size:.76rem;font-weight:800;${done?'color:#94a3b8;text-decoration:line-through;':`color:${gc};`}">${role.icon} ${role.title}${role.cross?'&nbsp;<span style="background:'+gc+';color:#fff;font-size:.6rem;font-weight:800;border-radius:3px;padding:0 4px;vertical-align:middle;">跨組</span>':''}</div>`;
+      if(role.task) html+=`<div style="font-size:.66rem;color:#64748b;font-weight:600;margin-top:1px;">${role.task}</div>`;
+      if(role.steps&&role.steps.length){
+        html+=`<ol style="margin:2px 0 2px 14px;padding:0;font-size:.63rem;color:#94a3b8;line-height:1.5;">`;
+        role.steps.forEach(s=>{ html+=`<li>${s}</li>`; });
+        html+=`</ol>`;
+      }
+      html+=`<div style="font-size:.68rem;font-weight:700;color:${done?'#94a3b8':asgn?gc:'#cbd5e1'};margin-top:2px;">${asgn?(asgn.seatNo?asgn.seatNo+'號 ':'')+asgn.name:'⬜ 尚未派任'}</div>`;
       html+='</div>';
       if(asgn){
         html+=`<button onclick="toggleAfricaDone('${key}',event)" style="padding:3px 9px;border-radius:50px;border:1.5px solid ${done?'#6ee7b7':'#cbd5e1'};cursor:pointer;font-family:inherit;font-size:.68rem;font-weight:800;background:${done?'#d1fae5':'#fff'};color:${done?'#065f46':'#94a3b8'};">${done?'✅ 完成':'○ 標記完成'}</button>`;
@@ -10384,6 +10391,67 @@ function renderAfricaAssignPage(){
   const done=Object.keys(africaDone).length;
   const prog=document.getElementById('africaAssignProgress');
   if(prog) prog.textContent=`已派任 ${total}/26・完成 ${done}/${total||26}`;
+}
+
+function printAfricaTaskCards(){
+  const assigned=Object.entries(africaAssign);
+  if(!assigned.length){toast('⚠️ 還沒有派任任何人');return;}
+  // 依組別排序
+  assigned.sort((a,b)=>{
+    const [ga,ma]=a[0].split('-').map(Number);
+    const [gb,mb]=b[0].split('-').map(Number);
+    return ga!==gb?ga-gb:ma-mb;
+  });
+  const gc=AFRICA_GC, gn=AFRICA_GN;
+  let cards='';
+  assigned.forEach(([key,asgn])=>{
+    const role=AFRICA_ROLES.find(r=>r.g+'-'+r.m===key);
+    if(!role) return;
+    const c=gc[role.g]||'#888';
+    const stepsList=role.steps&&role.steps.length
+      ? role.steps.map((s,i)=>`<li>${s}</li>`).join('')
+      : '';
+    const crossBadge=role.cross?`<span style="background:${c};color:#fff;font-size:9px;font-weight:800;border-radius:3px;padding:1px 5px;margin-left:5px;vertical-align:middle;">跨組</span>`:'';
+    cards+=`
+    <div style="break-inside:avoid;border:2px solid ${c};border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff;page-break-inside:avoid;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:1.2rem;">${role.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:.7rem;color:${c};font-weight:800;letter-spacing:.05em;">${gn[role.g]||''}</div>
+          <div style="font-size:.95rem;font-weight:900;color:#1e293b;">${role.title}${crossBadge}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="background:${c};color:#fff;border-radius:50px;padding:4px 12px;font-size:.85rem;font-weight:900;">${asgn.seatNo?asgn.seatNo+'號 ':''}${asgn.name}</div>
+        </div>
+      </div>
+      <div style="font-size:.72rem;color:#475569;font-weight:700;margin-bottom:4px;">📋 ${role.task||''}</div>
+      ${stepsList?`<ol style="margin:0 0 0 16px;padding:0;font-size:.7rem;color:#64748b;line-height:1.7;">${stepsList}</ol>`:''}
+    </div>`;
+  });
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <title>非洲海報任務卡</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Noto Sans TC',sans-serif;background:#f8f4ef;padding:16px;}
+    h1{text-align:center;font-size:1.1rem;color:#4a3520;margin-bottom:4px;}
+    .sub{text-align:center;font-size:.75rem;color:#8a7060;margin-bottom:16px;}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+    @media print{
+      body{background:#fff;padding:8px;}
+      .grid{gap:8px;}
+      @page{margin:12mm;}
+    }
+    li{margin-left:2px;}
+  </style>
+  </head><body>
+  <h1>🌍 非洲美食海報・任務卡</h1>
+  <p class="sub">每人一格，剪開後發給學生</p>
+  <div class="grid">${cards}</div>
+  <script>window.onload=()=>window.print();<\/script>
+  </body></html>`);
+  win.document.close();
 }
 
 function switchAfricaTab(n){
