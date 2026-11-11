@@ -4743,24 +4743,41 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
     <button id="writingTab2Btn" onclick="switchWritingTab(2)" style="padding:7px 18px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;font-size:.8rem;font-weight:800;background:#f1f5f9;color:#64748b;">🖊️ 產生練習紙</button>
   </div>
 
-  <!-- 分頁1：字庫 iframe -->
+  <!-- 分頁1：字庫啟動頁 -->
   <div id="writingPane1">
-    <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:.78rem;color:#1e40af;font-weight:600;">
-      💡 下方為「萌墨書法字庫」，可搜尋楷書、隸書、草書等字體的書法範本，讓學生觀摩練習。
-      <a href="https://jgwords.neillu.com/" target="_blank" style="color:#2563eb;margin-left:6px;">↗ 在新分頁開啟</a>
-    </div>
-    <div id="writingIframeWrap" style="border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);background:#f8fafc;">
-      <iframe id="writingIframe" src="https://jgwords.neillu.com/" style="width:100%;height:78vh;border:none;display:block;" loading="lazy"
-        onerror="document.getElementById('writingIframeFallback').style.display='flex';this.style.display='none';">
-      </iframe>
-      <div id="writingIframeFallback" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:78vh;gap:16px;padding:30px;">
-        <div style="font-size:2.5rem;">📖</div>
-        <div style="font-size:1rem;font-weight:800;color:#374151;">無法在此直接顯示</div>
-        <div style="font-size:.85rem;color:#64748b;text-align:center;max-width:320px;">該網站不允許嵌入顯示，請點下方按鈕在新分頁開啟使用。</div>
-        <a href="https://jgwords.neillu.com/" target="_blank"
-           style="background:#4f46e5;color:#fff;padding:11px 28px;border-radius:50px;font-weight:800;font-size:.9rem;text-decoration:none;">
-          🔍 開啟萌墨字庫
-        </a>
+    <div style="background:linear-gradient(135deg,#eef2ff,#f0f9ff);border:1.5px solid #c7d2fe;border-radius:20px;padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-size:3rem;">🖌️</div>
+      <div style="font-size:1.15rem;font-weight:900;color:#1e1b4b;letter-spacing:.03em;">萌墨書法字庫</div>
+      <div style="font-size:.85rem;color:#4b5563;max-width:340px;line-height:1.75;">
+        收錄 138,499 個書法字體範本（楷書、隸書、草書等），讓學生搜尋觀摩、臨摹練習。
+        網站有內建列印功能，在獨立分頁中才能正常預覽列印。
+      </div>
+      <a href="https://jgwords.neillu.com/" target="_blank"
+         style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:13px 36px;border-radius:50px;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 4px 14px rgba(79,70,229,.35);letter-spacing:.03em;">
+        🔍 開啟萌墨字庫
+      </a>
+      <div style="font-size:.75rem;color:#9ca3af;">點擊後會在新分頁開啟 · 在該頁面可直接搜尋字體並列印</div>
+
+      <div style="width:100%;max-width:400px;border-top:1px solid #e0e7ff;padding-top:16px;margin-top:4px;">
+        <div style="font-size:.8rem;font-weight:700;color:#374151;margin-bottom:10px;">💡 使用流程</div>
+        <div style="display:flex;flex-direction:column;gap:8px;text-align:left;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:.8rem;color:#4b5563;">
+            <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;flex-shrink:0;">1</span>
+            點擊上方按鈕開啟網站
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:.8rem;color:#4b5563;">
+            <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;flex-shrink:0;">2</span>
+            在搜尋欄輸入要查詢的漢字
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:.8rem;color:#4b5563;">
+            <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;flex-shrink:0;">3</span>
+            選擇喜歡的書法家字體範本
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:.8rem;color:#4b5563;">
+            <span style="background:#4f46e5;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.7rem;flex-shrink:0;">4</span>
+            用網站內建的列印功能印出來
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -10565,21 +10582,6 @@ function switchAfricaTab(n){
 // ─────── 📝 練習字庫 ──────────────────────────────────
 function initWritingPage(){
   previewWritingChars();
-  // 偵測 iframe 是否可嵌入（X-Frame-Options）
-  const iframe=document.getElementById('writingIframe');
-  if(iframe){
-    iframe.onload=function(){
-      try{
-        // 若能存取 contentDocument 就是正常載入（同源），否則可能跨源但仍顯示
-        document.getElementById('writingIframeFallback').style.display='none';
-        iframe.style.display='block';
-      }catch(e){}
-    };
-    iframe.onerror=function(){
-      document.getElementById('writingIframeFallback').style.display='flex';
-      iframe.style.display='none';
-    };
-  }
 }
 function switchWritingTab(n){
   document.getElementById('writingPane1').style.display=n===1?'':'none';
