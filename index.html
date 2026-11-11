@@ -2710,17 +2710,17 @@
 <tr class="even">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第14週</td>
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">11/30~12/4</td>
-<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第七單元 除法</td>
+<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第六單元（小考 12/4）</td>
 </tr>
 <tr class="odd">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第15週</td>
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">12/7~12/11</td>
-<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第七單元（續）</td>
+<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第七單元 除法（小考 12/11）</td>
 </tr>
 <tr class="even">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第16週</td>
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">12/14~12/18</td>
-<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第八單元 公升和毫升</td>
+<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第八單元 公升和毫升（小考 12/18）</td>
 </tr>
 <tr class="odd">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第17週</td>
@@ -2729,8 +2729,8 @@
 </tr>
 <tr class="even">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第18週</td>
-<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">12/28~1/1</td>
-<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第九單元（續）／總複習</td>
+<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">12/28~12/31</td>
+<td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第九單元（續）／小考（12/31）</td>
 </tr>
 <tr class="odd">
 <td style="padding:6px;border:1px solid #e2e8f0;vertical-align:top;">第19週</td>
@@ -4813,6 +4813,17 @@ p.___~p.___）、放鬆心情迎接考試</em></td>
             <option value="6" selected>6格</option>
             <option value="8">8格</option>
             <option value="10">10格</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;font-weight:700;color:#374151;margin-bottom:6px;">🖌️ 範字字體</label>
+          <select id="writingFont" style="width:100%;border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;font-size:.85rem;font-family:inherit;outline:none;background:#fff;">
+            <option value="'Noto Serif TC',serif">標準楷書（預設）</option>
+            <option value="'Ma Shan Zheng',cursive">馬善政楷書</option>
+            <option value="'ZCOOL XiaoWei',serif">小魏體</option>
+            <option value="'Liu Jian Mao Cao',cursive">劉建毛草書</option>
+            <option value="'Long Cang',cursive">龍藏行書</option>
+            <option value="'Zhi Mang Xing',cursive">直芒行書</option>
           </select>
         </div>
         <div>
@@ -10611,6 +10622,7 @@ function printWritingSheet(){
   const repeat=parseInt(document.getElementById('writingRepeat').value)||6;
   const showSample=document.getElementById('writingShowSample').value==='1';
   const title=document.getElementById('writingSheetTitle').value||'生字練習';
+  const fontFamily=document.getElementById('writingFont').value||"'Noto Serif TC',serif";
 
   // 產生 SVG 格線
   const SZ=70; // 格子尺寸(px)
@@ -10628,7 +10640,7 @@ function printWritingSheet(){
       lines.push(`<line x1="${SZ}" y1="0" x2="0" y2="${SZ}" stroke="#bbb" stroke-width=".8" stroke-dasharray="3,3"/>`);
     }
     if(char&&!isBlank){
-      lines.push(`<text x="${SZ/2}" y="${SZ/2+2}" text-anchor="middle" dominant-baseline="middle" font-size="${SZ*.72}" font-family="'Noto Serif TC',serif" fill="#222" opacity="0.9">${char}</text>`);
+      lines.push(`<text x="${SZ/2}" y="${SZ/2+2}" text-anchor="middle" dominant-baseline="middle" font-size="${SZ*.72}" font-family="${fontFamily}" fill="#222" opacity="0.9">${char}</text>`);
     }
     return `<svg width="${SZ}" height="${SZ}" xmlns="http://www.w3.org/2000/svg">${lines.join('')}</svg>`;
   }
@@ -10644,11 +10656,13 @@ function printWritingSheet(){
   }).join('');
 
   const styleName=style==='tian'?'田字格':style==='mi'?'米字格':'空白格';
+  const fontNames={'\'Noto Serif TC\',serif':'標準楷書','\'Ma Shan Zheng\',cursive':'馬善政楷書','\'ZCOOL XiaoWei\',serif':'小魏體','\'Liu Jian Mao Cao\',cursive':'劉建毛草書','\'Long Cang\',cursive':'龍藏行書','\'Zhi Mang Xing\',cursive':'直芒行書'};
+  const fontLabel=fontNames[fontFamily]||'楷書';
   const html=`<!DOCTYPE html>
 <html lang="zh-TW"><head>
 <meta charset="UTF-8">
 <title>${title}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Liu+Jian+Mao+Cao&family=Long+Cang&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'Noto Sans TC',sans-serif;padding:20px 24px 32px;background:#fff;color:#111;}
@@ -10667,7 +10681,7 @@ function printWritingSheet(){
 </head>
 <body>
 <h1>✏️ ${title}</h1>
-<div class="meta">${styleName} · 每字 ${repeat} 格${showSample?' · 第一格為範字':''}</div>
+<div class="meta">${styleName} · 每字 ${repeat} 格${showSample?` · 第一格範字（${fontLabel}）`:''}</div>
 <div class="header-line">
   <span>班級：<span class="blank"></span></span>
   <span>姓名：<span class="blank"></span></span>
