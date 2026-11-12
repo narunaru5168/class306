@@ -5244,20 +5244,13 @@ function save() {
 // ─── 即時同步監聽（讓其他裝置的修改可以即時推過來）───
 // ⚠️ 注意：students（星星資料）不做即時 listener——Firebase 離線快取有時會先推舊版本，
 // 有導致星星被舊資料蓋掉的風險。星星同步請改用手動重新整理頁面（Ctrl+Shift+R）。
-// teamScores（組別組長）和 mutualAidGroups（互助小組）不影響星星，可以安全即時同步。
+// ⚠️ 同理：teamScores（小組競賽累計分）也不做即時 listener——
+// suppress 窗口 6 秒到期後，Firebase 推播舊版本會把剛存的勾選/跑步分蓋掉。
+// 兩個以上裝置同時開著時尤其容易觸發。請改用手動重新整理頁面同步。
+// mutualAidGroups（互助小組）純名單、不含分數，可以安全即時同步。
 function setupMainDataListeners(){
   if(!useCloud || !db) return;
-  let skipInit_ts=true, skipInit_ma=true;
-
-  db.ref('class306/teamScores').on('value', snap=>{
-    if(skipInit_ts){ skipInit_ts=false; return; }
-    if(Date.now()<_suppressListenerUntil) return;
-    const val=snap.val();
-    if(!val) return;
-    teamScores=val;
-    try{ localStorage.setItem('cls_teamScores',JSON.stringify(teamScores)); }catch(e){}
-    try{ renderTeamScoreTable(); }catch(e){}
-  });
+  let skipInit_ma=true;
 
   db.ref('class306/mutualAidGroups').on('value', snap=>{
     if(skipInit_ma){ skipInit_ma=false; return; }
