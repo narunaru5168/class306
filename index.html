@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light only">
-<meta name="app-version" content="v20261031-excerpt-fix">
+<meta name="app-version" content="v20261113-ios-scroll-fix">
 <title>⭐ 星星班級大冒險</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -24,7 +24,11 @@
     --radius: 20px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { overflow-x: hidden; }
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none; /* iOS Safari 防橫向彈跳 */
+    max-width: 100%;
+  }
   body {
     color-scheme: light;
     font-family: 'Nunito', sans-serif;
@@ -32,6 +36,9 @@
     min-height: 100vh;
     color: var(--dark);
     overflow-x: clip;
+    overscroll-behavior-x: none; /* iOS Safari 防橫向彈跳 */
+    max-width: 100%;
+    touch-action: pan-y; /* 只允許縱向觸控捲動 */
     padding-top: 80px; /* fallback before JS fires */
   }
 
@@ -714,6 +721,7 @@
 <body>
 <script>
 /* 立即重置橫向捲動 — 在頁面任何元素渲染前執行 */
+try { window.scrollTo(0, 0); } catch(e) {}
 document.documentElement.scrollLeft = 0;
 document.body && (document.body.scrollLeft = 0);
 </script>
@@ -5526,18 +5534,57 @@ function editLegendaryDesigner(){
 function adjustTopbarPadding(){
   const tb = document.querySelector('.topbar');
   if(tb) document.body.style.paddingTop = tb.offsetHeight + 'px';
-  // 防止橫向捲動切版
+  // 強制重置橫向捲動（使用 window.scrollTo 才能在 iOS Safari 生效）
+  if(window.scrollX !== 0) window.scrollTo(0, window.scrollY);
   document.documentElement.scrollLeft = 0;
   document.body.scrollLeft = 0;
 }
 document.addEventListener('DOMContentLoaded', adjustTopbarPadding);
 window.addEventListener('load', adjustTopbarPadding);
 window.addEventListener('resize', adjustTopbarPadding);
+
 // 額外防護：任何時候都強制scroll到左邊
+window.addEventListener('scroll', function(){
+  if(window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+}, {passive:true});
 document.addEventListener('scroll', function(){
   if(document.documentElement.scrollLeft !== 0) document.documentElement.scrollLeft = 0;
   if(document.body.scrollLeft !== 0) document.body.scrollLeft = 0;
 }, {passive:true});
+
+// iOS Safari 防彈跳橫向捲動（適用所有 iOS 版本）
+(function(){
+  'use strict';
+  var _tx = 0, _ty = 0;
+  document.addEventListener('touchstart', function(e){
+    _tx = e.touches[0].clientX;
+    _ty = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchmove', function(e){
+    var dx = Math.abs(e.touches[0].clientX - _tx);
+    var dy = Math.abs(e.touches[0].clientY - _ty);
+    if(dx > dy && dx > 5){
+      // 允許在有橫向捲動需求的容器內捲動（如表格）
+      var el = e.target;
+      while(el && el !== document.body){
+        var cs = window.getComputedStyle(el);
+        if((cs.overflowX === 'scroll' || cs.overflowX === 'auto') && el.scrollWidth > el.clientWidth) return;
+        el = el.parentElement;
+      }
+      e.preventDefault(); // 阻止頁面層級的橫向滑動
+    }
+  }, {passive:false});
+})();
+
+// 頁面載入後持續1秒強制重置橫向捲動（應對 iOS Safari 初始彈跳）
+window.addEventListener('load', function(){
+  var n = 0;
+  function raf(){
+    if(window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+    if(++n < 60) requestAnimationFrame(raf); // ~1秒 @60fps
+  }
+  requestAnimationFrame(raf);
+});
 function openNavSettingsModal(){
   ensureNavLabels();
   document.getElementById('siteTitleInput').value = siteTitle;
