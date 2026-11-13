@@ -24,7 +24,7 @@
     --radius: 20px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { overflow-x: clip; }
+  html { overflow-x: hidden; }
   body {
     color-scheme: light;
     font-family: 'Nunito', sans-serif;
@@ -712,6 +712,11 @@
 </style>
 </head>
 <body>
+<script>
+/* 立即重置橫向捲動 — 在頁面任何元素渲染前執行 */
+document.documentElement.scrollLeft = 0;
+document.body && (document.body.scrollLeft = 0);
+</script>
 
 <!-- ── 角色設定 Modal ── -->
 <div class="modal-overlay" id="roleModal">
@@ -5525,6 +5530,7 @@ function adjustTopbarPadding(){
   document.documentElement.scrollLeft = 0;
   document.body.scrollLeft = 0;
 }
+document.addEventListener('DOMContentLoaded', adjustTopbarPadding);
 window.addEventListener('load', adjustTopbarPadding);
 window.addEventListener('resize', adjustTopbarPadding);
 // 額外防護：任何時候都強制scroll到左邊
