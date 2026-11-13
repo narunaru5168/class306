@@ -31,7 +31,8 @@
     background: linear-gradient(160deg, #e0f2fe 0%, #fef9c3 50%, #dcfce7 100%);
     min-height: 100vh;
     color: var(--dark);
-    overflow-x: hidden;
+    overflow-x: clip;
+    padding-top: 80px; /* fallback before JS fires */
   }
 
   /* ── TOP BAR ── */
