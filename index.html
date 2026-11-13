@@ -104,7 +104,7 @@
   }
 
   /* ── PAGES ── */
-  .page { display: none; padding: 28px 24px 60px; max-width: 1100px; margin: 0 auto; }
+  .page { display: none; padding: 28px 24px 60px; max-width: 1100px; width: 100%; margin: 0 auto; box-sizing: border-box; overflow-x: hidden; }
   .page.active { display: block; }
 
   /* ── SECTION TITLE ── */
@@ -5521,9 +5521,17 @@ function editLegendaryDesigner(){
 function adjustTopbarPadding(){
   const tb = document.querySelector('.topbar');
   if(tb) document.body.style.paddingTop = tb.offsetHeight + 'px';
+  // 防止橫向捲動切版
+  document.documentElement.scrollLeft = 0;
+  document.body.scrollLeft = 0;
 }
 window.addEventListener('load', adjustTopbarPadding);
 window.addEventListener('resize', adjustTopbarPadding);
+// 額外防護：任何時候都強制scroll到左邊
+document.addEventListener('scroll', function(){
+  if(document.documentElement.scrollLeft !== 0) document.documentElement.scrollLeft = 0;
+  if(document.body.scrollLeft !== 0) document.body.scrollLeft = 0;
+}, {passive:true});
 function openNavSettingsModal(){
   ensureNavLabels();
   document.getElementById('siteTitleInput').value = siteTitle;
