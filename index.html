@@ -31,7 +31,7 @@
     background: linear-gradient(160deg, #e0f2fe 0%, #fef9c3 50%, #dcfce7 100%);
     min-height: 100vh;
     color: var(--dark);
-    overflow-x: clip;
+    overflow-x: hidden;
   }
 
   /* ── TOP BAR ── */
@@ -47,8 +47,9 @@
     flex-wrap: wrap;
     row-gap: 8px;
     box-shadow: 0 4px 20px rgba(91,184,245,0.4);
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
     z-index: 100;
     width: 100%;
     box-sizing: border-box;
@@ -5515,6 +5516,13 @@ function editLegendaryDesigner(){
   const saved = localStorage.getItem('legendaryDesignerName');
   if(saved){ const el = document.getElementById('legendaryDesignerName'); if(el) el.textContent = saved; }
 })();
+// Adjust body padding-top to match fixed topbar height
+function adjustTopbarPadding(){
+  const tb = document.querySelector('.topbar');
+  if(tb) document.body.style.paddingTop = tb.offsetHeight + 'px';
+}
+window.addEventListener('load', adjustTopbarPadding);
+window.addEventListener('resize', adjustTopbarPadding);
 function openNavSettingsModal(){
   ensureNavLabels();
   document.getElementById('siteTitleInput').value = siteTitle;
