@@ -230,6 +230,7 @@
       <div class="add-opt-row">
         <button class="btn btn-ghost btn-sm" type="button" id="addOptBtn">➕ 新增選項</button>
         <button class="btn btn-ghost btn-sm" type="button" id="importRosterBtn">📥 從全班名冊帶入</button>
+        <button class="btn btn-ghost btn-sm" type="button" id="loadVideoBtn">🎬 帶入影片候選人</button>
       </div>
 
       <button class="btn btn-primary" id="startVoteBtn" style="width:100%;justify-content:center;padding:14px;font-size:1.02rem;">🚀 開始投票</button>
@@ -431,6 +432,41 @@
     } else {
       try { done(JSON.parse(localStorage.getItem("cls_students") || "[]")); }
       catch(e){ done(null); }
+    }
+  });
+
+  // ─── 🎬 自主學習影片投票：已繳交影片的同學 ───
+  var VIDEO_SEATS = [6, 9, 11];
+  var VIDEO_FILES = { 6: "06.mp4", 9: "09.mp4", 11: "11.mp4" };
+
+  document.getElementById("loadVideoBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    function apply(list){
+      btn.disabled = false;
+      if (!list || !list.length) { toastMsg("⚠️ 找不到班上的名冊資料"); return; }
+      // 設定預設標題（如果還沒填）
+      var titleEl = document.getElementById("voteTitle");
+      if (!titleEl.value.trim()) titleEl.value = "自主學習成果影片票選";
+      // 依座號排序，有影片的開放，其餘先鎖定
+      var sorted = list.slice().sort(function(a,b){ return (parseInt(a.seatNo)||99)-(parseInt(b.seatNo)||99); });
+      sorted.forEach(function(s){
+        var sn = parseInt(s.seatNo || "0");
+        var hasVideo = VIDEO_SEATS.indexOf(sn) !== -1;
+        var label = (s.seatNo ? String(s.seatNo).padStart(2,"0") + "號 " : "") + (s.name || "");
+        var link = hasVideo ? ("./" + VIDEO_FILES[sn]) : "";
+        addOptRow(label, link, !hasVideo);
+      });
+      toastMsg("✅ 已帶入全班！06、09、11 號已繳交影片並開放投票，其餘同學尚未開放");
+    }
+    if (useCloud && db) {
+      db.ref("class306/students").get().then(function(snap){
+        apply(snap && snap.exists && snap.exists() ? snap.val() : null);
+      }).catch(function(){
+        try { apply(JSON.parse(localStorage.getItem("cls_students") || "[]")); } catch(e){ apply(null); }
+      });
+    } else {
+      try { apply(JSON.parse(localStorage.getItem("cls_students") || "[]")); } catch(e){ apply(null); }
     }
   });
 
