@@ -259,6 +259,7 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
         <button class="btn btn-sun btn-sm" id="revealBtn" hidden>🔓 公布目前票數</button>
+        <button class="btn btn-ghost btn-sm" id="unlockVideoBtn" type="button">🎬 開放影片同學</button>
         <a class="btn btn-ghost btn-sm" id="bigScreenLink" href="vote-result.html" target="_blank" rel="noopener">📺 開啟大螢幕結果頁</a>
       </div>
     </div>
@@ -438,6 +439,25 @@
   // ─── 🎬 自主學習影片投票：已繳交影片的同學 ───
   var VIDEO_SEATS = [6, 9, 11];
   var VIDEO_FILES = { 6: "06.mp4", 9: "09.mp4", 11: "11.mp4" };
+
+  document.getElementById("unlockVideoBtn").addEventListener("click", function(){
+    if (!activeBox || !activeBox.options) { toastMsg("⚠️ 目前沒有進行中的投票"); return; }
+    var updated = 0;
+    activeBox.options.forEach(function(o){
+      VIDEO_SEATS.forEach(function(sn){
+        var padded = String(sn).padStart(2,"0") + "號";
+        if (o.label.indexOf(padded) !== -1 && (o.disabled || !o.link)) {
+          o.disabled = false;
+          o.link = "./" + VIDEO_FILES[sn];
+          updated++;
+        }
+      });
+    });
+    if (!updated) { toastMsg("ℹ️ 三位同學已經都開放了！"); return; }
+    saveBox(activeBox);
+    toastMsg("✅ 已開放 " + updated + " 位同學並設好影片連結！");
+    renderActive();
+  });
 
   document.getElementById("loadVideoBtn").addEventListener("click", function(){
     var btn = this;
