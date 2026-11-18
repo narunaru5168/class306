@@ -1259,6 +1259,22 @@ document.body && (document.body.scrollLeft = 0);
         <input type="text" id="batchStarReason" placeholder="例：整理教室、上課吵鬧…">
       </div>
     </div>
+    <!-- 扣星類型（只在扣星時顯示） -->
+    <div id="batchSubTypeSection" style="display:none;margin-bottom:10px;">
+      <label style="font-weight:700;font-size:.85rem;color:#555;display:block;margin-bottom:6px;">扣星類型</label>
+      <div style="display:flex;gap:8px;">
+        <button id="batchSubNormalBtn" class="btn active" style="flex:1;padding:7px 0;font-size:.82rem;" onclick="setBatchSubType('normal',this)">📋 一般調整</button>
+        <button id="batchSubBehaviorBtn" class="btn" style="flex:1;padding:7px 0;font-size:.82rem;" onclick="setBatchSubType('behavior',this)">🔧 行為問題（鎖定加星）</button>
+      </div>
+    </div>
+    <!-- 修復任務選擇（行為問題才顯示） -->
+    <div id="batchRepairSection" style="display:none;margin-bottom:10px;">
+      <label style="font-weight:700;font-size:.85rem;color:#9a3412;display:block;margin-bottom:6px;">🔧 指派修復任務（完成前這些學生的加星會被鎖住）</label>
+      <div class="repair-list" id="batchRepairList"></div>
+      <div id="batchRepairCustomWrap" style="display:none;margin-top:8px;">
+        <input type="text" id="batchRepairCustomInput" placeholder="輸入自訂的修復任務內容..." oninput="batchSelectedRepair=this.value.trim()" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:.85rem;">
+      </div>
+    </div>
     <div class="modal-btns">
       <button class="btn btn-success" id="batchStarConfirmBtn" onclick="confirmBatchStar()">確認</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('batchStarModal')">取消</button>
@@ -5301,6 +5317,11 @@ function setupMainDataListeners(){
   });
 }
 async function doSaveAll() {
+  // 先記錄這次存檔的時間戳（localStorage 立即寫入，Firebase 非同步跟上）
+  // loadData 讀取時用這個時間戳判斷哪份資料比較新，避免刷新時舊版 Firebase 蓋掉剛加的星星
+  const saveTs = Date.now();
+  localStorage.setItem('cls_savedAt', String(saveTs));
+  await saveField('class306/savedAt', saveTs, null);
   await saveField('class306/students', students, 'cls_students');
   await saveField('class306/grades', grades, 'cls_grades');
   await saveField('class306/classMilestone', classMilestoneClaimed, 'cls_classMilestone');
@@ -5347,9 +5368,11 @@ async function fetchField(path, defaultVal){
 }
 async function loadData() {
   const [
+    saVal,
     sVal, gVal, mVal, tVal, dVal, cVal, tsVal, tcVal,
     wtVal, rlVal, nlVal, stVal, dsVal, scVal, scuVal, czVal, crVal, tbVal, maVal, coVal, opVal, gmsVal, fsVal, tdcVal, dkVal, omaVal, erVal
   ] = await Promise.all([
+    fetchField('class306/savedAt', 0),
     fetchField('class306/students', []),
     fetchField('class306/grades', []),
     fetchField('class306/classMilestone', 0),
@@ -5378,6 +5401,19 @@ async function loadData() {
     fetchField('class306/officerMonthlyAward', null),
     fetchField('class306/essayRecords', []),
   ]);
+
+  // 時間戳仲裁：如果 localStorage 比 Firebase 新，說明 Firebase 還沒寫完就刷新了
+  // 此時用 localStorage 的資料保護剛加的星星不被舊版 Firebase 蓋掉
+  const localSavedAt = parseInt(localStorage.getItem('cls_savedAt') || '0');
+  const cloudSavedAt = typeof saVal === 'number' ? saVal : 0;
+  if (localSavedAt > cloudSavedAt) {
+    const lsStudents = JSON.parse(localStorage.getItem('cls_students') || 'null');
+    if (lsStudents !== null) sVal = lsStudents;
+    const lsTeamScores = JSON.parse(localStorage.getItem('cls_teamScores') || 'null');
+    if (lsTeamScores !== null) tsVal = lsTeamScores;
+    const lsTeamDailyChecks = JSON.parse(localStorage.getItem('cls_teamDailyChecks') || 'null');
+    if (lsTeamDailyChecks !== null) tdcVal = lsTeamDailyChecks;
+  }
 
   students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
   grades = gVal !== null ? gVal : JSON.parse(localStorage.getItem('cls_grades')||'[]');
@@ -5706,6 +5742,8 @@ let studentFilter = 'all';
 let batchMode = false;
 let batchSelected = new Set();
 let batchStarType = 'add';
+let batchSubType = 'normal';
+let batchSelectedRepair = '';
 function setStudentFilter(filter, el){
   studentFilter = filter;
   document.querySelectorAll('#filter-all,#filter-boy,#filter-girl').forEach(b=>b.classList.remove('active'));
@@ -5761,6 +5799,8 @@ function renderBatchSeatGrid(){
 function openBatchStarModal(type, presetReason){
   if(batchSelected.size===0){ toast('⚠️ 請先勾選至少一位學生！'); return; }
   batchStarType = type;
+  batchSubType = 'normal';
+  batchSelectedRepair = '';
   const names = students.filter(s=>batchSelected.has(s.id)).map(s=>s.name).join('、');
   document.getElementById('batchStarNames').textContent = `${names}（共 ${batchSelected.size} 位）`;
   document.getElementById('batchStarTitle').textContent = type==='add' ? '⭐ 批次給予星星' : '－ 批次扣除星星';
@@ -5770,7 +5810,54 @@ function openBatchStarModal(type, presetReason){
   const btn = document.getElementById('batchStarConfirmBtn');
   btn.className = type==='add' ? 'btn btn-success' : 'btn btn-danger';
   btn.textContent = type==='add' ? '⭐ 確認給星' : '－ 確認扣星';
+  // 扣星才顯示類型選擇
+  document.getElementById('batchSubTypeSection').style.display = type==='sub' ? 'block' : 'none';
+  document.getElementById('batchRepairSection').style.display = 'none';
+  // 重置類型按鈕狀態
+  document.getElementById('batchSubNormalBtn').classList.add('active');
+  document.getElementById('batchSubBehaviorBtn').classList.remove('active');
   openModal('batchStarModal');
+}
+function setBatchSubType(type, el){
+  batchSubType = type;
+  batchSelectedRepair = '';
+  document.getElementById('batchSubNormalBtn').classList.remove('active');
+  document.getElementById('batchSubBehaviorBtn').classList.remove('active');
+  el.classList.add('active');
+  const repairSec = document.getElementById('batchRepairSection');
+  if(type === 'behavior'){
+    repairSec.style.display = 'block';
+    document.getElementById('batchRepairCustomWrap').style.display = 'none';
+    document.getElementById('batchRepairCustomInput').value = '';
+    const list = document.getElementById('batchRepairList');
+    list.innerHTML = '';
+    REPAIR_TASKS.forEach(task=>{
+      const d = document.createElement('div');
+      d.className = 'repair-item';
+      d.innerHTML = `<span>🔧</span><span style="font-size:.85rem;font-weight:700;">${task}</span>`;
+      d.onclick = ()=>{
+        batchSelectedRepair = task;
+        list.querySelectorAll('.repair-item').forEach(r=>r.classList.remove('chosen'));
+        d.classList.add('chosen');
+        document.getElementById('batchRepairCustomWrap').style.display = 'none';
+      };
+      list.appendChild(d);
+    });
+    const customItem = document.createElement('div');
+    customItem.className = 'repair-item';
+    customItem.innerHTML = `<span>✏️</span><span style="font-size:.85rem;font-weight:700;">自己輸入</span>`;
+    customItem.onclick = ()=>{
+      batchSelectedRepair = '';
+      list.querySelectorAll('.repair-item').forEach(r=>r.classList.remove('chosen'));
+      customItem.classList.add('chosen');
+      const wrap = document.getElementById('batchRepairCustomWrap');
+      wrap.style.display = 'block';
+      document.getElementById('batchRepairCustomInput').focus();
+    };
+    list.appendChild(customItem);
+  } else {
+    repairSec.style.display = 'none';
+  }
 }
 function confirmBatchStar(){
   const amt = Math.max(1, parseInt(document.getElementById('batchStarAmt').value)||1);
@@ -5788,18 +5875,31 @@ function confirmBatchStar(){
       if(s.stars>=250 && !s.badges.includes('⚡閃電')) s.badges.push('⚡閃電');
       if(s.stars>=400 && !s.badges.includes('🌟星王')) s.badges.push('🌟星王');
     } else {
+      // 行為問題扣星：需要選修復任務
+      if(batchSubType==='behavior' && !batchSelectedRepair){
+        toast('⚠️ 請選擇或輸入修復任務！'); return;
+      }
       const actualAmt = Math.min(amt, s.stars);
       s.stars = Math.max(0, s.stars-actualAmt);
-      s.log.push({id:generateId(), reason, amt:-actualAmt, date:new Date().toLocaleDateString('zh-TW')});
+      let reasonText = reason;
+      if(batchSubType==='behavior' && batchSelectedRepair){
+        s.repairTasks = s.repairTasks||[];
+        s.repairTasks.push({task:batchSelectedRepair, deductedStars:actualAmt, date:new Date().toLocaleDateString(), done:false});
+        reasonText = reason + `（修復任務：${batchSelectedRepair}）`;
+        s.lastBehaviorIncidentAt = Date.now();
+        s.streakMilestonesHit = [];
+      }
+      s.log.push({id:generateId(), reason:reasonText, amt:-actualAmt, date:new Date().toLocaleDateString('zh-TW')});
     }
   });
   save(); renderStudents(); updateStats();
   closeModal('batchStarModal');
   const awardedCount = targets.length - skipped.length;
   const skipNote = skipped.length ? `（⚠️ ${skipped.join('、')} 還有修復任務未完成，自動跳過沒有加）` : '';
+  const repairNote = (batchStarType==='sub' && batchSubType==='behavior' && batchSelectedRepair) ? `，已鎖定加星並指派修復任務：${batchSelectedRepair}` : '';
   toast(batchStarType==='add'
     ? `⭐ ${awardedCount} 位學生各獲得 ${amt} 顆星！（${reason}）${skipNote}`
-    : `－ ${targets.length} 位學生各扣除 ${amt} 顆星（${reason}）`);
+    : `🔧 ${targets.length} 位學生各扣除 ${amt} 顆星${repairNote}`);
   toggleBatchMode();
 }
 function batchGrantSpinChance(){
