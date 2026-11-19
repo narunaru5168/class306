@@ -1310,21 +1310,22 @@ function initExit(){
     try {
       db.ref('class306/students').once('value').then(snap=>{
         const fbStudents = snap.val();
-        if(fbStudents && Array.isArray(fbStudents) && fbStudents.length > 0){
+        const fbArr = Array.isArray(fbStudents)
+          ? fbStudents
+          : (fbStudents && typeof fbStudents==='object'
+              ? Object.keys(fbStudents).sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>fbStudents[k])
+              : null);
+        if(fbArr && fbArr.filter(s=>s&&s.name).length > 0){
           while(sel.options.length > 3) sel.remove(3);
-          const sorted = fbStudents.slice().sort((a,b)=>{
-            const sa = parseInt((a && (a.sid||a.seat))||'0');
-            const sb = parseInt((b && (b.sid||b.seat))||'0');
-            return sa - sb;
-          });
-          sorted.forEach(s=>{
-            if(!s) return;
-            const name = (s.name || '').toString();
-            const seat = (s.sid || s.seat || '');
-            const seatPad = seat ? String(seat).padStart(2,'0') : '';
+          let seatIdx = 0;
+          fbArr.forEach(s=>{
+            if(!s || !s.name) return;
+            seatIdx++;
+            const name = s.name.toString();
+            const seatPad = String(seatIdx).padStart(2,'0');
             const opt = document.createElement('option');
-            opt.value = seatPad ? `${seatPad}|${name}` : name;
-            opt.textContent = seatPad ? `${seatPad}號 ${name}` : name;
+            opt.value = `${seatPad}|${name}`;
+            opt.textContent = `${seatPad}號 ${name}`;
             sel.appendChild(opt);
           });
         } else {
