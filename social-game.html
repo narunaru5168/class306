@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>306 規範大冒險</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g1:#E84040;--g2:#F4A030;--g3:#E6C020;--g4:#34B86A;--g5:#3A86D8;--g6:#9B59B6;
+  --goal1:#3A86D8;--goal2:#34B86A;--goal3:#9B59B6;
+  --bg:#F5F7FF;--white:#FFFFFF;--text:#2C3E50;--muted:#7F8C8D;
+  --radius:16px;--shadow:0 4px 20px rgba(0,0,0,0.12);
+  --accent:#667EEA;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.screen{display:none;}
+.screen.active{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ===TOP BAR=== */
+.topbar{
+  background:linear-gradient(135deg,#667EEA,#764BA2);
+  color:#fff;padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 12px rgba(102,126,234,0.4);
+  position:sticky;top:0;z-index:100;
+}
+.topbar-title{font-size:1.1rem;font-weight:900;}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.topbar-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:0.8rem;font-weight:700;}
+
+/* ===HOME=== */
+#homeScreen{
+  background:linear-gradient(160deg,#667EEA 0%,#764BA2 50%,#F093FB 100%);
+  justify-content:center;align-items:center;padding:24px;
+}
+.home-hero{text-align:center;color:#fff;margin-bottom:32px;}
+.home-hero .emoji{font-size:4rem;display:block;margin-bottom:12px;animation:bounce 2s infinite;}
+.home-hero h1{font-size:2.4rem;font-weight:900;line-height:1.2;margin-bottom:8px;}
+.home-hero p{font-size:1rem;opacity:0.85;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;max-width:860px;width:100%;}
+.home-card{
+  background:#fff;border-radius:20px;padding:22px 18px;
+  cursor:pointer;text-align:center;
+  transition:transform 0.2s,box-shadow 0.2s;
+  box-shadow:var(--shadow);
+  border-top:6px solid;
+}
+.home-card:hover{transform:translateY(-5px);box-shadow:0 10px 30px rgba(0,0,0,0.2);}
+.home-card .hc-emoji{font-size:2.4rem;display:block;margin-bottom:8px;}
+.home-card .hc-round{font-size:0.75rem;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;}
+.home-card .hc-name{font-size:1.15rem;font-weight:900;}
+.home-card .hc-desc{font-size:0.78rem;color:var(--muted);margin-top:5px;}
+.home-card.r1{border-color:var(--goal1);}
+.home-card.r2{border-color:#E84040;}
+.home-card.r3{border-color:#F4A030;}
+.home-card.rx{border-color:#34B86A;}
+.home-card.rs{border-color:#95A5A6;}
+
+/* ===BUTTONS=== */
+.btn{
+  padding:9px 18px;border-radius:12px;border:none;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.9rem;
+  transition:all 0.18s;display:inline-flex;align-items:center;gap:6px;
+}
+.btn:hover{filter:brightness(0.92);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-success{background:#27AE60;color:#fff;}
+.btn-danger{background:#E74C3C;color:#fff;}
+.btn-warning{background:#F39C12;color:#fff;}
+.btn-info{background:#2980B9;color:#fff;}
+.btn-secondary{background:#BDC3C7;color:#fff;}
+.btn-ghost{background:#fff;color:var(--accent);border:2px solid var(--accent);}
+.btn-home{background:rgba(255,255,255,0.15);color:#fff;border:2px solid rgba(255,255,255,0.4);}
+.btn-sm{padding:6px 12px;font-size:0.82rem;border-radius:9px;}
+.btn-lg{padding:13px 26px;font-size:1.05rem;border-radius:16px;}
+
+/* ===CTRL BAR=== */
+.ctrl-bar{
+  background:#fff;border-top:1px solid #EEE;
+  padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;
+  align-items:center;justify-content:center;
+}
+
+/* ===GROUP TABS=== */
+.group-tabs{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;padding:10px 16px;}
+.gtab{
+  padding:5px 14px;border-radius:20px;border:2px solid;
+  background:#fff;cursor:pointer;font-weight:700;font-size:0.82rem;
+  transition:all 0.18s;
+}
+.gtab.active,.gtab:hover{color:#fff!important;}
+.gtab[data-g="1"]{color:var(--g1);border-color:var(--g1);}
+.gtab[data-g="2"]{color:var(--g2);border-color:var(--g2);}
+.gtab[data-g="3"]{color:var(--g3);border-color:var(--g3);}
+.gtab[data-g="4"]{color:var(--g4);border-color:var(--g4);}
+.gtab[data-g="5"]{color:var(--g5);border-color:var(--g5);}
+.gtab[data-g="6"]{color:var(--g6);border-color:var(--g6);}
+.gtab[data-g="1"].active,.gtab[data-g="1"]:hover{background:var(--g1);}
+.gtab[data-g="2"].active,.gtab[data-g="2"]:hover{background:var(--g2);}
+.gtab[data-g="3"].active,.gtab[data-g="3"]:hover{background:var(--g3);}
+.gtab[data-g="4"].active,.gtab[data-g="4"]:hover{background:var(--g4);}
+.gtab[data-g="5"].active,.gtab[data-g="5"]:hover{background:var(--g5);}
+.gtab[data-g="6"].active,.gtab[data-g="6"]:hover{background:var(--g6);}
+
+/* ===ROUND 1 規範偵探=== */
+#r1Screen{background:#EFF4FF;}
+.r1-body{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:12px;overflow:auto;}
+.goals-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.goal-col{
+  background:#fff;border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+  display:flex;flex-direction:column;min-height:220px;
+}
+.goal-head{
+  color:#fff;padding:12px 14px;text-align:center;
+  font-weight:900;font-size:1rem;line-height:1.3;
+}
+.goal-head .glabel{font-size:0.7rem;opacity:0.8;display:block;margin-bottom:3px;}
+.drop-zone{
+  flex:1;padding:8px;display:flex;flex-direction:column;gap:7px;
+  min-height:80px;transition:background 0.2s;
+}
+.drop-zone.over{background:rgba(102,126,234,0.07);border:2px dashed var(--accent);}
+.r1-pool{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
+.r1-pool h3{font-size:0.85rem;color:var(--muted);font-weight:700;margin-bottom:10px;}
+.cards-wrap{display:flex;flex-wrap:wrap;gap:9px;}
+.rcard{
+  background:#fff;border:2.5px dashed #CCC;border-radius:11px;
+  padding:9px 13px;cursor:grab;font-weight:700;font-size:0.88rem;
+  transition:all 0.18s;user-select:none;
+}
+.rcard:hover{border-color:var(--accent);box-shadow:0 3px 12px rgba(102,126,234,0.25);transform:scale(1.03);}
+.rcard.dragging{opacity:0.45;transform:scale(1.05);}
+.rcard.in-zone{font-size:0.82rem;padding:7px 11px;border-style:solid;border-color:#DDD;}
+.rcard.correct{border-color:#27AE60;background:#F0FFF5;color:#1a7a40;}
+.rcard.wrong{border-color:#E74C3C;background:#FFF5F5;color:#c0392b;}
+.score-banner{
+  background:linear-gradient(135deg,#667EEA,#764BA2);
+  color:#fff;padding:10px 18px;border-radius:12px;
+  text-align:center;font-weight:900;font-size:1rem;
+  display:none;
+}
+.score-banner.show{display:block;}
+
+/* ===ROUND 2 公約小法官=== */
+#r2Screen{background:#FFF5F5;}
+.r2-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px;gap:18px;}
+.proposal-wrap{
+  background:#fff;border-radius:24px;padding:36px 40px;
+  text-align:center;box-shadow:var(--shadow);max-width:580px;width:100%;
+  position:relative;overflow:hidden;
+}
+.proposal-wrap::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:150px;height:150px;border-radius:50%;
+  background:rgba(102,126,234,0.07);
+}
+.p-num{font-size:0.85rem;color:var(--muted);font-weight:700;margin-bottom:14px;}
+.p-text{font-size:1.9rem;font-weight:900;line-height:1.4;margin-bottom:20px;}
+.p-vote-hint{
+  display:flex;align-items:center;justify-content:center;gap:18px;
+  font-size:1rem;color:var(--muted);font-weight:700;
+}
+.vote-sym{font-size:1.4rem;font-weight:900;}
+.vote-sym.ok{color:#E74C3C;}
+.vote-sym.ng{color:#3498DB;}
+.votes-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:580px;width:100%;}
+.vcell{
+  background:#fff;border-radius:12px;padding:11px 7px;
+  text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  cursor:pointer;transition:all 0.18s;border:2px solid transparent;
+}
+.vcell:hover{transform:translateY(-2px);}
+.vcell .vg{font-size:0.75rem;font-weight:700;margin-bottom:7px;}
+.vcell .vi{font-size:1.6rem;line-height:1;}
+.vcell.voted-ok{background:#FFEAEA;border-color:#E74C3C;}
+.vcell.voted-ng{background:#EAF4FF;border-color:#3498DB;}
+.p-answer{
+  max-width:580px;width:100%;padding:14px 20px;
+  border-radius:14px;text-align:center;font-weight:700;
+  display:none;font-size:1rem;line-height:1.5;
+}
+.p-answer.show{display:block;animation:fadeIn 0.3s ease;}
+.p-answer.good{background:#D5F5E3;color:#1E8449;border:2px solid #A9DFBF;}
+.p-answer.bad{background:#FADBD8;color:#922B21;border:2px solid #F5B7B1;}
+.r2-nav{display:flex;gap:10px;align-items:center;font-weight:700;font-size:0.95rem;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.p-hidden .p-text{filter:blur(10px);transition:filter 0.3s;}
+
+/* ===ROUND 3 規範變變變=== */
+#r3Screen{background:#FFFBF0;}
+.r3-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:14px;}
+.r3-title{text-align:center;}
+.r3-title h2{font-size:1.3rem;font-weight:900;}
+.r3-title p{font-size:0.85rem;color:var(--muted);margin-top:4px;}
+.sort-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;flex:1;}
+.scard{
+  background:#fff;border:3px solid;border-radius:20px;
+  padding:22px 16px;text-align:center;
+  font-size:1.2rem;font-weight:900;
+  cursor:grab;user-select:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  transition:all 0.2s;min-height:110px;position:relative;
+}
+.scard:active{cursor:grabbing;}
+.scard:hover{transform:scale(1.02);}
+.scard.dragging{opacity:0.4;transform:scale(1.03);}
+.scard.drag-target{border-style:dashed;}
+.scard .snum{
+  position:absolute;top:10px;left:12px;
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.9rem;font-weight:900;color:#fff;
+}
+.scard[data-idx="0"]{border-color:var(--g1);}
+.scard[data-idx="0"] .snum{background:var(--g1);}
+.scard[data-idx="1"]{border-color:var(--g2);}
+.scard[data-idx="1"] .snum{background:var(--g2);}
+.scard[data-idx="2"]{border-color:var(--g4);}
+.scard[data-idx="2"] .snum{background:var(--g4);}
+.scard[data-idx="3"]{border-color:var(--g5);}
+.scard[data-idx="3"] .snum{background:var(--g5);}
+.scard.correct-pos{border-style:solid;background:#F0FFF5;}
+.scard.wrong-pos{border-style:solid;background:#FFF5F5;}
+.r3-answer{
+  background:#fff;border-radius:var(--radius);padding:14px 18px;
+  box-shadow:var(--shadow);display:none;
+}
+.r3-answer.show{display:block;animation:fadeIn 0.3s;}
+.r3-answer h3{font-weight:900;margin-bottom:10px;font-size:0.95rem;color:var(--muted);}
+.answer-steps{display:flex;gap:8px;flex-wrap:wrap;}
+.astep{
+  background:linear-gradient(135deg,#667EEA,#764BA2);
+  color:#fff;border-radius:12px;padding:8px 14px;
+  font-weight:700;font-size:0.88rem;
+  display:flex;align-items:center;gap:7px;
+}
+.astep-num{
+  background:rgba(255,255,255,0.3);
+  border-radius:50%;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.8rem;font-weight:900;flex-shrink:0;
+}
+
+/* ===EXIT TICKET=== */
+#exitScreen{background:#F0FFF8;}
+.exit-body{flex:1;padding:16px 14px;max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px;}
+.exit-header{text-align:center;}
+.exit-header .eh-emoji{font-size:2.8rem;display:block;margin-bottom:8px;}
+.exit-header h2{font-size:1.6rem;font-weight:900;}
+.exit-header p{color:var(--muted);font-size:0.9rem;margin-top:4px;}
+.exit-info{display:flex;gap:10px;flex-wrap:wrap;}
+.exit-field{flex:1;min-width:110px;display:flex;flex-direction:column;gap:5px;}
+.exit-field label{font-size:0.82rem;font-weight:700;color:var(--muted);}
+.exit-field input{
+  border:2px solid #DDD;border-radius:10px;padding:9px 13px;
+  font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;
+  transition:border-color 0.2s;
+}
+.exit-field input:focus{border-color:var(--accent);}
+.exit-q{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
+.exit-q .eq-label{font-size:0.75rem;font-weight:700;color:var(--accent);letter-spacing:0.5px;}
+.exit-q .eq-text{font-size:1.05rem;font-weight:700;margin:5px 0 12px;}
+.exit-q textarea{
+  width:100%;border:2px solid #DDD;border-radius:10px;padding:10px 13px;
+  font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;
+  resize:vertical;min-height:70px;transition:border-color 0.2s;
+}
+.exit-q textarea:focus{border-color:var(--accent);}
+.exit-reason{margin-top:10px;}
+.exit-reason label{font-size:0.82rem;font-weight:700;color:var(--muted);}
+.exit-thank{
+  background:linear-gradient(135deg,#667EEA,#764BA2);
+  color:#fff;border-radius:var(--radius);padding:20px;
+  text-align:center;display:none;
+}
+.exit-thank.show{display:block;animation:fadeIn 0.4s;}
+.exit-thank .et-emoji{font-size:3rem;display:block;margin-bottom:10px;}
+.exit-thank h3{font-size:1.4rem;font-weight:900;margin-bottom:6px;}
+
+/* ===SETTINGS=== */
+#settingsScreen{background:#F8F9FA;}
+.stgs-body{flex:1;padding:14px;max-width:900px;margin:0 auto;width:100%;overflow:auto;}
+.stgs-tabs{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap;}
+.stab{
+  padding:7px 18px;border-radius:20px;border:2px solid #DDD;
+  background:#fff;cursor:pointer;font-weight:700;font-size:0.85rem;transition:all 0.18s;
+}
+.stab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.spanel{display:none;}
+.spanel.active{display:flex;flex-direction:column;gap:14px;}
+.sbox{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.sbox h3{font-size:0.95rem;font-weight:900;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #F0F0F0;color:var(--accent);}
+.srow{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.srow label{font-size:0.8rem;font-weight:700;color:var(--muted);}
+.srow input,.srow textarea,.srow select{
+  border:2px solid #E0E0E0;border-radius:9px;padding:7px 11px;
+  font-family:'Noto Sans TC',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s;
+}
+.srow input:focus,.srow textarea:focus,.srow select:focus{border-color:var(--accent);}
+.card-edit-row{
+  display:flex;align-items:center;gap:8px;
+  background:#F8F9FA;border-radius:9px;padding:9px 12px;margin-bottom:7px;
+}
+.card-edit-row input{
+  flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;
+  font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none;
+}
+.card-edit-row input:focus{border-color:var(--accent);}
+.card-edit-row select{
+  border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;
+  font-family:'Noto Sans TC',sans-serif;font-size:0.82rem;outline:none;
+}
+.del-btn{
+  background:#E74C3C;color:#fff;border:none;border-radius:7px;
+  padding:5px 10px;cursor:pointer;font-size:0.78rem;white-space:nowrap;
+}
+.add-btn{
+  background:var(--accent);color:#fff;border:none;border-radius:9px;
+  padding:7px 14px;cursor:pointer;font-weight:700;font-size:0.85rem;margin-top:4px;
+}
+
+/* ===TOAST=== */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:#2C3E50;color:#fff;padding:10px 20px;border-radius:12px;
+  font-weight:700;font-size:0.9rem;z-index:9999;transition:transform 0.3s;
+  white-space:nowrap;pointer-events:none;
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ===CONFETTI=== */
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:9998;overflow:hidden;}
+.cf{position:absolute;width:9px;height:9px;animation:cf-fall 3.5s ease-in forwards;}
+@keyframes cf-fall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(110vh) rotate(600deg);opacity:0;}
+}
+
+/* ===RESP=== */
+@media(max-width:600px){
+  .goals-row{grid-template-columns:1fr;}
+  .sort-grid{grid-template-columns:1fr;}
+  .votes-grid{grid-template-columns:repeat(3,1fr);}
+  .home-cards{grid-template-columns:repeat(2,1fr);}
+  .p-text{font-size:1.5rem;}
+  .home-hero h1{font-size:1.8rem;}
+  .home-hero .emoji{font-size:3rem;}
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ===HOME=== -->
+<div id="homeScreen" class="screen active">
+  <div class="home-hero">
+    <span class="emoji">⭐</span>
+    <h1 id="gameTitle">306 規範大冒險</h1>
+    <p id="gameSubtitle">社會科互動課程</p>
+  </div>
+  <div class="home-cards">
+    <div class="home-card r1" onclick="goTo('r1Screen')">
+      <span class="hc-round">第 1 關</span>
+      <span class="hc-emoji">🔍</span>
+      <div class="hc-name">規範偵探</div>
+      <div class="hc-desc">把規範卡放到正確的目的下面</div>
+    </div>
+    <div class="home-card r2" onclick="goTo('r2Screen')">
+      <span class="hc-round">第 2 關</span>
+      <span class="hc-emoji">⚖️</span>
+      <div class="hc-name">公約小法官</div>
+      <div class="hc-desc">判斷公約好不好</div>
+    </div>
+    <div class="home-card r3" onclick="goTo('r3Screen')">
+      <span class="hc-round">第 3 關</span>
+      <span class="hc-emoji">🔀</span>
+      <div class="hc-name">規範變變變</div>
+      <div class="hc-desc">排出修改規範的正確順序</div>
+    </div>
+    <div class="home-card rx" onclick="goTo('exitScreen')">
+      <span class="hc-round">完成任務</span>
+      <span class="hc-emoji">📝</span>
+      <div class="hc-name">出場券</div>
+      <div class="hc-desc">寫下今天的收穫</div>
+    </div>
+    <div class="home-card rs" onclick="goTo('settingsScreen')">
+      <span class="hc-round">老師設定</span>
+      <span class="hc-emoji">⚙️</span>
+      <div class="hc-name">自訂內容</div>
+      <div class="hc-desc">修改題目與關卡設定</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===ROUND 1=== -->
+<div id="r1Screen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">🔍 第1關 規範偵探</span>
+    <span class="topbar-badge" id="r1-score-badge">0/0</span>
+  </div>
+  <div class="group-tabs" id="r1-group-tabs"></div>
+  <div class="r1-body">
+    <div class="goals-row" id="r1-goals"></div>
+    <div class="r1-pool">
+      <h3>✋ 規範卡（拖到上方正確的目的欄）</h3>
+      <div class="cards-wrap" id="r1-pool-cards"></div>
+    </div>
+    <div class="score-banner" id="r1-score-banner"></div>
+  </div>
+  <div class="ctrl-bar">
+    <button class="btn btn-warning btn-sm" onclick="r1Shuffle()">🔀 重新洗牌</button>
+    <button class="btn btn-info btn-sm" onclick="r1ShowAnswer()">💡 顯示答案</button>
+    <button class="btn btn-success btn-sm" onclick="r1Check()">✅ 對答案</button>
+    <button class="btn btn-secondary btn-sm" onclick="r1Reset()">↺ 重置</button>
+  </div>
+</div>
+
+<!-- ===ROUND 2=== -->
+<div id="r2Screen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">⚖️ 第2關 公約小法官</span>
+    <span class="topbar-badge" id="r2-counter">1/6</span>
+  </div>
+  <div class="r2-body">
+    <div class="proposal-wrap" id="r2-proposal">
+      <div class="p-num" id="r2-pnum">提議 1</div>
+      <div class="p-text" id="r2-ptext">載入中...</div>
+      <div class="p-vote-hint">
+        <span>這條公約好不好？</span>
+        <span class="vote-sym ok">○ 同意</span>
+        <span>還是</span>
+        <span class="vote-sym ng">✕ 要修改</span>
+      </div>
+    </div>
+    <div class="votes-grid" id="r2-votes"></div>
+    <div class="p-answer" id="r2-answer"></div>
+    <div class="r2-nav">
+      <button class="btn btn-secondary btn-sm" onclick="r2Prev()">◀ 上一題</button>
+      <span id="r2-idx-display" style="color:var(--muted)">1 / 6</span>
+      <button class="btn btn-primary btn-sm" onclick="r2Next()">下一題 ▶</button>
+    </div>
+  </div>
+  <div class="ctrl-bar">
+    <button class="btn btn-warning btn-sm" onclick="r2Toggle()">👁 顯示/隱藏題目</button>
+    <button class="btn btn-info btn-sm" onclick="r2ShowAnswer()">💡 揭示答案</button>
+    <button class="btn btn-secondary btn-sm" onclick="r2ResetVotes()">↺ 清除投票</button>
+  </div>
+</div>
+
+<!-- ===ROUND 3=== -->
+<div id="r3Screen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">🔀 第3關 規範變變變</span>
+    <span class="topbar-badge">排出正確順序</span>
+  </div>
+  <div class="group-tabs" id="r3-group-tabs"></div>
+  <div class="r3-body">
+    <div class="r3-title">
+      <h2>🗂 把卡片拖拉排出修改規範的正確順序</h2>
+      <p>拖動卡片，兩兩互換位置</p>
+    </div>
+    <div class="sort-grid" id="r3-sort"></div>
+    <div class="r3-answer" id="r3-answer">
+      <h3>✅ 正確順序</h3>
+      <div class="answer-steps" id="r3-answer-steps"></div>
+    </div>
+  </div>
+  <div class="ctrl-bar">
+    <button class="btn btn-warning btn-sm" onclick="r3Shuffle()">🔀 重新洗牌</button>
+    <button class="btn btn-success btn-sm" onclick="r3Check()">✅ 對答案</button>
+    <button class="btn btn-info btn-sm" onclick="r3ShowAnswer()">💡 顯示答案</button>
+    <button class="btn btn-secondary btn-sm" onclick="r3Reset()">↺ 重置</button>
+  </div>
+</div>
+
+<!-- ===EXIT TICKET=== -->
+<div id="exitScreen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">📝 出場券</span>
+    <span class="topbar-badge">今日收穫</span>
+  </div>
+  <div class="exit-body">
+    <div class="exit-header">
+      <span class="eh-emoji">📝</span>
+      <h2 id="exit-title-display">306 規範大冒險</h2>
+      <p>完成任務前，先填寫今天的出場券！</p>
+    </div>
+    <div class="exit-info">
+      <div class="exit-field">
+        <label>班級</label>
+        <input type="text" id="e-class" placeholder="三年六班">
+      </div>
+      <div class="exit-field" style="flex:2">
+        <label>姓名</label>
+        <input type="text" id="e-name" placeholder="請輸入姓名">
+      </div>
+      <div class="exit-field">
+        <label>座號</label>
+        <input type="text" id="e-seat" placeholder="01">
+      </div>
+    </div>
+    <div id="exit-questions"></div>
+    <div style="text-align:center;">
+      <button class="btn btn-success btn-lg" onclick="exitSubmit()">🎉 交出場券！</button>
+    </div>
+    <div class="exit-thank" id="exit-thank">
+      <span class="et-emoji">🌟</span>
+      <h3>太棒了！出場券完成！</h3>
+      <p>你真是今天的規範小專家！</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===SETTINGS=== -->
+<div id="settingsScreen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">⚙️ 自訂課程內容</span>
+    <button class="btn btn-success btn-sm" onclick="saveSettings()">💾 儲存</button>
+  </div>
+  <div class="stgs-body">
+    <div class="stgs-tabs">
+      <div class="stab active" onclick="switchTab(this,'s-basic')">基本設定</div>
+      <div class="stab" onclick="switchTab(this,'s-r1')">第1關</div>
+      <div class="stab" onclick="switchTab(this,'s-r2')">第2關</div>
+      <div class="stab" onclick="switchTab(this,'s-r3')">第3關</div>
+      <div class="stab" onclick="switchTab(this,'s-exit')">出場券</div>
+    </div>
+
+    <!-- Basic -->
+    <div id="s-basic" class="spanel active">
+      <div class="sbox">
+        <h3>🎮 課程基本資訊</h3>
+        <div class="srow"><label>課程標題</label><input type="text" id="s-title" placeholder="306 規範大冒險"></div>
+        <div class="srow"><label>副標題</label><input type="text" id="s-subtitle" placeholder="社會科互動課程"></div>
+        <div class="srow"><label>組別數量</label>
+          <select id="s-groups">
+            <option value="4">4組</option>
+            <option value="5">5組</option>
+            <option value="6" selected>6組</option>
+            <option value="7">7組</option>
+            <option value="8">8組</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- R1 -->
+    <div id="s-r1" class="spanel">
+      <div class="sbox">
+        <h3>🎯 目的卡（最多3個）</h3>
+        <div id="s-goals-editor"></div>
+      </div>
+      <div class="sbox">
+        <h3>📋 規範卡</h3>
+        <div id="s-rules-editor"></div>
+        <button class="add-btn" onclick="addRule()">＋ 新增規範卡</button>
+      </div>
+    </div>
+
+    <!-- R2 -->
+    <div id="s-r2" class="spanel">
+      <div class="sbox">
+        <h3>⚖️ 提議卡</h3>
+        <div id="s-proposals-editor"></div>
+        <button class="add-btn" onclick="addProposal()">＋ 新增提議</button>
+      </div>
+    </div>
+
+    <!-- R3 -->
+    <div id="s-r3" class="spanel">
+      <div class="sbox">
+        <h3>🔀 步驟卡（依正確順序填入）</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;">由上到下就是正確順序，系統會自動打亂讓學生排</p>
+        <div id="s-steps-editor"></div>
+        <button class="add-btn" onclick="addStep()">＋ 新增步驟</button>
+      </div>
+    </div>
+
+    <!-- Exit -->
+    <div id="s-exit" class="spanel">
+      <div class="sbox">
+        <h3>📝 出場券問題</h3>
+        <div id="s-eq-editor"></div>
+        <button class="add-btn" onclick="addExitQ()">＋ 新增問題</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =====================
+// DATA
+// =====================
+const GC = ['#E84040','#F4A030','#E6C020','#34B86A','#3A86D8','#9B59B6'];
+
+let gameData = {
+  title: "306 規範大冒險",
+  subtitle: "社會科互動課程",
+  numGroups: 6,
+  r1: {
+    goals: [
+      {id:"g1", text:"保護大家的安全", color:"#3A86D8"},
+      {id:"g2", text:"維持秩序，讓活動順利", color:"#34B86A"},
+      {id:"g3", text:"代表學校的形象", color:"#9B59B6"}
+    ],
+    rules: [
+      {id:"r1", text:"遵守上學時間，不遲到", answer:"g2"},
+      {id:"r2", text:"交通服務隊要準時到達", answer:"g2"},
+      {id:"r3", text:"集會活動要注意服裝規定", answer:"g3"},
+      {id:"r4", text:"遊樂器材有使用年齡限制", answer:"g1"},
+      {id:"r5", text:"穿著制服", answer:"g3"},
+      {id:"r6", text:"志工服務要完成自己的任務", answer:"g2"},
+      {id:"r7", text:"參加社團要遵守社團規定", answer:"g2"},
+      {id:"r8", text:"危險角落有「禁止進入」標示", answer:"g1"}
+    ]
+  },
+  r2: {
+    proposals: [
+      {id:"p1", text:"下課時間延長一個小時", isGood:false, reason:"太不合理！公約要可以執行，這個做不到喔"},
+      {id:"p2", text:"大家都要乖乖的", isGood:false, reason:"太模糊了！好的公約要說清楚要做什麼"},
+      {id:"p3", text:"只有班長可以先去裝午餐", isGood:false, reason:"不公平！公約要讓每個人都被平等對待"},
+      {id:"p4", text:"離開座位時要把椅子靠好", isGood:true, reason:"很棒！明確、公平，大家都做得到"},
+      {id:"p5", text:"在教室裡不追逐奔跑", isGood:true, reason:"正確！保護大家的安全，說得很清楚"},
+      {id:"p6", text:"上課可以拿手機出來玩遊戲", isGood:false, reason:"這違反校規，而且會影響大家學習喔"}
+    ]
+  },
+  r3: {
+    steps: [
+      {id:"s1", text:"學生向師長提出建議", correctOrder:1},
+      {id:"s2", text:"老師與家長們討論提案", correctOrder:2},
+      {id:"s3", text:"修改規範", correctOrder:3},
+      {id:"s4", text:"持續關注問題後續", correctOrder:4}
+    ]
+  },
+  exitTicket: {
+    questions: [
+      {id:"eq1", text:"學校訂定規範是為了：", hasReason:false},
+      {id:"eq2", text:"我願意遵守的一條 306 公約是：", hasReason:true}
+    ]
+  }
+};
+
+// Try load from localStorage
+(function(){
+  try {
+    const saved = localStorage.getItem('social_game_data');
+    if (saved) gameData = JSON.parse(saved);
+  } catch(e){}
+})();
+
+// =====================
+// NAVIGATION
+// =====================
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='r1Screen') initR1();
+  if(id==='r2Screen') initR2();
+  if(id==='r3Screen') initR3();
+  if(id==='exitScreen') initExit();
+  if(id==='settingsScreen') initSettings();
+  if(id==='homeScreen'){
+    document.getElementById('gameTitle').textContent = gameData.title;
+    document.getElementById('gameSubtitle').textContent = gameData.subtitle;
+  }
+}
+
+// =====================
+// TOAST
+// =====================
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// =====================
+// CONFETTI
+// =====================
+function confetti(){
+  const wrap = document.createElement('div');
+  wrap.className = 'confetti-wrap';
+  document.body.appendChild(wrap);
+  const colors = ['#E84040','#F4A030','#E6C020','#34B86A','#3A86D8','#9B59B6','#FFFFFF'];
+  for(let i=0;i<60;i++){
+    const c = document.createElement('div');
+    c.className = 'cf';
+    c.style.cssText = `
+      left:${Math.random()*100}%;
+      top:${-Math.random()*100}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-delay:${Math.random()*2}s;
+      animation-duration:${2.5+Math.random()*2}s;
+    `;
+    wrap.appendChild(c);
+  }
+  setTimeout(()=>wrap.remove(), 5000);
+}
+
+// =====================
+// ROUND 1 規範偵探
+// =====================
+let r1CurrentGroup = 1;
+let r1Placements = {}; // ruleId -> goalId
+let r1Shuffled = {}; // groupNum -> shuffled rule ids
+
+function r1GetShuffle(g){
+  if(!r1Shuffled[g]){
+    const ids = gameData.r1.rules.map(r=>r.id);
+    r1Shuffled[g] = [...ids].sort(()=>Math.random()-0.5);
+  }
+  return r1Shuffled[g];
+}
+
+function initR1(){
+  buildGroupTabs('r1-group-tabs', r1CurrentGroup, function(g){
+    r1CurrentGroup = g;
+    renderR1();
+  });
+  r1Placements = {};
+  renderR1();
+}
+
+function renderR1(){
+  const data = gameData.r1;
+  // Goals
+  const goalEl = document.getElementById('r1-goals');
+  goalEl.innerHTML = '';
+  data.goals.forEach(g=>{
+    const col = document.createElement('div');
+    col.className = 'goal-col';
+    col.innerHTML = `
+      <div class="goal-head" style="background:${g.color}">
+        <span class="glabel">目的卡</span>
+        ${g.text}
+      </div>
+      <div class="drop-zone" id="dz-${g.id}" data-goal="${g.id}"></div>
+    `;
+    goalEl.appendChild(col);
+  });
+
+  // Render placed cards
+  Object.entries(r1Placements).forEach(([rId, gId])=>{
+    const rule = data.rules.find(r=>r.id===rId);
+    if(!rule) return;
+    const dz = document.getElementById('dz-'+gId);
+    if(dz) dz.appendChild(createRuleCardEl(rule, true));
+  });
+
+  // Drop zone events
+  document.querySelectorAll('.drop-zone').forEach(dz=>{
+    dz.addEventListener('dragover',e=>{
+      e.preventDefault();
+      dz.classList.add('over');
+    });
+    dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+    dz.addEventListener('drop',e=>{
+      e.preventDefault();
+      dz.classList.remove('over');
+      const rId = e.dataTransfer.getData('ruleId');
+      if(rId){
+        // Remove from old placement
+        delete r1Placements[rId];
+        r1Placements[rId] = dz.dataset.goal;
+        renderR1();
+      }
+    });
+  });
+
+  // Pool: unplaced cards (shuffled for group)
+  const pool = document.getElementById('r1-pool-cards');
+  pool.innerHTML = '';
+  const shuffled = r1GetShuffle(r1CurrentGroup);
+  const placed = new Set(Object.keys(r1Placements));
+  shuffled.forEach(rId=>{
+    if(placed.has(rId)) return;
+    const rule = data.rules.find(r=>r.id===rId);
+    if(rule) pool.appendChild(createRuleCardEl(rule, false));
+  });
+
+  // Also allow dropping back to pool
+  pool.addEventListener('dragover',e=>{e.preventDefault();});
+  pool.addEventListener('drop',e=>{
+    e.preventDefault();
+    const rId = e.dataTransfer.getData('ruleId');
+    if(rId){ delete r1Placements[rId]; renderR1(); }
+  });
+
+  updateR1Badge();
+  document.getElementById('r1-score-banner').classList.remove('show');
+}
+
+function createRuleCardEl(rule, inZone){
+  const el = document.createElement('div');
+  el.className = 'rcard' + (inZone?' in-zone':'');
+  el.textContent = rule.text;
+  el.draggable = true;
+  el.dataset.ruleId = rule.id;
+  el.addEventListener('dragstart',e=>{
+    e.dataTransfer.setData('ruleId', rule.id);
+    el.classList.add('dragging');
+  });
+  el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+  return el;
+}
+
+function updateR1Badge(){
+  const total = gameData.r1.rules.length;
+  const placed = Object.keys(r1Placements).length;
+  document.getElementById('r1-score-badge').textContent = placed+'/'+total;
+}
+
+function r1Shuffle(){
+  r1Shuffled[r1CurrentGroup] = [...gameData.r1.rules.map(r=>r.id)].sort(()=>Math.random()-0.5);
+  r1Placements = {};
+  renderR1();
+  toast('🔀 已重新洗牌！');
+}
+
+function r1Reset(){
+  r1Shuffled = {};
+  r1Placements = {};
+  renderR1();
+  toast('↺ 已重置');
+}
+
+function r1Check(){
+  const data = gameData.r1;
+  let correct = 0;
+  // Mark cards
+  document.querySelectorAll('.rcard.in-zone').forEach(el=>{
+    const rId = el.dataset.ruleId;
+    const rule = data.rules.find(r=>r.id===rId);
+    if(!rule) return;
+    const placed = r1Placements[rId];
+    if(placed === rule.answer){
+      el.classList.add('correct');
+      el.classList.remove('wrong');
+      correct++;
+    } else {
+      el.classList.add('wrong');
+      el.classList.remove('correct');
+    }
+  });
+  const total = Object.keys(r1Placements).length;
+  const banner = document.getElementById('r1-score-banner');
+  banner.textContent = `第${r1CurrentGroup}組：答對 ${correct} / ${total} 張！` + (correct===data.rules.length?'  🎉 全部正確！':'');
+  banner.classList.add('show');
+  if(correct===data.rules.length) confetti();
+}
+
+function r1ShowAnswer(){
+  const data = gameData.r1;
+  r1Placements = {};
+  data.rules.forEach(r=>{ r1Placements[r.id] = r.answer; });
+  renderR1();
+  // Mark all correct
+  setTimeout(()=>{
+    document.querySelectorAll('.rcard.in-zone').forEach(el=>{
+      el.classList.add('correct');
+    });
+  }, 100);
+  toast('💡 顯示標準答案');
+}
+
+// =====================
+// ROUND 2 公約小法官
+// =====================
+let r2Idx = 0;
+let r2Votes = {}; // proposalId -> {groupNum: 'ok'|'ng'}
+let r2Hidden = false;
+
+function initR2(){
+  r2Idx = 0;
+  r2Votes = {};
+  r2Hidden = false;
+  renderR2();
+  buildVoteGrid();
+}
+
+function renderR2(){
+  const proposals = gameData.r2.proposals;
+  const p = proposals[r2Idx];
+  if(!p) return;
+  document.getElementById('r2-pnum').textContent = `提議 ${r2Idx+1}`;
+  document.getElementById('r2-ptext').textContent = p.text;
+  document.getElementById('r2-counter').textContent = `${r2Idx+1}/${proposals.length}`;
+  document.getElementById('r2-idx-display').textContent = `${r2Idx+1} / ${proposals.length}`;
+  document.getElementById('r2-proposal').classList.toggle('p-hidden', r2Hidden);
+  document.getElementById('r2-answer').classList.remove('show');
+  buildVoteGrid();
+}
+
+function buildVoteGrid(){
+  const p = gameData.r2.proposals[r2Idx];
+  const grid = document.getElementById('r2-votes');
+  grid.innerHTML = '';
+  const votes = r2Votes[p?.id] || {};
+  for(let g=1;g<=gameData.numGroups;g++){
+    const cell = document.createElement('div');
+    cell.className = 'vcell';
+    const v = votes[g];
+    if(v==='ok') cell.classList.add('voted-ok');
+    if(v==='ng') cell.classList.add('voted-ng');
+    cell.innerHTML = `<div class="vg" style="color:${GC[g-1]}">第${g}組</div>
+      <div class="vi">${v==='ok'?'○':v==='ng'?'✕':'—'}</div>`;
+    cell.onclick = ()=>r2Vote(g);
+    grid.appendChild(cell);
+  }
+}
+
+function r2Vote(g){
+  const p = gameData.r2.proposals[r2Idx];
+  if(!p) return;
+  if(!r2Votes[p.id]) r2Votes[p.id]={};
+  const cur = r2Votes[p.id][g];
+  // cycle: undefined -> ok -> ng -> undefined
+  if(!cur) r2Votes[p.id][g]='ok';
+  else if(cur==='ok') r2Votes[p.id][g]='ng';
+  else delete r2Votes[p.id][g];
+  buildVoteGrid();
+}
+
+function r2Next(){
+  if(r2Idx < gameData.r2.proposals.length-1){
+    r2Idx++;
+    r2Hidden = false;
+    renderR2();
+  } else {
+    toast('已是最後一題！');
+  }
+}
+
+function r2Prev(){
+  if(r2Idx > 0){
+    r2Idx--;
+    r2Hidden = false;
+    renderR2();
+  }
+}
+
+function r2Toggle(){
+  r2Hidden = !r2Hidden;
+  document.getElementById('r2-proposal').classList.toggle('p-hidden', r2Hidden);
+  toast(r2Hidden ? '👁 題目已隱藏' : '👁 題目已顯示');
+}
+
+function r2ShowAnswer(){
+  const p = gameData.r2.proposals[r2Idx];
+  if(!p) return;
+  const ans = document.getElementById('r2-answer');
+  ans.className = 'p-answer show ' + (p.isGood ? 'good' : 'bad');
+  ans.innerHTML = (p.isGood ? '✅ 好公約！' : '❌ 要修改！') + '<br><span style="font-size:0.9rem;font-weight:400">' + p.reason + '</span>';
+}
+
+function r2ResetVotes(){
+  r2Votes = {};
+  buildVoteGrid();
+  toast('↺ 投票已清除');
+}
+
+// =====================
+// ROUND 3 規範變變變
+// =====================
+let r3Current = []; // current order of step ids
+let r3DragSrc = null;
+
+function initR3(){
+  buildGroupTabs('r3-group-tabs', 1, function(){});
+  r3Reset();
+}
+
+function r3Reset(){
+  const steps = gameData.r3.steps;
+  r3Current = [...steps].sort(()=>Math.random()-0.5).map(s=>s.id);
+  renderR3();
+  document.getElementById('r3-answer').classList.remove('show');
+}
+
+function r3Shuffle(){
+  r3Current = [...r3Current].sort(()=>Math.random()-0.5);
+  renderR3();
+  document.getElementById('r3-answer').classList.remove('show');
+  toast('🔀 重新洗牌！');
+}
+
+function renderR3(){
+  const grid = document.getElementById('r3-sort');
+  grid.innerHTML = '';
+  r3Current.forEach((sId, idx)=>{
+    const step = gameData.r3.steps.find(s=>s.id===sId);
+    if(!step) return;
+    const card = document.createElement('div');
+    card.className = 'scard';
+    card.dataset.idx = idx;
+    card.draggable = true;
+    card.innerHTML = `<div class="snum">${idx+1}</div>${step.text}`;
+    card.addEventListener('dragstart',e=>{
+      r3DragSrc = idx;
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend',()=>card.classList.remove('dragging'));
+    card.addEventListener('dragover',e=>{
+      e.preventDefault();
+      card.classList.add('drag-target');
+    });
+    card.addEventListener('dragleave',()=>card.classList.remove('drag-target'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();
+      card.classList.remove('drag-target');
+      if(r3DragSrc !== null && r3DragSrc !== idx){
+        const tmp = r3Current[r3DragSrc];
+        r3Current[r3DragSrc] = r3Current[idx];
+        r3Current[idx] = tmp;
+        renderR3();
+      }
+      r3DragSrc = null;
+    });
+    grid.appendChild(card);
+  });
+}
+
+function r3Check(){
+  const steps = gameData.r3.steps;
+  const correctOrder = [...steps].sort((a,b)=>a.correctOrder-b.correctOrder).map(s=>s.id);
+  let correct = 0;
+  document.querySelectorAll('#r3-sort .scard').forEach((card, idx)=>{
+    if(r3Current[idx] === correctOrder[idx]){
+      card.classList.add('correct-pos');
+      card.classList.remove('wrong-pos');
+      correct++;
+    } else {
+      card.classList.add('wrong-pos');
+      card.classList.remove('correct-pos');
+    }
+  });
+  if(correct === steps.length){
+    toast('🎉 全部正確！太厲害了！');
+    confetti();
+  } else {
+    toast(`答對 ${correct} / ${steps.length} 個，繼續加油！`);
+  }
+}
+
+function r3ShowAnswer(){
+  const steps = [...gameData.r3.steps].sort((a,b)=>a.correctOrder-b.correctOrder);
+  const el = document.getElementById('r3-answer');
+  const stepsEl = document.getElementById('r3-answer-steps');
+  stepsEl.innerHTML = steps.map((s,i)=>`
+    <div class="astep">
+      <div class="astep-num">${i+1}</div>
+      ${s.text}
+    </div>
+  `).join('');
+  el.classList.add('show');
+  // Set correct order
+  r3Current = steps.map(s=>s.id);
+  renderR3();
+  toast('💡 顯示標準答案');
+}
+
+// =====================
+// EXIT TICKET
+// =====================
+function initExit(){
+  document.getElementById('exit-title-display').textContent = gameData.title;
+  const container = document.getElementById('exit-questions');
+  container.innerHTML = '';
+  gameData.exitTicket.questions.forEach((q,i)=>{
+    const div = document.createElement('div');
+    div.className = 'exit-q';
+    div.innerHTML = `
+      <div class="eq-label">問題 ${i+1}</div>
+      <div class="eq-text">${q.text}</div>
+      <textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>
+      ${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}
+    `;
+    container.appendChild(div);
+  });
+  document.getElementById('exit-thank').classList.remove('show');
+}
+
+function exitSubmit(){
+  const name = document.getElementById('e-name').value.trim();
+  if(!name){ toast('⚠️ 請先填寫姓名！'); return; }
+  document.getElementById('exit-thank').classList.add('show');
+  document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
+  confetti();
+  toast('🌟 出場券送出！');
+}
+
+// =====================
+// SETTINGS
+// =====================
+function initSettings(){
+  document.getElementById('s-title').value = gameData.title;
+  document.getElementById('s-subtitle').value = gameData.subtitle;
+  document.getElementById('s-groups').value = gameData.numGroups;
+  buildGoalsEditor();
+  buildRulesEditor();
+  buildProposalsEditor();
+  buildStepsEditor();
+  buildExitQEditor();
+}
+
+function switchTab(el, panelId){
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.spanel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+function buildGoalsEditor(){
+  const el = document.getElementById('s-goals-editor');
+  el.innerHTML = '';
+  gameData.r1.goals.forEach((g,i)=>{
+    const row = document.createElement('div');
+    row.className = 'card-edit-row';
+    row.innerHTML = `
+      <input value="${g.text}" placeholder="目的卡文字" oninput="gameData.r1.goals[${i}].text=this.value">
+      <input type="color" value="${g.color}" style="width:36px;height:34px;padding:2px;border-radius:7px;border:2px solid #DDD;cursor:pointer"
+        onchange="gameData.r1.goals[${i}].color=this.value">
+    `;
+    el.appendChild(row);
+  });
+}
+
+function buildRulesEditor(){
+  const el = document.getElementById('s-rules-editor');
+  el.innerHTML = '';
+  gameData.r1.rules.forEach((r,i)=>{
+    const row = document.createElement('div');
+    row.className = 'card-edit-row';
+    const opts = gameData.r1.goals.map(g=>`<option value="${g.id}" ${r.answer===g.id?'selected':''}>${g.text}</option>`).join('');
+    row.innerHTML = `
+      <input value="${r.text}" placeholder="規範卡文字" oninput="gameData.r1.rules[${i}].text=this.value">
+      <select onchange="gameData.r1.rules[${i}].answer=this.value"><option value="">選擇目的</option>${opts}</select>
+      <button class="del-btn" onclick="gameData.r1.rules.splice(${i},1);buildRulesEditor()">刪除</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+function addRule(){
+  const id = 'r'+(Date.now());
+  gameData.r1.rules.push({id, text:'新規範', answer: gameData.r1.goals[0]?.id||''});
+  buildRulesEditor();
+}
+
+function buildProposalsEditor(){
+  const el = document.getElementById('s-proposals-editor');
+  el.innerHTML = '';
+  gameData.r2.proposals.forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#F8F9FA;border-radius:9px;padding:10px 12px;margin-bottom:8px;';
+    row.innerHTML = `
+      <div class="card-edit-row" style="margin-bottom:6px">
+        <input value="${p.text}" placeholder="提議內容" style="flex:3" oninput="gameData.r2.proposals[${i}].text=this.value">
+        <select onchange="gameData.r2.proposals[${i}].isGood=this.value==='true'">
+          <option value="true" ${p.isGood?'selected':''}>○ 好公約</option>
+          <option value="false" ${!p.isGood?'selected':''}>✕ 要修改</option>
+        </select>
+        <button class="del-btn" onclick="gameData.r2.proposals.splice(${i},1);buildProposalsEditor()">刪除</button>
+      </div>
+      <input value="${p.reason||''}" placeholder="答案揭示時的說明（選填）"
+        style="width:100%;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.85rem;outline:none"
+        oninput="gameData.r2.proposals[${i}].reason=this.value">
+    `;
+    el.appendChild(row);
+  });
+}
+
+function addProposal(){
+  gameData.r2.proposals.push({id:'p'+Date.now(), text:'新提議', isGood:true, reason:''});
+  buildProposalsEditor();
+}
+
+function buildStepsEditor(){
+  const el = document.getElementById('s-steps-editor');
+  el.innerHTML = '';
+  const sorted = [...gameData.r3.steps].sort((a,b)=>a.correctOrder-b.correctOrder);
+  sorted.forEach((s,i)=>{
+    const realIdx = gameData.r3.steps.findIndex(x=>x.id===s.id);
+    const row = document.createElement('div');
+    row.className = 'card-edit-row';
+    row.innerHTML = `
+      <span style="font-weight:900;color:var(--muted);min-width:24px">${i+1}.</span>
+      <input value="${s.text}" placeholder="步驟內容"
+        oninput="gameData.r3.steps[${realIdx}].text=this.value">
+      <button class="del-btn" onclick="gameData.r3.steps.splice(${realIdx},1);buildStepsEditor()">刪除</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+function addStep(){
+  const nextOrder = gameData.r3.steps.length + 1;
+  gameData.r3.steps.push({id:'s'+Date.now(), text:'新步驟', correctOrder: nextOrder});
+  buildStepsEditor();
+}
+
+function buildExitQEditor(){
+  const el = document.getElementById('s-eq-editor');
+  el.innerHTML = '';
+  gameData.exitTicket.questions.forEach((q,i)=>{
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#F8F9FA;border-radius:9px;padding:10px 12px;margin-bottom:8px;display:flex;gap:8px;align-items:center;';
+    row.innerHTML = `
+      <input value="${q.text}" placeholder="問題內容" style="flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none"
+        oninput="gameData.exitTicket.questions[${i}].text=this.value">
+      <label style="font-size:0.8rem;white-space:nowrap;cursor:pointer">
+        <input type="checkbox" ${q.hasReason?'checked':''} onchange="gameData.exitTicket.questions[${i}].hasReason=this.checked"> 有理由欄
+      </label>
+      <button class="del-btn" onclick="gameData.exitTicket.questions.splice(${i},1);buildExitQEditor()">刪除</button>
+    `;
+    el.appendChild(row);
+  });
+}
+
+function addExitQ(){
+  gameData.exitTicket.questions.push({id:'eq'+Date.now(), text:'新問題', hasReason:false});
+  buildExitQEditor();
+}
+
+function saveSettings(){
+  gameData.title = document.getElementById('s-title').value || gameData.title;
+  gameData.subtitle = document.getElementById('s-subtitle').value || gameData.subtitle;
+  gameData.numGroups = parseInt(document.getElementById('s-groups').value) || 6;
+  try{ localStorage.setItem('social_game_data', JSON.stringify(gameData)); } catch(e){}
+  toast('💾 設定已儲存！');
+  setTimeout(()=>goTo('homeScreen'), 800);
+}
+
+// =====================
+// GROUP TABS HELPER
+// =====================
+function buildGroupTabs(containerId, activeG, onSelect){
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for(let g=1; g<=gameData.numGroups; g++){
+    const tab = document.createElement('div');
+    tab.className = 'gtab' + (g===activeG?' active':'');
+    tab.dataset.g = g;
+    tab.textContent = `第${g}組`;
+    tab.onclick = ()=>{
+      el.querySelectorAll('.gtab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      onSelect(g);
+    };
+    el.appendChild(tab);
+  }
+}
+
+// Init home
+document.getElementById('gameTitle').textContent = gameData.title;
+document.getElementById('gameSubtitle').textContent = gameData.subtitle;
+</script>
+</body>
+</html>
