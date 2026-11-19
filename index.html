@@ -9940,6 +9940,109 @@ function renderMathLeaderboard(){
   });
 }
 
+// ─── 每週遊戲進步獎勵（全自動）───
+// 每次開啟班網時自動檢查：進入新的一週，就對比上週快照計算進步幅度，
+// 語詞遊戲 & 數學遊戲各取進步前3名，分別＋3/+2/+1顆星。
+// 快照儲存在 class306/weeklyGameSnapshot，不需要老師手動操作。
+
+function getISOWeekKey(){
+  // 以台灣時間（UTC+8）計算 ISO 週次
+  const now = new Date();
+  const tw = new Date(now.getTime() + 8*60*60*1000);
+  const d = new Date(Date.UTC(tw.getUTCFullYear(), tw.getUTCMonth(), tw.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+}
+
+function calcStudentGameAggregates(gameScoreData){
+  // 回傳 { [studentId]: { word: N, math: N } }
+  const result = {};
+  students.forEach(s=>{
+    const rec = (gameScoreData||{})[s.id] || {};
+    let word = 0;
+    ['snake','quiz','runner'].forEach(mode=>{
+      Object.values(rec[mode]||{}).forEach(v=>{ if(typeof v==='number' && v>word) word=v; });
+    });
+    let math = 0;
+    ['math_quiz','math_sprint'].forEach(mode=>{
+      Object.values(rec[mode]||{}).forEach(v=>{ if(typeof v==='number' && v>math) math=v; });
+    });
+    result[s.id] = { word, math };
+  });
+  return result;
+}
+
+function autoGrantGameStars(s, amt, reason){
+  // 遊戲進步自動加星：不受「修復任務」封鎖，直接加（與老師手動加星不同）
+  s.stars = (s.stars||0) + amt;
+  s.log = s.log||[];
+  s.log.push({ id: generateId(), reason, amt, date: new Date().toLocaleDateString('zh-TW') });
+}
+
+function checkWeeklyGameAwards(){
+  if(!(useCloud && db)) return;
+  if(!students || !students.length) return;
+  const currentWeek = getISOWeekKey();
+  const snapshotRef = db.ref('class306/weeklyGameSnapshot');
+  snapshotRef.get().then(snap=>{
+    const existing = snap.exists() ? (snap.val()||{}) : {};
+    if(existing.lastRun === currentWeek) return; // 本週已結算過，不重複執行
+    // 讀取所有學生的遊戲分數
+    db.ref('class306/gameScores').get().then(gsSnap=>{
+      const gameScoreData = gsSnap.exists() ? (gsSnap.val()||{}) : {};
+      const current = calcStudentGameAggregates(gameScoreData);
+      const prevScores = existing.scores || {};
+      // 計算每位學生的進步幅度
+      const wordImprovements = [], mathImprovements = [];
+      students.forEach(s=>{
+        const prev = prevScores[s.id] || { word: 0, math: 0 };
+        const cur  = current[s.id]   || { word: 0, math: 0 };
+        const wordDelta = cur.word - prev.word;
+        const mathDelta = cur.math - prev.math;
+        if(wordDelta > 0) wordImprovements.push({ s, delta: wordDelta, prev: prev.word, cur: cur.word });
+        if(mathDelta > 0) mathImprovements.push({ s, delta: mathDelta, prev: prev.math, cur: cur.math });
+      });
+      wordImprovements.sort((a,b)=>b.delta-a.delta);
+      mathImprovements.sort((a,b)=>b.delta-a.delta);
+
+      const awards = []; // 收集本次所有得獎紀錄（供 toast 顯示）
+      const starMap = [3,2,1];
+      function awardTop3(list, gameName){
+        // 同分並列：同分都獲得同一名次的星星
+        let rank = 0, prev = -1;
+        list.forEach((item, idx)=>{
+          if(item.delta !== prev){ rank = idx; prev = item.delta; }
+          if(rank >= 3) return;
+          const stars = starMap[rank];
+          autoGrantGameStars(item.s, stars, `🎮 ${gameName}週進步第${rank+1}名 +${stars}顆星（進步${item.delta}分）`);
+          awards.push({ name: item.s.name, game: gameName, rank: rank+1, stars, delta: item.delta });
+        });
+      }
+      awardTop3(wordImprovements, '語詞遊戲');
+      awardTop3(mathImprovements, '數學遊戲');
+
+      if(awards.length){
+        save(); renderStudents(); updateStats(); populateWheelSelect();
+        // 顯示彙整 toast
+        const wordLines = awards.filter(a=>a.game==='語詞遊戲').map(a=>`${a.name} +${a.stars}⭐`).join('、');
+        const mathLines = awards.filter(a=>a.game==='數學遊戲').map(a=>`${a.name} +${a.stars}⭐`).join('、');
+        let msg = `🏆 本週遊戲進步獎勵發放！`;
+        if(wordLines) msg += `\n語詞：${wordLines}`;
+        if(mathLines) msg += `\n數學：${mathLines}`;
+        toast(msg);
+        setTimeout(confetti, 300);
+      }
+
+      // 儲存本週快照（不論有無人進步都要存，以便下週比對）
+      const newScores = {};
+      students.forEach(s=>{ newScores[s.id] = current[s.id] || { word:0, math:0 }; });
+      snapshotRef.set({ lastRun: currentWeek, scores: newScores }).catch(()=>{});
+    }).catch(e=>console.warn('週進步獎勵：讀取 gameScores 失敗', e));
+  }).catch(e=>console.warn('週進步獎勵：讀取快照失敗', e));
+}
+
 // ─── WHEEL ───
 // 顏色對應下方「獎勵清單說明」的四大類，方便老師和學生一眼對照
 // ─── 鼓勵小卡內容庫 ───
@@ -12021,6 +12124,8 @@ async function initApp() {
   try { setupPendingChallengesListener(); } catch(e) { console.warn(e); }
   // 開始即時監聽主要資料（學生、組別評分、互助小組），讓跨裝置修改能自動同步
   try { setupMainDataListeners(); } catch(e) { console.warn('即時同步監聽啟動失敗', e); }
+  // 自動檢查每週遊戲進步獎勵（進入新的一週時自動結算，不需手動）
+  try { setTimeout(checkWeeklyGameAwards, 2000); } catch(e) { console.warn('週進步獎勵初始化失敗', e); }
   // 載入非洲海報任務
   try { loadAfricaTasks(); } catch(e) { console.warn('Africa tasks init failed', e); }
 
