@@ -89,7 +89,56 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .home-card.r2{border-color:#E84040;}
 .home-card.r3{border-color:#F4A030;}
 .home-card.rx{border-color:#34B86A;}
+.home-card.rv{border-color:#E91E8C;background:linear-gradient(135deg,#fff 60%,#FFF0F8);}
 .home-card.rs{border-color:#95A5A6;}
+
+/* ===CONVENTION VOTE SCREEN=== */
+#conventionVoteScreen{background:linear-gradient(160deg,#FFF0F8,#F8F0FF);}
+.cvote-body{flex:1;padding:16px 14px;max-width:860px;margin:0 auto;width:100%;}
+.cvote-header{text-align:center;margin-bottom:18px;}
+.cvote-header h2{font-size:1.5rem;font-weight:900;color:#9C27B0;}
+.cvote-header p{font-size:0.88rem;color:var(--muted);margin-top:4px;}
+.cvote-controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.cvote-count{background:#9C27B0;color:#fff;border-radius:20px;padding:4px 14px;font-size:0.82rem;font-weight:700;}
+.cvote-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:0.95rem;}
+.cvote-empty .ce-emoji{font-size:3rem;display:block;margin-bottom:12px;}
+.proposals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.proposal-card{
+  background:#fff;border-radius:16px;padding:16px;
+  box-shadow:0 3px 14px rgba(0,0,0,0.1);
+  border:3px solid transparent;
+  transition:all 0.2s;position:relative;overflow:hidden;
+}
+.proposal-card.pc-top{border-color:#F4A030;background:linear-gradient(135deg,#fff 70%,#FFF9E6);}
+.proposal-card.pc-adopted{border-color:#27AE60;background:linear-gradient(135deg,#fff 70%,#F0FFF8);}
+.proposal-card .pc-student{font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:6px;}
+.proposal-card .pc-text{font-size:0.98rem;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:12px;min-height:44px;}
+.proposal-card .pc-bottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.vote-btn{
+  display:flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,#9C27B0,#673AB7);
+  color:#fff;border:none;border-radius:20px;
+  padding:6px 14px;font-family:'Noto Sans TC',sans-serif;
+  font-weight:700;font-size:0.85rem;cursor:pointer;
+  transition:all 0.18s;
+}
+.vote-btn:hover{filter:brightness(0.9);transform:translateY(-1px);}
+.vote-btn.voted{background:linear-gradient(135deg,#27AE60,#1E8449);}
+.vote-btn.voted::before{content:'✅ ';}
+.vote-count{font-size:1.1rem;font-weight:900;color:#9C27B0;min-width:28px;text-align:center;}
+.pc-rank{position:absolute;top:10px;right:12px;font-size:1.1rem;font-weight:900;color:#F4A030;}
+.adopt-btn{
+  background:linear-gradient(135deg,#27AE60,#1E8449);
+  color:#fff;border:none;border-radius:8px;
+  padding:5px 12px;font-family:'Noto Sans TC',sans-serif;
+  font-weight:700;font-size:0.78rem;cursor:pointer;margin-left:auto;
+}
+.adopt-btn:hover{filter:brightness(0.9);}
+.adopted-badge{background:#27AE60;color:#fff;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:700;margin-left:auto;}
+.cvote-adopted-bar{background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:2px solid #27AE60;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:none;}
+.cvote-adopted-bar.show{display:block;}
+.cvote-adopted-bar .cab-label{font-size:0.75rem;font-weight:900;color:#1B5E20;letter-spacing:.5px;margin-bottom:4px;}
+.cvote-adopted-bar .cab-text{font-size:1rem;font-weight:900;color:#2E7D32;}
 
 /* ===BUTTONS=== */
 .btn{
@@ -367,6 +416,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <div class="hc-time" id="hc-rx-time">⏱ 5 分鐘</div>
       <div class="hc-desc" id="hc-rx-desc">寫下今天的收穫</div>
     </div>
+    <div class="home-card rv" onclick="goTo('conventionVoteScreen')">
+      <span class="hc-round">全班共識</span>
+      <span class="hc-emoji">🗳️</span>
+      <div class="hc-name">公約提案板</div>
+      <div class="hc-desc" id="hc-rv-count">查看提案並投票</div>
+    </div>
     <div class="home-card rs" onclick="goTo('settingsScreen')">
       <span class="hc-round">老師設定</span>
       <span class="hc-emoji">⚙️</span>
@@ -551,6 +606,43 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <strong>📌 目前網站上的全班公約：</strong>
       <span id="convention-current-text"></span>
     </div>
+  </div>
+</div>
+
+<!-- ===CONVENTION VOTE=== -->
+<div id="conventionVoteScreen" class="screen">
+  <div class="topbar">
+    <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
+    <span class="topbar-title">🗳️ 公約提案板</span>
+    <span class="topbar-badge" id="cv-count-badge">0 則提案</span>
+  </div>
+  <div class="cvote-body">
+    <div class="cvote-header">
+      <h2>🗳️ 全班公約大投票</h2>
+      <p>看看大家的提案，一起選出最好的公約！</p>
+    </div>
+
+    <!-- 已採用的公約 -->
+    <div class="cvote-adopted-bar" id="cvote-adopted-bar">
+      <div class="cab-label">✅ 本次課程採用的公約</div>
+      <div class="cab-text" id="cvote-adopted-text"></div>
+    </div>
+
+    <!-- 老師控制列 -->
+    <div class="cvote-controls">
+      <span class="cvote-count" id="cvote-count">0 則提案</span>
+      <button class="btn btn-warning btn-sm" onclick="clearConventionSession()">🗑️ 清除所有提案</button>
+    </div>
+
+    <!-- 空狀態 -->
+    <div class="cvote-empty" id="cvote-empty">
+      <span class="ce-emoji">📭</span>
+      <div>還沒有同學提出公約</div>
+      <div style="font-size:0.82rem;margin-top:6px;">請同學先到「出場券」填寫自己的提案</div>
+    </div>
+
+    <!-- 提案卡片 -->
+    <div class="proposals-grid" id="proposals-grid"></div>
   </div>
 </div>
 
@@ -892,6 +984,7 @@ function goTo(id){
   if(id==='exitScreen'){ timerReset('rx'); initExit(); }
   if(id==='settingsScreen') initSettings();
   if(id==='homeScreen') refreshHome();
+  if(id==='conventionVoteScreen') initConventionVote();
 }
 
 function refreshHome(){
@@ -1320,11 +1413,170 @@ function saveConvention(text){
   const data = { text: text, updatedAt: new Date().toLocaleString('zh-TW', {timeZone:'Asia/Taipei'}) };
   try {
     return db.ref('class306/classConvention').set(data).then(()=>{
-      document.getElementById('convention-current-text').textContent = text;
-      document.getElementById('convention-current-preview').classList.add('show');
+      const el = document.getElementById('convention-current-text');
+      if(el) el.textContent = text;
+      const pr = document.getElementById('convention-current-preview');
+      if(pr) pr.classList.add('show');
     });
   } catch(e){ return Promise.reject(e); }
 }
+
+// =====================
+// CONVENTION VOTE
+// =====================
+let cvoteListener = null;
+
+function initConventionVote(){
+  // 移除舊 listener
+  if(cvoteListener){
+    try{ db.ref('class306/conventionSession/proposals').off('value', cvoteListener); }catch(e){}
+    cvoteListener = null;
+  }
+  renderProposals({});
+
+  // 即時監聽提案
+  cvoteListener = db.ref('class306/conventionSession/proposals').on('value', snap=>{
+    const data = snap.val() || {};
+    renderProposals(data);
+  });
+
+  // 載入目前公約
+  db.ref('class306/classConvention').once('value').then(snap=>{
+    const val = snap.val();
+    const bar = document.getElementById('cvote-adopted-bar');
+    if(val && val.text){
+      document.getElementById('cvote-adopted-text').textContent = '「' + val.text + '」';
+      bar.classList.add('show');
+    } else {
+      bar.classList.remove('show');
+    }
+  }).catch(()=>{});
+
+  // 更新首頁提案數
+  updateHomeVoteCount({});
+}
+
+function renderProposals(data){
+  const grid = document.getElementById('proposals-grid');
+  const empty = document.getElementById('cvote-empty');
+  const badge = document.getElementById('cv-count-badge');
+  const countEl = document.getElementById('cvote-count');
+  if(!grid) return;
+
+  const keys = Object.keys(data);
+  const count = keys.length;
+  badge.textContent = count + ' 則提案';
+  if(countEl) countEl.textContent = count + ' 則提案';
+
+  updateHomeVoteCount(data);
+
+  if(count === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // 排序：票數多的在前
+  const sorted = keys.map(k=>({id:k, ...data[k]}))
+    .sort((a,b)=>(b.votes||0)-(a.votes||0));
+
+  const myVoted = getMyVoted();
+
+  grid.innerHTML = sorted.map((p, idx)=>{
+    const isTop = idx===0 && (p.votes||0) > 0;
+    const isAdopted = p.adopted;
+    const voted = myVoted === p.id;
+    return `
+    <div class="proposal-card ${isTop?'pc-top':''} ${isAdopted?'pc-adopted':''}" id="pc-${p.id}">
+      ${isTop?'<span class="pc-rank">👑</span>':''}
+      <div class="pc-student">🙋 ${p.name||'同學'}${p.seat?' (座號'+p.seat+')':''}</div>
+      <div class="pc-text">${escHtml(p.text||'')}</div>
+      <div class="pc-bottom">
+        <button class="vote-btn ${voted?'voted':''}" onclick="voteProposal('${p.id}',${voted})">
+          ${voted?'已投票':'👍 支持'}
+        </button>
+        <span class="vote-count">${p.votes||0}</span>
+        ${isAdopted
+          ? '<span class="adopted-badge">✅ 已採用</span>'
+          : `<button class="adopt-btn" onclick="adoptProposal('${p.id}','${escAttr(p.text||'')}')">✅ 採用</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateHomeVoteCount(data){
+  const el = document.getElementById('hc-rv-count');
+  if(!el) return;
+  const n = Object.keys(data).length;
+  el.textContent = n > 0 ? n + ' 則提案，點我投票！' : '查看提案並投票';
+}
+
+function voteProposal(id, alreadyVoted){
+  if(alreadyVoted){
+    // 取消投票
+    db.ref('class306/conventionSession/proposals/'+id+'/votes')
+      .transaction(v=>(v||1)-1);
+    clearMyVoted();
+    toast('已取消投票');
+  } else {
+    const prev = getMyVoted();
+    if(prev && prev !== id){
+      // 先撤回上一票
+      db.ref('class306/conventionSession/proposals/'+prev+'/votes')
+        .transaction(v=>Math.max(0,(v||1)-1));
+    }
+    db.ref('class306/conventionSession/proposals/'+id+'/votes')
+      .transaction(v=>(v||0)+1);
+    setMyVoted(id);
+    toast('👍 投票成功！');
+  }
+}
+
+function adoptProposal(id, text){
+  if(!confirm('採用這條公約並更新到班級星星網站？\n\n「'+text+'」')) return;
+  // 標記採用
+  db.ref('class306/conventionSession/proposals/'+id+'/adopted').set(true);
+  // 存到 classConvention
+  saveConvention(text).then(()=>{
+    const bar = document.getElementById('cvote-adopted-bar');
+    document.getElementById('cvote-adopted-text').textContent = '「'+text+'」';
+    if(bar) bar.classList.add('show');
+    toast('✅ 公約已採用並發布到星星網站！');
+    confetti();
+  }).catch(e=>toast('⚠️ 儲存失敗：'+e.message));
+}
+
+function clearConventionSession(){
+  if(!confirm('確定要清除所有提案？（無法復原）')) return;
+  db.ref('class306/conventionSession/proposals').remove().then(()=>{
+    clearMyVoted();
+    toast('🗑️ 已清除所有提案');
+  });
+}
+
+// 把個人提案送到 Firebase
+function submitProposal(name, seat, text){
+  if(!text || !text.trim()) return Promise.resolve();
+  const data = {
+    name: name, seat: seat,
+    text: text.trim(), votes: 0,
+    timestamp: Date.now()
+  };
+  return db.ref('class306/conventionSession/proposals').push(data);
+}
+
+// 投票紀錄存 localStorage（以頁面為單位，同一裝置同一次課程只算一票）
+function getMyVoted(){ try{ return localStorage.getItem('cv_voted_'+getSessionKey()); }catch(e){return null;} }
+function setMyVoted(id){ try{ localStorage.setItem('cv_voted_'+getSessionKey(), id); }catch(e){} }
+function clearMyVoted(){ try{ localStorage.removeItem('cv_voted_'+getSessionKey()); }catch(e){} }
+function getSessionKey(){
+  // 以日期為 key，每天重置
+  return new Date().toISOString().slice(0,10);
+}
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s){ return s.replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
 function exitSubmit(){
   const sel = document.getElementById('e-name');
@@ -1350,13 +1602,26 @@ function exitSubmit(){
       toast('⚠️ 發布失敗，請確認網路連線：'+e.message);
     });
   } else {
-    // 個人模式
-    document.getElementById('exit-thank-emoji').textContent = '🌟';
-    document.getElementById('exit-thank-title').textContent = '太棒了！出場券完成！';
-    document.getElementById('exit-thank-msg').textContent = '你真是今天的規範小專家！';
-    document.getElementById('exit-thank').classList.add('show');
-    document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
-    confetti(); toast('🌟 出場券送出！');
+    // 個人模式 — 把公約答案推到提案板
+    const conventionQ = gameData.exitTicket.questions.find(q=>q.hasReason || q.text.includes('公約'));
+    const conventionAns = conventionQ ? (document.getElementById('eq-ans-'+conventionQ.id)||{}).value||'' : '';
+    const displayName = sel.options[sel.selectedIndex]?.text || val;
+    const seat = document.getElementById('e-seat').value||'';
+
+    const doFinish = ()=>{
+      document.getElementById('exit-thank-emoji').textContent = '🌟';
+      document.getElementById('exit-thank-title').textContent = '太棒了！出場券完成！';
+      document.getElementById('exit-thank-msg').textContent = '你的提案已加入公約提案板，等待全班投票！';
+      document.getElementById('exit-thank').classList.add('show');
+      document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
+      confetti(); toast('🌟 出場券送出，提案已上傳！');
+    };
+
+    if(conventionAns.trim()){
+      submitProposal(displayName, seat, conventionAns).then(doFinish).catch(()=>doFinish());
+    } else {
+      doFinish();
+    }
   }
 }
 
