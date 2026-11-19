@@ -1778,12 +1778,15 @@ function addExitQ(){ gameData.exitTicket.questions.push({id:'eq'+Date.now(), tex
 
 function resetAllScores(){
   if(!confirm('確定要將全部組別分數歸零嗎？')) return;
-  const n = gameData.groups || 6;
-  const zeros = [];
-  for(let i=0;i<n;i++) zeros.push({scores:[]});
-  db.ref('class306/teamScores').set(zeros).then(()=>{
-    alert('✅ 分數已全部歸零！');
-  }).catch(()=>alert('❌ 重置失敗，請確認網路連線'));
+  const cat = gameData.title || '社會課競賽';
+  const n = (fbTeamScores && fbTeamScores.length) || gameData.groups || 6;
+  const promises = [];
+  for(let i=0; i<n; i++){
+    promises.push(db.ref(`class306/teamScores/${i}/scores/${cat}`).set(0));
+  }
+  Promise.all(promises)
+    .then(()=>alert('✅ 分數已全部歸零！'))
+    .catch(()=>alert('❌ 重置失敗，請確認網路連線'));
 }
 
 function saveSettings(){
