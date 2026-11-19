@@ -800,7 +800,7 @@ let gameData = {
     "16 蔡嘉真","17 林采言","18 黃尹柔","19 林禹希","20 吳芯彤",
     "21 張容榛","22 陳亭睿","23 鄭榆嬪","24 林倚安","25 郭品岑",
     "26 鄭心慈"
-  ]
+  ],
 };
 
 // Load from localStorage
@@ -1305,36 +1305,8 @@ function initExit(){
   const sel = document.getElementById('e-name');
   // 保留前3個固定選項（請選擇、全班、分隔線），清除其他
   while(sel.options.length > 3) sel.remove(3);
-  // 嘗試從 Firebase 載入最新學生名單，否則用 gameData.students
-  const tryLoadFirebase = ()=>{
-    try {
-      db.ref('class306/students').once('value').then(snap=>{
-        const fbStudents = snap.val();
-        const fbArr = Array.isArray(fbStudents)
-          ? fbStudents
-          : (fbStudents && typeof fbStudents==='object'
-              ? Object.keys(fbStudents).sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>fbStudents[k])
-              : null);
-        if(fbArr && fbArr.filter(s=>s&&s.name).length > 0){
-          while(sel.options.length > 3) sel.remove(3);
-          let seatIdx = 0;
-          fbArr.forEach(s=>{
-            if(!s || !s.name) return;
-            seatIdx++;
-            const name = s.name.toString();
-            const seatPad = String(seatIdx).padStart(2,'0');
-            const opt = document.createElement('option');
-            opt.value = `${seatPad}|${name}`;
-            opt.textContent = `${seatPad}號 ${name}`;
-            sel.appendChild(opt);
-          });
-        } else {
-          fillDefaultStudents(sel);
-        }
-      }).catch(()=>fillDefaultStudents(sel));
-    } catch(e){ fillDefaultStudents(sel); }
-  };
-  tryLoadFirebase();
+  // 使用 gameData.students 名單（已按座號排好）
+  fillDefaultStudents(sel);
 
   // 建題目
   const container = document.getElementById('exit-questions');
