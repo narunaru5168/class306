@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>306 規範大冒險</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 <style>
-:root {
+:root{
   --g1:#E84040;--g2:#F4A030;--g3:#E6C020;--g4:#34B86A;--g5:#3A86D8;--g6:#9B59B6;
   --goal1:#3A86D8;--goal2:#34B86A;--goal3:#9B59B6;
   --bg:#F5F7FF;--white:#FFFFFF;--text:#2C3E50;--muted:#7F8C8D;
@@ -26,9 +28,39 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   box-shadow:0 2px 12px rgba(102,126,234,0.4);
   position:sticky;top:0;z-index:100;
 }
-.topbar-title{font-size:1.1rem;font-weight:900;}
+.topbar-title{font-size:1rem;font-weight:900;}
 .topbar-right{display:flex;gap:8px;align-items:center;}
 .topbar-badge{background:rgba(255,255,255,0.2);border-radius:20px;padding:4px 12px;font-size:0.8rem;font-weight:700;}
+
+/* ===TIMER STRIP=== */
+.timer-strip{
+  background:#1a1a2e;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 14px;gap:12px;
+  position:sticky;top:52px;z-index:99;
+  border-bottom:3px solid transparent;
+  transition:border-color 0.4s,background 0.4s;
+}
+.timer-strip.ts-green{border-color:#27AE60;}
+.timer-strip.ts-yellow{border-color:#F39C12;background:#1a1500;}
+.timer-strip.ts-orange{border-color:#E67E22;background:#1a0e00;}
+.timer-strip.ts-red{border-color:#E74C3C;background:#1a0000;}
+.timer-strip.ts-red .timer-display{animation:pulse-red 0.6s infinite alternate;}
+@keyframes pulse-red{from{color:#ff6b6b;}to{color:#fff;}}
+.timer-left{display:flex;align-items:center;gap:10px;}
+.timer-label{font-size:0.75rem;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:0.5px;}
+.timer-display{font-size:1.6rem;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;min-width:68px;}
+.timer-progress{flex:1;height:7px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;}
+.timer-bar{height:100%;border-radius:4px;transition:width 1s linear,background 0.4s;}
+.timer-btns{display:flex;gap:6px;}
+.tbtn{
+  padding:5px 11px;border-radius:8px;border:none;cursor:pointer;
+  font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.8rem;
+  transition:all 0.18s;
+}
+.tbtn-start{background:#27AE60;color:#fff;}
+.tbtn-pause{background:#F39C12;color:#fff;}
+.tbtn-reset{background:rgba(255,255,255,0.15);color:#fff;}
 
 /* ===HOME=== */
 #homeScreen{
@@ -40,19 +72,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .home-hero h1{font-size:2.4rem;font-weight:900;line-height:1.2;margin-bottom:8px;}
 .home-hero p{font-size:1rem;opacity:0.85;}
 @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;max-width:860px;width:100%;}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;max-width:900px;width:100%;}
 .home-card{
-  background:#fff;border-radius:20px;padding:22px 18px;
+  background:#fff;border-radius:20px;padding:20px 16px;
   cursor:pointer;text-align:center;
   transition:transform 0.2s,box-shadow 0.2s;
-  box-shadow:var(--shadow);
-  border-top:6px solid;
+  box-shadow:var(--shadow);border-top:6px solid;
 }
 .home-card:hover{transform:translateY(-5px);box-shadow:0 10px 30px rgba(0,0,0,0.2);}
-.home-card .hc-emoji{font-size:2.4rem;display:block;margin-bottom:8px;}
-.home-card .hc-round{font-size:0.75rem;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:4px;}
-.home-card .hc-name{font-size:1.15rem;font-weight:900;}
-.home-card .hc-desc{font-size:0.78rem;color:var(--muted);margin-top:5px;}
+.home-card .hc-emoji{font-size:2.4rem;display:block;margin-bottom:6px;}
+.home-card .hc-round{font-size:0.7rem;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:3px;}
+.home-card .hc-name{font-size:1.1rem;font-weight:900;}
+.home-card .hc-time{font-size:0.75rem;color:var(--muted);margin-top:4px;}
+.home-card .hc-desc{font-size:0.75rem;color:var(--muted);margin-top:3px;}
 .home-card.r1{border-color:var(--goal1);}
 .home-card.r2{border-color:#E84040;}
 .home-card.r3{border-color:#F4A030;}
@@ -106,147 +138,80 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .gtab[data-g="5"].active,.gtab[data-g="5"]:hover{background:var(--g5);}
 .gtab[data-g="6"].active,.gtab[data-g="6"]:hover{background:var(--g6);}
 
-/* ===ROUND 1 規範偵探=== */
+/* ===ROUND 1=== */
 #r1Screen{background:#EFF4FF;}
 .r1-body{flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:12px;overflow:auto;}
 .goals-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-.goal-col{
-  background:#fff;border-radius:var(--radius);
-  box-shadow:var(--shadow);overflow:hidden;
-  display:flex;flex-direction:column;min-height:220px;
-}
-.goal-head{
-  color:#fff;padding:12px 14px;text-align:center;
-  font-weight:900;font-size:1rem;line-height:1.3;
-}
+.goal-col{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:220px;}
+.goal-head{color:#fff;padding:12px 14px;text-align:center;font-weight:900;font-size:1rem;line-height:1.3;}
 .goal-head .glabel{font-size:0.7rem;opacity:0.8;display:block;margin-bottom:3px;}
-.drop-zone{
-  flex:1;padding:8px;display:flex;flex-direction:column;gap:7px;
-  min-height:80px;transition:background 0.2s;
-}
+.drop-zone{flex:1;padding:8px;display:flex;flex-direction:column;gap:7px;min-height:80px;transition:background 0.2s;}
 .drop-zone.over{background:rgba(102,126,234,0.07);border:2px dashed var(--accent);}
 .r1-pool{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
 .r1-pool h3{font-size:0.85rem;color:var(--muted);font-weight:700;margin-bottom:10px;}
 .cards-wrap{display:flex;flex-wrap:wrap;gap:9px;}
-.rcard{
-  background:#fff;border:2.5px dashed #CCC;border-radius:11px;
-  padding:9px 13px;cursor:grab;font-weight:700;font-size:0.88rem;
-  transition:all 0.18s;user-select:none;
-}
+.rcard{background:#fff;border:2.5px dashed #CCC;border-radius:11px;padding:9px 13px;cursor:grab;font-weight:700;font-size:0.88rem;transition:all 0.18s;user-select:none;}
 .rcard:hover{border-color:var(--accent);box-shadow:0 3px 12px rgba(102,126,234,0.25);transform:scale(1.03);}
 .rcard.dragging{opacity:0.45;transform:scale(1.05);}
 .rcard.in-zone{font-size:0.82rem;padding:7px 11px;border-style:solid;border-color:#DDD;}
 .rcard.correct{border-color:#27AE60;background:#F0FFF5;color:#1a7a40;}
 .rcard.wrong{border-color:#E74C3C;background:#FFF5F5;color:#c0392b;}
-.score-banner{
-  background:linear-gradient(135deg,#667EEA,#764BA2);
-  color:#fff;padding:10px 18px;border-radius:12px;
-  text-align:center;font-weight:900;font-size:1rem;
-  display:none;
-}
+.score-banner{background:linear-gradient(135deg,#667EEA,#764BA2);color:#fff;padding:10px 18px;border-radius:12px;text-align:center;font-weight:900;font-size:1rem;display:none;}
 .score-banner.show{display:block;}
 
-/* ===ROUND 2 公約小法官=== */
+/* ===ROUND 2=== */
 #r2Screen{background:#FFF5F5;}
-.r2-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px;gap:18px;}
-.proposal-wrap{
-  background:#fff;border-radius:24px;padding:36px 40px;
-  text-align:center;box-shadow:var(--shadow);max-width:580px;width:100%;
-  position:relative;overflow:hidden;
-}
-.proposal-wrap::before{
-  content:'';position:absolute;top:-40px;right:-40px;
-  width:150px;height:150px;border-radius:50%;
-  background:rgba(102,126,234,0.07);
-}
+.r2-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 14px;gap:14px;}
+.proposal-wrap{background:#fff;border-radius:24px;padding:30px 36px;text-align:center;box-shadow:var(--shadow);max-width:580px;width:100%;position:relative;overflow:hidden;}
+.proposal-wrap::before{content:'';position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:rgba(102,126,234,0.07);}
 .p-num{font-size:0.85rem;color:var(--muted);font-weight:700;margin-bottom:14px;}
-.p-text{font-size:1.9rem;font-weight:900;line-height:1.4;margin-bottom:20px;}
-.p-vote-hint{
-  display:flex;align-items:center;justify-content:center;gap:18px;
-  font-size:1rem;color:var(--muted);font-weight:700;
-}
-.vote-sym{font-size:1.4rem;font-weight:900;}
-.vote-sym.ok{color:#E74C3C;}
-.vote-sym.ng{color:#3498DB;}
+.p-text{font-size:1.8rem;font-weight:900;line-height:1.4;margin-bottom:16px;}
+.p-vote-hint{display:flex;align-items:center;justify-content:center;gap:14px;font-size:0.95rem;color:var(--muted);font-weight:700;}
+.vote-sym{font-size:1.3rem;font-weight:900;}
+.vote-sym.ok{color:#E74C3C;}.vote-sym.ng{color:#3498DB;}
 .votes-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:580px;width:100%;}
-.vcell{
-  background:#fff;border-radius:12px;padding:11px 7px;
-  text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);
-  cursor:pointer;transition:all 0.18s;border:2px solid transparent;
-}
+.vcell{background:#fff;border-radius:12px;padding:11px 7px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.18s;border:2px solid transparent;}
 .vcell:hover{transform:translateY(-2px);}
 .vcell .vg{font-size:0.75rem;font-weight:700;margin-bottom:7px;}
 .vcell .vi{font-size:1.6rem;line-height:1;}
 .vcell.voted-ok{background:#FFEAEA;border-color:#E74C3C;}
 .vcell.voted-ng{background:#EAF4FF;border-color:#3498DB;}
-.p-answer{
-  max-width:580px;width:100%;padding:14px 20px;
-  border-radius:14px;text-align:center;font-weight:700;
-  display:none;font-size:1rem;line-height:1.5;
-}
+.p-answer{max-width:580px;width:100%;padding:14px 20px;border-radius:14px;text-align:center;font-weight:700;display:none;font-size:1rem;line-height:1.5;}
 .p-answer.show{display:block;animation:fadeIn 0.3s ease;}
 .p-answer.good{background:#D5F5E3;color:#1E8449;border:2px solid #A9DFBF;}
 .p-answer.bad{background:#FADBD8;color:#922B21;border:2px solid #F5B7B1;}
 .r2-nav{display:flex;gap:10px;align-items:center;font-weight:700;font-size:0.95rem;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+#r2-award-row{display:none;flex-wrap:wrap;gap:7px;justify-content:center;max-width:580px;width:100%;}
 .p-hidden .p-text{filter:blur(10px);transition:filter 0.3s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
-/* ===ROUND 3 規範變變變=== */
+/* ===ROUND 3=== */
 #r3Screen{background:#FFFBF0;}
 .r3-body{flex:1;padding:14px;display:flex;flex-direction:column;gap:14px;}
 .r3-title{text-align:center;}
 .r3-title h2{font-size:1.3rem;font-weight:900;}
 .r3-title p{font-size:0.85rem;color:var(--muted);margin-top:4px;}
 .sort-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;flex:1;}
-.scard{
-  background:#fff;border:3px solid;border-radius:20px;
-  padding:22px 16px;text-align:center;
-  font-size:1.2rem;font-weight:900;
-  cursor:grab;user-select:none;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-  transition:all 0.2s;min-height:110px;position:relative;
-}
+.scard{background:#fff;border:3px solid;border-radius:20px;padding:22px 16px;text-align:center;font-size:1.2rem;font-weight:900;cursor:grab;user-select:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:all 0.2s;min-height:110px;position:relative;}
 .scard:active{cursor:grabbing;}
 .scard:hover{transform:scale(1.02);}
 .scard.dragging{opacity:0.4;transform:scale(1.03);}
 .scard.drag-target{border-style:dashed;}
-.scard .snum{
-  position:absolute;top:10px;left:12px;
-  width:30px;height:30px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.9rem;font-weight:900;color:#fff;
-}
-.scard[data-idx="0"]{border-color:var(--g1);}
-.scard[data-idx="0"] .snum{background:var(--g1);}
-.scard[data-idx="1"]{border-color:var(--g2);}
-.scard[data-idx="1"] .snum{background:var(--g2);}
-.scard[data-idx="2"]{border-color:var(--g4);}
-.scard[data-idx="2"] .snum{background:var(--g4);}
-.scard[data-idx="3"]{border-color:var(--g5);}
-.scard[data-idx="3"] .snum{background:var(--g5);}
+.scard .snum{position:absolute;top:10px;left:12px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:900;color:#fff;}
+.scard[data-idx="0"]{border-color:var(--g1);} .scard[data-idx="0"] .snum{background:var(--g1);}
+.scard[data-idx="1"]{border-color:var(--g2);} .scard[data-idx="1"] .snum{background:var(--g2);}
+.scard[data-idx="2"]{border-color:var(--g4);} .scard[data-idx="2"] .snum{background:var(--g4);}
+.scard[data-idx="3"]{border-color:var(--g5);} .scard[data-idx="3"] .snum{background:var(--g5);}
 .scard.correct-pos{border-style:solid;background:#F0FFF5;}
 .scard.wrong-pos{border-style:solid;background:#FFF5F5;}
-.r3-answer{
-  background:#fff;border-radius:var(--radius);padding:14px 18px;
-  box-shadow:var(--shadow);display:none;
-}
+.r3-answer{background:#fff;border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);display:none;}
 .r3-answer.show{display:block;animation:fadeIn 0.3s;}
 .r3-answer h3{font-weight:900;margin-bottom:10px;font-size:0.95rem;color:var(--muted);}
 .answer-steps{display:flex;gap:8px;flex-wrap:wrap;}
-.astep{
-  background:linear-gradient(135deg,#667EEA,#764BA2);
-  color:#fff;border-radius:12px;padding:8px 14px;
-  font-weight:700;font-size:0.88rem;
-  display:flex;align-items:center;gap:7px;
-}
-.astep-num{
-  background:rgba(255,255,255,0.3);
-  border-radius:50%;width:22px;height:22px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:0.8rem;font-weight:900;flex-shrink:0;
-}
+.astep{background:linear-gradient(135deg,#667EEA,#764BA2);color:#fff;border-radius:12px;padding:8px 14px;font-weight:700;font-size:0.88rem;display:flex;align-items:center;gap:7px;}
+.astep-num{background:rgba(255,255,255,0.3);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:900;flex-shrink:0;}
 
-/* ===EXIT TICKET=== */
+/* ===EXIT=== */
 #exitScreen{background:#F0FFF8;}
 .exit-body{flex:1;padding:16px 14px;max-width:680px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:14px;}
 .exit-header{text-align:center;}
@@ -256,28 +221,16 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .exit-info{display:flex;gap:10px;flex-wrap:wrap;}
 .exit-field{flex:1;min-width:110px;display:flex;flex-direction:column;gap:5px;}
 .exit-field label{font-size:0.82rem;font-weight:700;color:var(--muted);}
-.exit-field input{
-  border:2px solid #DDD;border-radius:10px;padding:9px 13px;
-  font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;
-  transition:border-color 0.2s;
-}
+.exit-field input{border:2px solid #DDD;border-radius:10px;padding:9px 13px;font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;transition:border-color 0.2s;}
 .exit-field input:focus{border-color:var(--accent);}
 .exit-q{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
 .exit-q .eq-label{font-size:0.75rem;font-weight:700;color:var(--accent);letter-spacing:0.5px;}
 .exit-q .eq-text{font-size:1.05rem;font-weight:700;margin:5px 0 12px;}
-.exit-q textarea{
-  width:100%;border:2px solid #DDD;border-radius:10px;padding:10px 13px;
-  font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;
-  resize:vertical;min-height:70px;transition:border-color 0.2s;
-}
+.exit-q textarea{width:100%;border:2px solid #DDD;border-radius:10px;padding:10px 13px;font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;resize:vertical;min-height:70px;transition:border-color 0.2s;}
 .exit-q textarea:focus{border-color:var(--accent);}
 .exit-reason{margin-top:10px;}
 .exit-reason label{font-size:0.82rem;font-weight:700;color:var(--muted);}
-.exit-thank{
-  background:linear-gradient(135deg,#667EEA,#764BA2);
-  color:#fff;border-radius:var(--radius);padding:20px;
-  text-align:center;display:none;
-}
+.exit-thank{background:linear-gradient(135deg,#667EEA,#764BA2);color:#fff;border-radius:var(--radius);padding:20px;text-align:center;display:none;}
 .exit-thank.show{display:block;animation:fadeIn 0.4s;}
 .exit-thank .et-emoji{font-size:3rem;display:block;margin-bottom:10px;}
 .exit-thank h3{font-size:1.4rem;font-weight:900;margin-bottom:6px;}
@@ -286,10 +239,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 #settingsScreen{background:#F8F9FA;}
 .stgs-body{flex:1;padding:14px;max-width:900px;margin:0 auto;width:100%;overflow:auto;}
 .stgs-tabs{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap;}
-.stab{
-  padding:7px 18px;border-radius:20px;border:2px solid #DDD;
-  background:#fff;cursor:pointer;font-weight:700;font-size:0.85rem;transition:all 0.18s;
-}
+.stab{padding:7px 18px;border-radius:20px;border:2px solid #DDD;background:#fff;cursor:pointer;font-weight:700;font-size:0.85rem;transition:all 0.18s;}
 .stab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .spanel{display:none;}
 .spanel.active{display:flex;flex-direction:column;gap:14px;}
@@ -297,72 +247,34 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .sbox h3{font-size:0.95rem;font-weight:900;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #F0F0F0;color:var(--accent);}
 .srow{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
 .srow label{font-size:0.8rem;font-weight:700;color:var(--muted);}
-.srow input,.srow textarea,.srow select{
-  border:2px solid #E0E0E0;border-radius:9px;padding:7px 11px;
-  font-family:'Noto Sans TC',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s;
-}
+.srow input,.srow textarea,.srow select{border:2px solid #E0E0E0;border-radius:9px;padding:7px 11px;font-family:'Noto Sans TC',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s;}
 .srow input:focus,.srow textarea:focus,.srow select:focus{border-color:var(--accent);}
-.card-edit-row{
-  display:flex;align-items:center;gap:8px;
-  background:#F8F9FA;border-radius:9px;padding:9px 12px;margin-bottom:7px;
-}
-.card-edit-row input{
-  flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;
-  font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none;
-}
+.card-edit-row{display:flex;align-items:center;gap:8px;background:#F8F9FA;border-radius:9px;padding:9px 12px;margin-bottom:7px;}
+.card-edit-row input{flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none;}
 .card-edit-row input:focus{border-color:var(--accent);}
-.card-edit-row select{
-  border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;
-  font-family:'Noto Sans TC',sans-serif;font-size:0.82rem;outline:none;
-}
-.del-btn{
-  background:#E74C3C;color:#fff;border:none;border-radius:7px;
-  padding:5px 10px;cursor:pointer;font-size:0.78rem;white-space:nowrap;
-}
-.add-btn{
-  background:var(--accent);color:#fff;border:none;border-radius:9px;
-  padding:7px 14px;cursor:pointer;font-weight:700;font-size:0.85rem;margin-top:4px;
-}
+.card-edit-row select{border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.82rem;outline:none;}
+.del-btn{background:#E74C3C;color:#fff;border:none;border-radius:7px;padding:5px 10px;cursor:pointer;font-size:0.78rem;white-space:nowrap;}
+.add-btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:7px 14px;cursor:pointer;font-weight:700;font-size:0.85rem;margin-top:4px;}
+
+/* ===TOAST=== */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#2C3E50;color:#fff;padding:10px 20px;border-radius:12px;font-weight:700;font-size:0.9rem;z-index:9999;transition:transform 0.3s;white-space:nowrap;pointer-events:none;}
+#toast.show{transform:translateX(-50%) translateY(0);}
 
 /* ===SCORE BAR=== */
-#score-bar{
-  position:fixed;top:0;left:0;right:0;z-index:200;
-  background:rgba(30,30,50,0.92);backdrop-filter:blur(8px);
-  display:none;padding:7px 12px;
-  flex-direction:column;gap:4px;
-}
+#score-bar{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(20,20,40,0.94);backdrop-filter:blur(8px);display:none;padding:7px 12px;flex-direction:column;gap:4px;}
 #score-bar.show{display:flex;}
 .sbar-title{font-size:0.7rem;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:1px;text-align:center;}
 .sbar-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
-.sbar-cell{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,0.1);border-radius:8px;
-  padding:4px 10px;min-width:80px;
-}
+.sbar-cell{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.1);border-radius:8px;padding:4px 10px;min-width:80px;}
 .sbar-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
 .sbar-name{font-size:0.75rem;color:rgba(255,255,255,0.75);font-weight:700;}
 .sbar-score{font-size:0.9rem;color:#fff;font-weight:900;margin-left:auto;}
-.sbar-toggle{
-  position:fixed;top:6px;right:10px;z-index:201;
-  background:rgba(102,126,234,0.85);color:#fff;border:none;
-  border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;
-}
-/* ===TOAST=== */
-#toast{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
-  background:#2C3E50;color:#fff;padding:10px 20px;border-radius:12px;
-  font-weight:700;font-size:0.9rem;z-index:9999;transition:transform 0.3s;
-  white-space:nowrap;pointer-events:none;
-}
-#toast.show{transform:translateX(-50%) translateY(0);}
+.sbar-toggle{position:fixed;top:7px;right:10px;z-index:201;background:rgba(102,126,234,0.9);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;display:none;}
 
 /* ===CONFETTI=== */
 .confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:9998;overflow:hidden;}
 .cf{position:absolute;width:9px;height:9px;animation:cf-fall 3.5s ease-in forwards;}
-@keyframes cf-fall{
-  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
-  100%{transform:translateY(110vh) rotate(600deg);opacity:0;}
-}
+@keyframes cf-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(600deg);opacity:0;}}
 
 /* ===RESP=== */
 @media(max-width:600px){
@@ -370,24 +282,20 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .sort-grid{grid-template-columns:1fr;}
   .votes-grid{grid-template-columns:repeat(3,1fr);}
   .home-cards{grid-template-columns:repeat(2,1fr);}
-  .p-text{font-size:1.5rem;}
+  .p-text{font-size:1.4rem;}
   .home-hero h1{font-size:1.8rem;}
-  .home-hero .emoji{font-size:3rem;}
+  .timer-display{font-size:1.3rem;}
 }
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
 
 <div id="toast"></div>
-
-<!-- ===SCORE BAR=== -->
 <div id="score-bar">
   <div class="sbar-title">⭐ 星星網站即時分數（社會課競賽）</div>
   <div class="sbar-row" id="sbar-row"></div>
 </div>
-<button class="sbar-toggle" id="sbar-toggle-btn" onclick="toggleScoreBar()" style="display:none">📊 分數</button>
+<button class="sbar-toggle" id="sbar-toggle-btn" onclick="toggleScoreBar()">📊 分數</button>
 
 <!-- ===HOME=== -->
 <div id="homeScreen" class="screen active">
@@ -398,34 +306,38 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
   <div class="home-cards">
     <div class="home-card r1" onclick="goTo('r1Screen')">
-      <span class="hc-round">第 1 關</span>
+      <span class="hc-round" id="hc-r1-label">第 1 關</span>
       <span class="hc-emoji">🔍</span>
-      <div class="hc-name">規範偵探</div>
-      <div class="hc-desc">把規範卡放到正確的目的下面</div>
+      <div class="hc-name" id="hc-r1-name">規範偵探</div>
+      <div class="hc-time" id="hc-r1-time">⏱ 8 分鐘</div>
+      <div class="hc-desc" id="hc-r1-desc">把規範卡放到正確的目的下面</div>
     </div>
     <div class="home-card r2" onclick="goTo('r2Screen')">
-      <span class="hc-round">第 2 關</span>
+      <span class="hc-round" id="hc-r2-label">第 2 關</span>
       <span class="hc-emoji">⚖️</span>
-      <div class="hc-name">公約小法官</div>
-      <div class="hc-desc">判斷公約好不好</div>
+      <div class="hc-name" id="hc-r2-name">公約小法官</div>
+      <div class="hc-time" id="hc-r2-time">⏱ 10 分鐘</div>
+      <div class="hc-desc" id="hc-r2-desc">判斷公約好不好</div>
     </div>
     <div class="home-card r3" onclick="goTo('r3Screen')">
-      <span class="hc-round">第 3 關</span>
+      <span class="hc-round" id="hc-r3-label">第 3 關</span>
       <span class="hc-emoji">🔀</span>
-      <div class="hc-name">規範變變變</div>
-      <div class="hc-desc">排出修改規範的正確順序</div>
+      <div class="hc-name" id="hc-r3-name">規範變變變</div>
+      <div class="hc-time" id="hc-r3-time">⏱ 5 分鐘</div>
+      <div class="hc-desc" id="hc-r3-desc">排出修改規範的正確順序</div>
     </div>
     <div class="home-card rx" onclick="goTo('exitScreen')">
-      <span class="hc-round">完成任務</span>
+      <span class="hc-round" id="hc-rx-label">完成任務</span>
       <span class="hc-emoji">📝</span>
-      <div class="hc-name">出場券</div>
-      <div class="hc-desc">寫下今天的收穫</div>
+      <div class="hc-name" id="hc-rx-name">出場券</div>
+      <div class="hc-time" id="hc-rx-time">⏱ 5 分鐘</div>
+      <div class="hc-desc" id="hc-rx-desc">寫下今天的收穫</div>
     </div>
     <div class="home-card rs" onclick="goTo('settingsScreen')">
       <span class="hc-round">老師設定</span>
       <span class="hc-emoji">⚙️</span>
       <div class="hc-name">自訂內容</div>
-      <div class="hc-desc">修改題目與關卡設定</div>
+      <div class="hc-desc">修改題目、時間、關卡設定</div>
     </div>
   </div>
 </div>
@@ -434,8 +346,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div id="r1Screen" class="screen">
   <div class="topbar">
     <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
-    <span class="topbar-title">🔍 第1關 規範偵探</span>
+    <span class="topbar-title" id="r1-topbar-title">🔍 第1關 規範偵探</span>
     <span class="topbar-badge" id="r1-score-badge">0/0</span>
+  </div>
+  <div class="timer-strip" id="r1-timer">
+    <div class="timer-left">
+      <span class="timer-label">⏱ 計時</span>
+      <span class="timer-display" id="r1-tdisp">08:00</span>
+    </div>
+    <div class="timer-progress"><div class="timer-bar" id="r1-tbar" style="width:100%;background:#27AE60;"></div></div>
+    <div class="timer-btns">
+      <button class="tbtn tbtn-start" id="r1-tstart" onclick="timerAction('r1','start')">▶ 開始</button>
+      <button class="tbtn tbtn-reset" onclick="timerAction('r1','reset')">↺</button>
+    </div>
   </div>
   <div class="group-tabs" id="r1-group-tabs"></div>
   <div class="r1-body">
@@ -458,8 +381,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div id="r2Screen" class="screen">
   <div class="topbar">
     <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
-    <span class="topbar-title">⚖️ 第2關 公約小法官</span>
+    <span class="topbar-title" id="r2-topbar-title">⚖️ 第2關 公約小法官</span>
     <span class="topbar-badge" id="r2-counter">1/6</span>
+  </div>
+  <div class="timer-strip" id="r2-timer">
+    <div class="timer-left">
+      <span class="timer-label">⏱ 計時</span>
+      <span class="timer-display" id="r2-tdisp">10:00</span>
+    </div>
+    <div class="timer-progress"><div class="timer-bar" id="r2-tbar" style="width:100%;background:#27AE60;"></div></div>
+    <div class="timer-btns">
+      <button class="tbtn tbtn-start" id="r2-tstart" onclick="timerAction('r2','start')">▶ 開始</button>
+      <button class="tbtn tbtn-reset" onclick="timerAction('r2','reset')">↺</button>
+    </div>
   </div>
   <div class="r2-body">
     <div class="proposal-wrap" id="r2-proposal">
@@ -474,7 +408,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="votes-grid" id="r2-votes"></div>
     <div class="p-answer" id="r2-answer"></div>
-    <div id="r2-award-row" style="display:none;flex-wrap:wrap;gap:7px;justify-content:center;max-width:580px;width:100%;"></div>
+    <div id="r2-award-row"></div>
     <div class="r2-nav">
       <button class="btn btn-secondary btn-sm" onclick="r2Prev()">◀ 上一題</button>
       <span id="r2-idx-display" style="color:var(--muted)">1 / 6</span>
@@ -483,7 +417,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
   <div class="ctrl-bar">
     <button class="btn btn-warning btn-sm" onclick="r2Toggle()">👁 顯示/隱藏題目</button>
-    <button class="btn btn-info btn-sm" onclick="r2ShowAnswer()">💡 揭示答案</button>
+    <button class="btn btn-info btn-sm" onclick="r2ShowAnswer()">💡 揭示答案＋加分</button>
     <button class="btn btn-secondary btn-sm" onclick="r2ResetVotes()">↺ 清除投票</button>
   </div>
 </div>
@@ -492,13 +426,24 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 <div id="r3Screen" class="screen">
   <div class="topbar">
     <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
-    <span class="topbar-title">🔀 第3關 規範變變變</span>
+    <span class="topbar-title" id="r3-topbar-title">🔀 第3關 規範變變變</span>
     <span class="topbar-badge">排出正確順序</span>
+  </div>
+  <div class="timer-strip" id="r3-timer">
+    <div class="timer-left">
+      <span class="timer-label">⏱ 計時</span>
+      <span class="timer-display" id="r3-tdisp">05:00</span>
+    </div>
+    <div class="timer-progress"><div class="timer-bar" id="r3-tbar" style="width:100%;background:#27AE60;"></div></div>
+    <div class="timer-btns">
+      <button class="tbtn tbtn-start" id="r3-tstart" onclick="timerAction('r3','start')">▶ 開始</button>
+      <button class="tbtn tbtn-reset" onclick="timerAction('r3','reset')">↺</button>
+    </div>
   </div>
   <div class="group-tabs" id="r3-group-tabs"></div>
   <div class="r3-body">
     <div class="r3-title">
-      <h2>🗂 把卡片拖拉排出修改規範的正確順序</h2>
+      <h2 id="r3-instruction">🗂 把卡片拖拉排出修改規範的正確順序</h2>
       <p>拖動卡片，兩兩互換位置</p>
     </div>
     <div class="sort-grid" id="r3-sort"></div>
@@ -515,12 +460,23 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   </div>
 </div>
 
-<!-- ===EXIT TICKET=== -->
+<!-- ===EXIT=== -->
 <div id="exitScreen" class="screen">
   <div class="topbar">
     <button class="btn btn-home btn-sm" onclick="goTo('homeScreen')">← 回首頁</button>
     <span class="topbar-title">📝 出場券</span>
     <span class="topbar-badge">今日收穫</span>
+  </div>
+  <div class="timer-strip" id="rx-timer">
+    <div class="timer-left">
+      <span class="timer-label">⏱ 計時</span>
+      <span class="timer-display" id="rx-tdisp">05:00</span>
+    </div>
+    <div class="timer-progress"><div class="timer-bar" id="rx-tbar" style="width:100%;background:#27AE60;"></div></div>
+    <div class="timer-btns">
+      <button class="tbtn tbtn-start" id="rx-tstart" onclick="timerAction('rx','start')">▶ 開始</button>
+      <button class="tbtn tbtn-reset" onclick="timerAction('rx','reset')">↺</button>
+    </div>
   </div>
   <div class="exit-body">
     <div class="exit-header">
@@ -529,18 +485,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <p>完成任務前，先填寫今天的出場券！</p>
     </div>
     <div class="exit-info">
-      <div class="exit-field">
-        <label>班級</label>
-        <input type="text" id="e-class" placeholder="三年六班">
-      </div>
-      <div class="exit-field" style="flex:2">
-        <label>姓名</label>
-        <input type="text" id="e-name" placeholder="請輸入姓名">
-      </div>
-      <div class="exit-field">
-        <label>座號</label>
-        <input type="text" id="e-seat" placeholder="01">
-      </div>
+      <div class="exit-field"><label>班級</label><input type="text" id="e-class" placeholder="三年六班"></div>
+      <div class="exit-field" style="flex:2"><label>姓名</label><input type="text" id="e-name" placeholder="請輸入姓名"></div>
+      <div class="exit-field"><label>座號</label><input type="text" id="e-seat" placeholder="01"></div>
     </div>
     <div id="exit-questions"></div>
     <div style="text-align:center;">
@@ -578,13 +525,18 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div class="srow"><label>副標題</label><input type="text" id="s-subtitle" placeholder="社會科互動課程"></div>
         <div class="srow"><label>組別數量</label>
           <select id="s-groups">
-            <option value="4">4組</option>
-            <option value="5">5組</option>
-            <option value="6" selected>6組</option>
-            <option value="7">7組</option>
-            <option value="8">8組</option>
+            <option value="4">4組</option><option value="5">5組</option>
+            <option value="6" selected>6組</option><option value="7">7組</option><option value="8">8組</option>
           </select>
         </div>
+      </div>
+      <div class="sbox">
+        <h3>⏱ 各關卡計時設定</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="s-timers-grid"></div>
+      </div>
+      <div class="sbox">
+        <h3>🏷 關卡名稱與說明（首頁顯示）</h3>
+        <div id="s-labels-editor"></div>
       </div>
     </div>
 
@@ -641,6 +593,15 @@ let gameData = {
   title: "306 規範大冒險",
   subtitle: "社會科互動課程",
   numGroups: 6,
+  // 關卡標籤（首頁顯示）
+  labels: {
+    r1: { label:"第 1 關", name:"規範偵探", desc:"把規範卡放到正確的目的下面" },
+    r2: { label:"第 2 關", name:"公約小法官", desc:"判斷公約好不好" },
+    r3: { label:"第 3 關", name:"規範變變變", desc:"排出修改規範的正確順序" },
+    rx: { label:"完成任務", name:"出場券", desc:"寫下今天的收穫" }
+  },
+  // 計時（秒）
+  timers: { r1: 480, r2: 600, r3: 300, rx: 300 },
   r1: {
     goals: [
       {id:"g1", text:"保護大家的安全", color:"#3A86D8"},
@@ -684,16 +645,16 @@ let gameData = {
   }
 };
 
-// Try load from localStorage
+// Load from localStorage
 (function(){
   try {
     const saved = localStorage.getItem('social_game_data');
-    if (saved) gameData = JSON.parse(saved);
+    if(saved){ const p = JSON.parse(saved); gameData = Object.assign({}, gameData, p); }
   } catch(e){}
 })();
 
 // =====================
-// FIREBASE 連動
+// FIREBASE
 // =====================
 let db = null;
 let fbTeamScores = [];
@@ -711,32 +672,27 @@ let scoreBarVisible = false;
       appId: "1:105193372361:web:5591b76255cb86cf566b18"
     });
     db = firebase.database();
-    // 即時監聽星星網站的組別分數
     db.ref('class306/teamScores').on('value', snap=>{
       const val = snap.val();
       if(Array.isArray(val)) fbTeamScores = val;
       else if(val && typeof val === 'object') fbTeamScores = Object.values(val);
       updateScoreBar();
-      // 顯示分數按鈕
       document.getElementById('sbar-toggle-btn').style.display = 'block';
     });
   } catch(e){ console.warn('Firebase init failed:', e); }
 })();
 
-// 加分到星星網站
 function addTeamScore(groupIdx, points){
   if(!db || points <= 0) return;
   const cat = gameData.title || '社會課競賽';
-  const path = `class306/teamScores/${groupIdx}/scores`;
-  db.ref(path).once('value').then(snap=>{
+  db.ref(`class306/teamScores/${groupIdx}/scores`).once('value').then(snap=>{
     const scores = snap.val() || {};
     scores[cat] = (scores[cat] || 0) + points;
-    db.ref(path).set(scores);
+    db.ref(`class306/teamScores/${groupIdx}/scores`).set(scores);
     toast(`🌟 第${groupIdx+1}組 ＋${points}分！已同步到星星網站`);
   }).catch(()=>toast('⚠️ 加分失敗，請確認 Firebase 連線'));
 }
 
-// 更新分數列
 function updateScoreBar(){
   const row = document.getElementById('sbar-row');
   if(!row) return;
@@ -754,10 +710,111 @@ function updateScoreBar(){
 function toggleScoreBar(){
   scoreBarVisible = !scoreBarVisible;
   document.getElementById('score-bar').classList.toggle('show', scoreBarVisible);
-  // 給 topbar 騰出空間
-  document.querySelectorAll('.topbar').forEach(tb=>{
-    tb.style.marginTop = scoreBarVisible ? '56px' : '0';
-  });
+}
+
+// =====================
+// TIMER ENGINE
+// =====================
+const timers = {};
+// timers[id] = { total, remaining, running, interval }
+
+function timerInit(id){
+  if(timers[id]) return; // already init
+  const key = id === 'rx' ? 'rx' : id;
+  const total = (gameData.timers && gameData.timers[key]) || 300;
+  timers[id] = { total, remaining: total, running: false, interval: null };
+  updateTimerUI(id);
+}
+
+function timerAction(id, action){
+  timerInit(id);
+  const t = timers[id];
+  if(action === 'start'){
+    if(t.running){
+      // pause
+      t.running = false;
+      clearInterval(t.interval);
+      document.getElementById(id+'-tstart').textContent = '▶ 繼續';
+      document.getElementById(id+'-tstart').className = 'tbtn tbtn-start';
+    } else {
+      if(t.remaining <= 0){ timerAction(id,'reset'); return; }
+      t.running = true;
+      document.getElementById(id+'-tstart').textContent = '⏸ 暫停';
+      document.getElementById(id+'-tstart').className = 'tbtn tbtn-pause';
+      t.interval = setInterval(()=>{
+        t.remaining--;
+        updateTimerUI(id);
+        if(t.remaining <= 0){
+          clearInterval(t.interval);
+          t.running = false;
+          document.getElementById(id+'-tstart').textContent = '▶ 開始';
+          document.getElementById(id+'-tstart').className = 'tbtn tbtn-start';
+          timerAlarm();
+        }
+      }, 1000);
+    }
+  } else if(action === 'reset'){
+    clearInterval(t.interval);
+    t.running = false;
+    t.remaining = t.total;
+    document.getElementById(id+'-tstart').textContent = '▶ 開始';
+    document.getElementById(id+'-tstart').className = 'tbtn tbtn-start';
+    updateTimerUI(id);
+  }
+}
+
+function updateTimerUI(id){
+  const t = timers[id];
+  if(!t) return;
+  const m = Math.floor(t.remaining / 60);
+  const s = t.remaining % 60;
+  const disp = document.getElementById(id+'-tdisp');
+  const bar = document.getElementById(id+'-tbar');
+  const strip = document.getElementById(id+'-timer') || document.getElementById(id.replace('rx','rx')+'-timer');
+  if(!disp) return;
+  disp.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  const pct = t.total > 0 ? (t.remaining / t.total * 100) : 0;
+  if(bar){
+    bar.style.width = pct + '%';
+    if(pct > 50){ bar.style.background = '#27AE60'; }
+    else if(pct > 25){ bar.style.background = '#F39C12'; }
+    else if(pct > 10){ bar.style.background = '#E67E22'; }
+    else { bar.style.background = '#E74C3C'; }
+  }
+  const stripEl = document.getElementById(id+'-timer');
+  if(stripEl){
+    stripEl.className = 'timer-strip';
+    if(pct > 50) stripEl.classList.add('ts-green');
+    else if(pct > 25) stripEl.classList.add('ts-yellow');
+    else if(pct > 10) stripEl.classList.add('ts-orange');
+    else stripEl.classList.add('ts-red');
+  }
+}
+
+function timerReset(id){
+  if(timers[id]){
+    clearInterval(timers[id].interval);
+    delete timers[id];
+  }
+  timerInit(id);
+}
+
+function timerAlarm(){
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.4, 0.8].forEach(offset=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.35);
+      osc.start(ctx.currentTime + offset);
+      osc.stop(ctx.currentTime + offset + 0.35);
+    });
+  } catch(e){}
+  toast('⏰ 時間到！');
 }
 
 // =====================
@@ -766,15 +823,32 @@ function toggleScoreBar(){
 function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='r1Screen') initR1();
-  if(id==='r2Screen') initR2();
-  if(id==='r3Screen') initR3();
-  if(id==='exitScreen') initExit();
+  if(id==='r1Screen'){ timerReset('r1'); initR1(); }
+  if(id==='r2Screen'){ timerReset('r2'); initR2(); }
+  if(id==='r3Screen'){ timerReset('r3'); initR3(); }
+  if(id==='exitScreen'){ timerReset('rx'); initExit(); }
   if(id==='settingsScreen') initSettings();
-  if(id==='homeScreen'){
-    document.getElementById('gameTitle').textContent = gameData.title;
-    document.getElementById('gameSubtitle').textContent = gameData.subtitle;
-  }
+  if(id==='homeScreen') refreshHome();
+}
+
+function refreshHome(){
+  document.getElementById('gameTitle').textContent = gameData.title;
+  document.getElementById('gameSubtitle').textContent = gameData.subtitle;
+  const lk = ['r1','r2','r3','rx'];
+  lk.forEach(k=>{
+    const lb = gameData.labels[k];
+    if(!lb) return;
+    ['label','name','desc'].forEach(f=>{
+      const el = document.getElementById(`hc-${k}-${f}`);
+      if(el) el.textContent = lb[f] || '';
+    });
+    // timer display on home card
+    const te = document.getElementById(`hc-${k}-time`);
+    if(te){
+      const sec = (gameData.timers && gameData.timers[k]) || 0;
+      if(sec) te.textContent = '⏱ ' + (sec>=60 ? Math.round(sec/60)+' 分鐘' : sec+' 秒');
+    }
+  });
 }
 
 // =====================
@@ -786,7 +860,7 @@ function toast(msg){
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
 }
 
 // =====================
@@ -800,14 +874,7 @@ function confetti(){
   for(let i=0;i<60;i++){
     const c = document.createElement('div');
     c.className = 'cf';
-    c.style.cssText = `
-      left:${Math.random()*100}%;
-      top:${-Math.random()*100}px;
-      background:${colors[Math.floor(Math.random()*colors.length)]};
-      border-radius:${Math.random()>0.5?'50%':'2px'};
-      animation-delay:${Math.random()*2}s;
-      animation-duration:${2.5+Math.random()*2}s;
-    `;
+    c.style.cssText = `left:${Math.random()*100}%;top:${-Math.random()*100}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};animation-delay:${Math.random()*2}s;animation-duration:${2.5+Math.random()*2}s;`;
     wrap.appendChild(c);
   }
   setTimeout(()=>wrap.remove(), 5000);
@@ -817,8 +884,8 @@ function confetti(){
 // ROUND 1 規範偵探
 // =====================
 let r1CurrentGroup = 1;
-let r1Placements = {}; // ruleId -> goalId
-let r1Shuffled = {}; // groupNum -> shuffled rule ids
+let r1Placements = {};
+let r1Shuffled = {};
 
 function r1GetShuffle(g){
   if(!r1Shuffled[g]){
@@ -829,8 +896,11 @@ function r1GetShuffle(g){
 }
 
 function initR1(){
+  const lbl = gameData.labels.r1;
+  document.getElementById('r1-topbar-title').textContent = `🔍 ${lbl.label} ${lbl.name}`;
   buildGroupTabs('r1-group-tabs', r1CurrentGroup, function(g){
     r1CurrentGroup = g;
+    r1Placements = {};
     renderR1();
   });
   r1Placements = {};
@@ -839,145 +909,77 @@ function initR1(){
 
 function renderR1(){
   const data = gameData.r1;
-  // Goals
   const goalEl = document.getElementById('r1-goals');
   goalEl.innerHTML = '';
   data.goals.forEach(g=>{
     const col = document.createElement('div');
     col.className = 'goal-col';
-    col.innerHTML = `
-      <div class="goal-head" style="background:${g.color}">
-        <span class="glabel">目的卡</span>
-        ${g.text}
-      </div>
-      <div class="drop-zone" id="dz-${g.id}" data-goal="${g.id}"></div>
-    `;
+    col.innerHTML = `<div class="goal-head" style="background:${g.color}"><span class="glabel">目的卡</span>${g.text}</div><div class="drop-zone" id="dz-${g.id}" data-goal="${g.id}"></div>`;
     goalEl.appendChild(col);
   });
-
-  // Render placed cards
   Object.entries(r1Placements).forEach(([rId, gId])=>{
     const rule = data.rules.find(r=>r.id===rId);
     if(!rule) return;
     const dz = document.getElementById('dz-'+gId);
     if(dz) dz.appendChild(createRuleCardEl(rule, true));
   });
-
-  // Drop zone events
   document.querySelectorAll('.drop-zone').forEach(dz=>{
-    dz.addEventListener('dragover',e=>{
-      e.preventDefault();
-      dz.classList.add('over');
-    });
+    dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
     dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
-    dz.addEventListener('drop',e=>{
-      e.preventDefault();
-      dz.classList.remove('over');
-      const rId = e.dataTransfer.getData('ruleId');
-      if(rId){
-        // Remove from old placement
-        delete r1Placements[rId];
-        r1Placements[rId] = dz.dataset.goal;
-        renderR1();
-      }
-    });
+    dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); const rId=e.dataTransfer.getData('ruleId'); if(rId){ delete r1Placements[rId]; r1Placements[rId]=dz.dataset.goal; renderR1(); } });
   });
-
-  // Pool: unplaced cards (shuffled for group)
   const pool = document.getElementById('r1-pool-cards');
   pool.innerHTML = '';
   const shuffled = r1GetShuffle(r1CurrentGroup);
   const placed = new Set(Object.keys(r1Placements));
-  shuffled.forEach(rId=>{
-    if(placed.has(rId)) return;
-    const rule = data.rules.find(r=>r.id===rId);
-    if(rule) pool.appendChild(createRuleCardEl(rule, false));
-  });
-
-  // Also allow dropping back to pool
+  shuffled.forEach(rId=>{ if(placed.has(rId)) return; const rule=data.rules.find(r=>r.id===rId); if(rule) pool.appendChild(createRuleCardEl(rule,false)); });
   pool.addEventListener('dragover',e=>{e.preventDefault();});
-  pool.addEventListener('drop',e=>{
-    e.preventDefault();
-    const rId = e.dataTransfer.getData('ruleId');
-    if(rId){ delete r1Placements[rId]; renderR1(); }
-  });
-
+  pool.addEventListener('drop',e=>{ e.preventDefault(); const rId=e.dataTransfer.getData('ruleId'); if(rId){ delete r1Placements[rId]; renderR1(); } });
   updateR1Badge();
   document.getElementById('r1-score-banner').classList.remove('show');
 }
 
 function createRuleCardEl(rule, inZone){
   const el = document.createElement('div');
-  el.className = 'rcard' + (inZone?' in-zone':'');
+  el.className = 'rcard'+(inZone?' in-zone':'');
   el.textContent = rule.text;
   el.draggable = true;
   el.dataset.ruleId = rule.id;
-  el.addEventListener('dragstart',e=>{
-    e.dataTransfer.setData('ruleId', rule.id);
-    el.classList.add('dragging');
-  });
+  el.addEventListener('dragstart',e=>{ e.dataTransfer.setData('ruleId',rule.id); el.classList.add('dragging'); });
   el.addEventListener('dragend',()=>el.classList.remove('dragging'));
   return el;
 }
 
 function updateR1Badge(){
-  const total = gameData.r1.rules.length;
-  const placed = Object.keys(r1Placements).length;
-  document.getElementById('r1-score-badge').textContent = placed+'/'+total;
+  document.getElementById('r1-score-badge').textContent = Object.keys(r1Placements).length+'/'+gameData.r1.rules.length;
 }
 
-function r1Shuffle(){
-  r1Shuffled[r1CurrentGroup] = [...gameData.r1.rules.map(r=>r.id)].sort(()=>Math.random()-0.5);
-  r1Placements = {};
-  renderR1();
-  toast('🔀 已重新洗牌！');
-}
-
-function r1Reset(){
-  r1Shuffled = {};
-  r1Placements = {};
-  renderR1();
-  toast('↺ 已重置');
-}
+function r1Shuffle(){ r1Shuffled[r1CurrentGroup]=[...gameData.r1.rules.map(r=>r.id)].sort(()=>Math.random()-0.5); r1Placements={}; renderR1(); toast('🔀 已重新洗牌！'); }
+function r1Reset(){ r1Shuffled={}; r1Placements={}; renderR1(); toast('↺ 已重置'); }
 
 function r1Check(){
   const data = gameData.r1;
   let correct = 0;
-  // Mark cards
   document.querySelectorAll('.rcard.in-zone').forEach(el=>{
     const rId = el.dataset.ruleId;
     const rule = data.rules.find(r=>r.id===rId);
     if(!rule) return;
-    const placed = r1Placements[rId];
-    if(placed === rule.answer){
-      el.classList.add('correct');
-      el.classList.remove('wrong');
-      correct++;
-    } else {
-      el.classList.add('wrong');
-      el.classList.remove('correct');
-    }
+    if(r1Placements[rId]===rule.answer){ el.classList.add('correct'); el.classList.remove('wrong'); correct++; }
+    else { el.classList.add('wrong'); el.classList.remove('correct'); }
   });
   const total = Object.keys(r1Placements).length;
   const banner = document.getElementById('r1-score-banner');
-  banner.textContent = `第${r1CurrentGroup}組：答對 ${correct} / ${total} 張！` + (correct===data.rules.length?'  🎉 全部正確！':'');
+  banner.textContent = `第${r1CurrentGroup}組：答對 ${correct} / ${total} 張！`+(correct===data.rules.length?'  🎉 全部正確！':'');
   banner.classList.add('show');
   if(correct===data.rules.length) confetti();
-  // Firebase 加分（每張答對 +1）
-  if(correct > 0) addTeamScore(r1CurrentGroup - 1, correct);
+  if(correct > 0) addTeamScore(r1CurrentGroup-1, correct);
 }
 
 function r1ShowAnswer(){
-  const data = gameData.r1;
-  r1Placements = {};
-  data.rules.forEach(r=>{ r1Placements[r.id] = r.answer; });
+  r1Placements={};
+  gameData.r1.rules.forEach(r=>{ r1Placements[r.id]=r.answer; });
   renderR1();
-  // Mark all correct
-  setTimeout(()=>{
-    document.querySelectorAll('.rcard.in-zone').forEach(el=>{
-      el.classList.add('correct');
-    });
-  }, 100);
+  setTimeout(()=>{ document.querySelectorAll('.rcard.in-zone').forEach(el=>el.classList.add('correct')); }, 100);
   toast('💡 顯示標準答案');
 }
 
@@ -985,15 +987,14 @@ function r1ShowAnswer(){
 // ROUND 2 公約小法官
 // =====================
 let r2Idx = 0;
-let r2Votes = {}; // proposalId -> {groupNum: 'ok'|'ng'}
+let r2Votes = {};
 let r2Hidden = false;
 
 function initR2(){
-  r2Idx = 0;
-  r2Votes = {};
-  r2Hidden = false;
-  renderR2();
-  buildVoteGrid();
+  const lbl = gameData.labels.r2;
+  document.getElementById('r2-topbar-title').textContent = `⚖️ ${lbl.label} ${lbl.name}`;
+  r2Idx=0; r2Votes={}; r2Hidden=false;
+  renderR2(); buildVoteGrid();
 }
 
 function renderR2(){
@@ -1021,8 +1022,7 @@ function buildVoteGrid(){
     const v = votes[g];
     if(v==='ok') cell.classList.add('voted-ok');
     if(v==='ng') cell.classList.add('voted-ng');
-    cell.innerHTML = `<div class="vg" style="color:${GC[g-1]}">第${g}組</div>
-      <div class="vi">${v==='ok'?'○':v==='ng'?'✕':'—'}</div>`;
+    cell.innerHTML = `<div class="vg" style="color:${GC[g-1]}">第${g}組</div><div class="vi">${v==='ok'?'○':v==='ng'?'✕':'—'}</div>`;
     cell.onclick = ()=>r2Vote(g);
     grid.appendChild(cell);
   }
@@ -1033,100 +1033,62 @@ function r2Vote(g){
   if(!p) return;
   if(!r2Votes[p.id]) r2Votes[p.id]={};
   const cur = r2Votes[p.id][g];
-  // cycle: undefined -> ok -> ng -> undefined
   if(!cur) r2Votes[p.id][g]='ok';
   else if(cur==='ok') r2Votes[p.id][g]='ng';
   else delete r2Votes[p.id][g];
   buildVoteGrid();
 }
 
-function r2Next(){
-  if(r2Idx < gameData.r2.proposals.length-1){
-    r2Idx++;
-    r2Hidden = false;
-    renderR2();
-  } else {
-    toast('已是最後一題！');
-  }
-}
-
-function r2Prev(){
-  if(r2Idx > 0){
-    r2Idx--;
-    r2Hidden = false;
-    renderR2();
-  }
-}
-
-function r2Toggle(){
-  r2Hidden = !r2Hidden;
-  document.getElementById('r2-proposal').classList.toggle('p-hidden', r2Hidden);
-  toast(r2Hidden ? '👁 題目已隱藏' : '👁 題目已顯示');
-}
+function r2Next(){ if(r2Idx<gameData.r2.proposals.length-1){ r2Idx++; r2Hidden=false; renderR2(); } else { toast('已是最後一題！'); } }
+function r2Prev(){ if(r2Idx>0){ r2Idx--; r2Hidden=false; renderR2(); } }
+function r2Toggle(){ r2Hidden=!r2Hidden; document.getElementById('r2-proposal').classList.toggle('p-hidden',r2Hidden); toast(r2Hidden?'👁 題目已隱藏':'👁 題目已顯示'); }
+function r2ResetVotes(){ r2Votes={}; buildVoteGrid(); document.getElementById('r2-award-row').style.display='none'; toast('↺ 投票已清除'); }
 
 function r2ShowAnswer(){
   const p = gameData.r2.proposals[r2Idx];
   if(!p) return;
   const ans = document.getElementById('r2-answer');
-  ans.className = 'p-answer show ' + (p.isGood ? 'good' : 'bad');
-  ans.innerHTML = (p.isGood ? '✅ 好公約！' : '❌ 要修改！') + '<br><span style="font-size:0.9rem;font-weight:400">' + p.reason + '</span>';
+  ans.className = 'p-answer show '+(p.isGood?'good':'bad');
+  ans.innerHTML = (p.isGood?'✅ 好公約！':'❌ 要修改！')+'<br><span style="font-size:0.9rem;font-weight:400">'+p.reason+'</span>';
 
-  // 顯示加分按鈕：判斷哪些組投對了
+  // 加分按鈕
   const awardRow = document.getElementById('r2-award-row');
-  awardRow.style.display = 'flex';
-  awardRow.innerHTML = `<span style="font-size:0.8rem;color:var(--muted);font-weight:700;width:100%;text-align:center">答對的組 +1分 ↓</span>`;
+  awardRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:7px;justify-content:center;max-width:580px;width:100%;margin-top:4px;';
+  awardRow.innerHTML = `<span style="font-size:0.8rem;color:var(--muted);font-weight:700;width:100%;text-align:center">✅ 判斷正確的組 ＋1分：</span>`;
   const votes = r2Votes[p.id] || {};
-  for(let g=1; g<=gameData.numGroups; g++){
+  for(let g=1;g<=gameData.numGroups;g++){
     const voted = votes[g];
-    // 答對：好公約投○，壞公約投✕
     const isCorrect = p.isGood ? voted==='ok' : voted==='ng';
     const btn = document.createElement('button');
-    btn.style.cssText = `
-      padding:7px 14px;border-radius:12px;border:none;cursor:pointer;
-      font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.85rem;
-      background:${isCorrect?GC[g-1]:'#DDD'};color:${isCorrect?'#fff':'#999'};
-      transition:all 0.18s;
-    `;
-    btn.innerHTML = `第${g}組 ${isCorrect?'✓ ＋1':voted?'✗':'—'}`;
-    btn.onclick = ()=>{ addTeamScore(g-1, 1); btn.disabled=true; btn.style.opacity='0.5'; };
-    if(!isCorrect) btn.disabled = true;
+    btn.style.cssText = `padding:7px 14px;border-radius:12px;border:none;cursor:pointer;font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.85rem;background:${isCorrect?GC[g-1]:'#DDD'};color:${isCorrect?'#fff':'#999'};transition:all 0.18s;`;
+    btn.textContent = `第${g}組 ${isCorrect?'✓ ＋1':voted?'✗':'—'}`;
+    if(isCorrect){ btn.onclick = ()=>{ addTeamScore(g-1,1); btn.disabled=true; btn.style.opacity='0.4'; }; }
+    else { btn.disabled = true; }
     awardRow.appendChild(btn);
   }
-}
-
-function r2ResetVotes(){
-  r2Votes = {};
-  buildVoteGrid();
-  toast('↺ 投票已清除');
 }
 
 // =====================
 // ROUND 3 規範變變變
 // =====================
-let r3Current = []; // current order of step ids
+let r3Current = [];
 let r3DragSrc = null;
 let r3CurrentGroup = 1;
 
 function initR3(){
-  buildGroupTabs('r3-group-tabs', r3CurrentGroup, function(g){
-    r3CurrentGroup = g;
-  });
+  const lbl = gameData.labels.r3;
+  document.getElementById('r3-topbar-title').textContent = `🔀 ${lbl.label} ${lbl.name}`;
+  buildGroupTabs('r3-group-tabs', r3CurrentGroup, function(g){ r3CurrentGroup = g; });
   r3Reset();
 }
 
 function r3Reset(){
-  const steps = gameData.r3.steps;
-  r3Current = [...steps].sort(()=>Math.random()-0.5).map(s=>s.id);
+  r3Current = [...gameData.r3.steps].sort(()=>Math.random()-0.5).map(s=>s.id);
   renderR3();
   document.getElementById('r3-answer').classList.remove('show');
 }
 
-function r3Shuffle(){
-  r3Current = [...r3Current].sort(()=>Math.random()-0.5);
-  renderR3();
-  document.getElementById('r3-answer').classList.remove('show');
-  toast('🔀 重新洗牌！');
-}
+function r3Shuffle(){ r3Current=[...r3Current].sort(()=>Math.random()-0.5); renderR3(); document.getElementById('r3-answer').classList.remove('show'); toast('🔀 重新洗牌！'); }
 
 function renderR3(){
   const grid = document.getElementById('r3-sort');
@@ -1139,26 +1101,14 @@ function renderR3(){
     card.dataset.idx = idx;
     card.draggable = true;
     card.innerHTML = `<div class="snum">${idx+1}</div>${step.text}`;
-    card.addEventListener('dragstart',e=>{
-      r3DragSrc = idx;
-      card.classList.add('dragging');
-    });
+    card.addEventListener('dragstart',e=>{ r3DragSrc=idx; card.classList.add('dragging'); });
     card.addEventListener('dragend',()=>card.classList.remove('dragging'));
-    card.addEventListener('dragover',e=>{
-      e.preventDefault();
-      card.classList.add('drag-target');
-    });
+    card.addEventListener('dragover',e=>{ e.preventDefault(); card.classList.add('drag-target'); });
     card.addEventListener('dragleave',()=>card.classList.remove('drag-target'));
     card.addEventListener('drop',e=>{
-      e.preventDefault();
-      card.classList.remove('drag-target');
-      if(r3DragSrc !== null && r3DragSrc !== idx){
-        const tmp = r3Current[r3DragSrc];
-        r3Current[r3DragSrc] = r3Current[idx];
-        r3Current[idx] = tmp;
-        renderR3();
-      }
-      r3DragSrc = null;
+      e.preventDefault(); card.classList.remove('drag-target');
+      if(r3DragSrc!==null && r3DragSrc!==idx){ const tmp=r3Current[r3DragSrc]; r3Current[r3DragSrc]=r3Current[idx]; r3Current[idx]=tmp; renderR3(); }
+      r3DragSrc=null;
     });
     grid.appendChild(card);
   });
@@ -1168,37 +1118,19 @@ function r3Check(){
   const steps = gameData.r3.steps;
   const correctOrder = [...steps].sort((a,b)=>a.correctOrder-b.correctOrder).map(s=>s.id);
   let correct = 0;
-  document.querySelectorAll('#r3-sort .scard').forEach((card, idx)=>{
-    if(r3Current[idx] === correctOrder[idx]){
-      card.classList.add('correct-pos');
-      card.classList.remove('wrong-pos');
-      correct++;
-    } else {
-      card.classList.add('wrong-pos');
-      card.classList.remove('correct-pos');
-    }
+  document.querySelectorAll('#r3-sort .scard').forEach((card,idx)=>{
+    if(r3Current[idx]===correctOrder[idx]){ card.classList.add('correct-pos'); card.classList.remove('wrong-pos'); correct++; }
+    else { card.classList.add('wrong-pos'); card.classList.remove('correct-pos'); }
   });
-  if(correct === steps.length){
-    confetti();
-    // Firebase 加分：全對 +4分
-    addTeamScore(r3CurrentGroup - 1, steps.length);
-  } else {
-    toast(`答對 ${correct} / ${steps.length} 個，繼續加油！`);
-  }
+  if(correct===steps.length){ confetti(); addTeamScore(r3CurrentGroup-1, steps.length); }
+  else { toast(`答對 ${correct} / ${steps.length} 個，繼續加油！`); }
 }
 
 function r3ShowAnswer(){
   const steps = [...gameData.r3.steps].sort((a,b)=>a.correctOrder-b.correctOrder);
   const el = document.getElementById('r3-answer');
-  const stepsEl = document.getElementById('r3-answer-steps');
-  stepsEl.innerHTML = steps.map((s,i)=>`
-    <div class="astep">
-      <div class="astep-num">${i+1}</div>
-      ${s.text}
-    </div>
-  `).join('');
+  document.getElementById('r3-answer-steps').innerHTML = steps.map((s,i)=>`<div class="astep"><div class="astep-num">${i+1}</div>${s.text}</div>`).join('');
   el.classList.add('show');
-  // Set correct order
   r3Current = steps.map(s=>s.id);
   renderR3();
   toast('💡 顯示標準答案');
@@ -1214,12 +1146,7 @@ function initExit(){
   gameData.exitTicket.questions.forEach((q,i)=>{
     const div = document.createElement('div');
     div.className = 'exit-q';
-    div.innerHTML = `
-      <div class="eq-label">問題 ${i+1}</div>
-      <div class="eq-text">${q.text}</div>
-      <textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>
-      ${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}
-    `;
+    div.innerHTML = `<div class="eq-label">問題 ${i+1}</div><div class="eq-text">${q.text}</div><textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}`;
     container.appendChild(div);
   });
   document.getElementById('exit-thank').classList.remove('show');
@@ -1230,8 +1157,7 @@ function exitSubmit(){
   if(!name){ toast('⚠️ 請先填寫姓名！'); return; }
   document.getElementById('exit-thank').classList.add('show');
   document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
-  confetti();
-  toast('🌟 出場券送出！');
+  confetti(); toast('🌟 出場券送出！');
 }
 
 // =====================
@@ -1241,6 +1167,8 @@ function initSettings(){
   document.getElementById('s-title').value = gameData.title;
   document.getElementById('s-subtitle').value = gameData.subtitle;
   document.getElementById('s-groups').value = gameData.numGroups;
+  buildTimersEditor();
+  buildLabelsEditor();
   buildGoalsEditor();
   buildRulesEditor();
   buildProposalsEditor();
@@ -1255,17 +1183,63 @@ function switchTab(el, panelId){
   document.getElementById(panelId).classList.add('active');
 }
 
+function buildTimersEditor(){
+  const grid = document.getElementById('s-timers-grid');
+  if(!gameData.timers) gameData.timers = {r1:480, r2:600, r3:300, rx:300};
+  const defs = [
+    {key:'r1', label:'第1關 規範偵探'},
+    {key:'r2', label:'第2關 公約小法官'},
+    {key:'r3', label:'第3關 規範變變變'},
+    {key:'rx', label:'出場券'}
+  ];
+  grid.innerHTML = defs.map(d=>`
+    <div class="srow" style="background:#F8F9FA;border-radius:9px;padding:10px 12px;">
+      <label>${d.label}</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="st-${d.key}" value="${Math.round((gameData.timers[d.key]||300)/60)}"
+          min="1" max="60" style="width:70px;"
+          oninput="gameData.timers['${d.key}']=parseInt(this.value||0)*60">
+        <span style="font-size:0.85rem;color:var(--muted)">分鐘</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildLabelsEditor(){
+  const el = document.getElementById('s-labels-editor');
+  const defs = [
+    {key:'r1', emoji:'🔍'}, {key:'r2', emoji:'⚖️'},
+    {key:'r3', emoji:'🔀'}, {key:'rx', emoji:'📝'}
+  ];
+  if(!gameData.labels) gameData.labels = {};
+  el.innerHTML = defs.map(d=>{
+    const lb = gameData.labels[d.key] || {};
+    return `
+      <div style="background:#F8F9FA;border-radius:10px;padding:11px 13px;margin-bottom:9px;">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--accent);margin-bottom:8px;">${d.emoji} ${lb.label||d.key}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+          <div class="srow" style="margin:0"><label>標籤（如「第1關」）</label>
+            <input value="${lb.label||''}" placeholder="第 1 關"
+              oninput="if(!gameData.labels['${d.key}']) gameData.labels['${d.key}']={};gameData.labels['${d.key}'].label=this.value"></div>
+          <div class="srow" style="margin:0"><label>關卡名稱</label>
+            <input value="${lb.name||''}" placeholder="規範偵探"
+              oninput="if(!gameData.labels['${d.key}']) gameData.labels['${d.key}']={};gameData.labels['${d.key}'].name=this.value"></div>
+        </div>
+        <div class="srow" style="margin:7px 0 0"><label>簡介說明</label>
+          <input value="${lb.desc||''}" placeholder="活動說明..."
+            oninput="if(!gameData.labels['${d.key}']) gameData.labels['${d.key}']={};gameData.labels['${d.key}'].desc=this.value"></div>
+      </div>`;
+  }).join('');
+}
+
 function buildGoalsEditor(){
   const el = document.getElementById('s-goals-editor');
   el.innerHTML = '';
   gameData.r1.goals.forEach((g,i)=>{
     const row = document.createElement('div');
     row.className = 'card-edit-row';
-    row.innerHTML = `
-      <input value="${g.text}" placeholder="目的卡文字" oninput="gameData.r1.goals[${i}].text=this.value">
-      <input type="color" value="${g.color}" style="width:36px;height:34px;padding:2px;border-radius:7px;border:2px solid #DDD;cursor:pointer"
-        onchange="gameData.r1.goals[${i}].color=this.value">
-    `;
+    row.innerHTML = `<input value="${g.text}" placeholder="目的卡文字" oninput="gameData.r1.goals[${i}].text=this.value">
+      <input type="color" value="${g.color}" style="width:36px;height:34px;padding:2px;border-radius:7px;border:2px solid #DDD;cursor:pointer" onchange="gameData.r1.goals[${i}].color=this.value">`;
     el.appendChild(row);
   });
 }
@@ -1277,20 +1251,14 @@ function buildRulesEditor(){
     const row = document.createElement('div');
     row.className = 'card-edit-row';
     const opts = gameData.r1.goals.map(g=>`<option value="${g.id}" ${r.answer===g.id?'selected':''}>${g.text}</option>`).join('');
-    row.innerHTML = `
-      <input value="${r.text}" placeholder="規範卡文字" oninput="gameData.r1.rules[${i}].text=this.value">
+    row.innerHTML = `<input value="${r.text}" placeholder="規範卡文字" oninput="gameData.r1.rules[${i}].text=this.value">
       <select onchange="gameData.r1.rules[${i}].answer=this.value"><option value="">選擇目的</option>${opts}</select>
-      <button class="del-btn" onclick="gameData.r1.rules.splice(${i},1);buildRulesEditor()">刪除</button>
-    `;
+      <button class="del-btn" onclick="gameData.r1.rules.splice(${i},1);buildRulesEditor()">刪除</button>`;
     el.appendChild(row);
   });
 }
 
-function addRule(){
-  const id = 'r'+(Date.now());
-  gameData.r1.rules.push({id, text:'新規範', answer: gameData.r1.goals[0]?.id||''});
-  buildRulesEditor();
-}
+function addRule(){ gameData.r1.rules.push({id:'r'+Date.now(), text:'新規範', answer:gameData.r1.goals[0]?.id||''}); buildRulesEditor(); }
 
 function buildProposalsEditor(){
   const el = document.getElementById('s-proposals-editor');
@@ -1298,8 +1266,7 @@ function buildProposalsEditor(){
   gameData.r2.proposals.forEach((p,i)=>{
     const row = document.createElement('div');
     row.style.cssText = 'background:#F8F9FA;border-radius:9px;padding:10px 12px;margin-bottom:8px;';
-    row.innerHTML = `
-      <div class="card-edit-row" style="margin-bottom:6px">
+    row.innerHTML = `<div class="card-edit-row" style="margin-bottom:6px">
         <input value="${p.text}" placeholder="提議內容" style="flex:3" oninput="gameData.r2.proposals[${i}].text=this.value">
         <select onchange="gameData.r2.proposals[${i}].isGood=this.value==='true'">
           <option value="true" ${p.isGood?'selected':''}>○ 好公約</option>
@@ -1309,16 +1276,12 @@ function buildProposalsEditor(){
       </div>
       <input value="${p.reason||''}" placeholder="答案揭示時的說明（選填）"
         style="width:100%;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.85rem;outline:none"
-        oninput="gameData.r2.proposals[${i}].reason=this.value">
-    `;
+        oninput="gameData.r2.proposals[${i}].reason=this.value">`;
     el.appendChild(row);
   });
 }
 
-function addProposal(){
-  gameData.r2.proposals.push({id:'p'+Date.now(), text:'新提議', isGood:true, reason:''});
-  buildProposalsEditor();
-}
+function addProposal(){ gameData.r2.proposals.push({id:'p'+Date.now(), text:'新提議', isGood:true, reason:''}); buildProposalsEditor(); }
 
 function buildStepsEditor(){
   const el = document.getElementById('s-steps-editor');
@@ -1328,21 +1291,14 @@ function buildStepsEditor(){
     const realIdx = gameData.r3.steps.findIndex(x=>x.id===s.id);
     const row = document.createElement('div');
     row.className = 'card-edit-row';
-    row.innerHTML = `
-      <span style="font-weight:900;color:var(--muted);min-width:24px">${i+1}.</span>
-      <input value="${s.text}" placeholder="步驟內容"
-        oninput="gameData.r3.steps[${realIdx}].text=this.value">
-      <button class="del-btn" onclick="gameData.r3.steps.splice(${realIdx},1);buildStepsEditor()">刪除</button>
-    `;
+    row.innerHTML = `<span style="font-weight:900;color:var(--muted);min-width:24px">${i+1}.</span>
+      <input value="${s.text}" placeholder="步驟內容" oninput="gameData.r3.steps[${realIdx}].text=this.value">
+      <button class="del-btn" onclick="gameData.r3.steps.splice(${realIdx},1);buildStepsEditor()">刪除</button>`;
     el.appendChild(row);
   });
 }
 
-function addStep(){
-  const nextOrder = gameData.r3.steps.length + 1;
-  gameData.r3.steps.push({id:'s'+Date.now(), text:'新步驟', correctOrder: nextOrder});
-  buildStepsEditor();
-}
+function addStep(){ gameData.r3.steps.push({id:'s'+Date.now(), text:'新步驟', correctOrder:gameData.r3.steps.length+1}); buildStepsEditor(); }
 
 function buildExitQEditor(){
   const el = document.getElementById('s-eq-editor');
@@ -1350,22 +1306,15 @@ function buildExitQEditor(){
   gameData.exitTicket.questions.forEach((q,i)=>{
     const row = document.createElement('div');
     row.style.cssText = 'background:#F8F9FA;border-radius:9px;padding:10px 12px;margin-bottom:8px;display:flex;gap:8px;align-items:center;';
-    row.innerHTML = `
-      <input value="${q.text}" placeholder="問題內容" style="flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none"
+    row.innerHTML = `<input value="${q.text}" placeholder="問題內容" style="flex:1;border:2px solid #E0E0E0;border-radius:7px;padding:5px 9px;font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;outline:none"
         oninput="gameData.exitTicket.questions[${i}].text=this.value">
-      <label style="font-size:0.8rem;white-space:nowrap;cursor:pointer">
-        <input type="checkbox" ${q.hasReason?'checked':''} onchange="gameData.exitTicket.questions[${i}].hasReason=this.checked"> 有理由欄
-      </label>
-      <button class="del-btn" onclick="gameData.exitTicket.questions.splice(${i},1);buildExitQEditor()">刪除</button>
-    `;
+      <label style="font-size:0.8rem;white-space:nowrap;cursor:pointer"><input type="checkbox" ${q.hasReason?'checked':''} onchange="gameData.exitTicket.questions[${i}].hasReason=this.checked"> 有理由欄</label>
+      <button class="del-btn" onclick="gameData.exitTicket.questions.splice(${i},1);buildExitQEditor()">刪除</button>`;
     el.appendChild(row);
   });
 }
 
-function addExitQ(){
-  gameData.exitTicket.questions.push({id:'eq'+Date.now(), text:'新問題', hasReason:false});
-  buildExitQEditor();
-}
+function addExitQ(){ gameData.exitTicket.questions.push({id:'eq'+Date.now(), text:'新問題', hasReason:false}); buildExitQEditor(); }
 
 function saveSettings(){
   gameData.title = document.getElementById('s-title').value || gameData.title;
@@ -1373,18 +1322,18 @@ function saveSettings(){
   gameData.numGroups = parseInt(document.getElementById('s-groups').value) || 6;
   try{ localStorage.setItem('social_game_data', JSON.stringify(gameData)); } catch(e){}
   toast('💾 設定已儲存！');
-  setTimeout(()=>goTo('homeScreen'), 800);
+  setTimeout(()=>goTo('homeScreen'), 700);
 }
 
 // =====================
-// GROUP TABS HELPER
+// GROUP TABS
 // =====================
 function buildGroupTabs(containerId, activeG, onSelect){
   const el = document.getElementById(containerId);
   el.innerHTML = '';
-  for(let g=1; g<=gameData.numGroups; g++){
+  for(let g=1;g<=gameData.numGroups;g++){
     const tab = document.createElement('div');
-    tab.className = 'gtab' + (g===activeG?' active':'');
+    tab.className = 'gtab'+(g===activeG?' active':'');
     tab.dataset.g = g;
     tab.textContent = `第${g}組`;
     tab.onclick = ()=>{
@@ -1396,9 +1345,8 @@ function buildGroupTabs(containerId, activeG, onSelect){
   }
 }
 
-// Init home
-document.getElementById('gameTitle').textContent = gameData.title;
-document.getElementById('gameSubtitle').textContent = gameData.subtitle;
+// Init
+refreshHome();
 </script>
 </body>
 </html>
