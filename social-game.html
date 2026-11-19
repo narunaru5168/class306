@@ -324,6 +324,29 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   padding:7px 14px;cursor:pointer;font-weight:700;font-size:0.85rem;margin-top:4px;
 }
 
+/* ===SCORE BAR=== */
+#score-bar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:rgba(30,30,50,0.92);backdrop-filter:blur(8px);
+  display:none;padding:7px 12px;
+  flex-direction:column;gap:4px;
+}
+#score-bar.show{display:flex;}
+.sbar-title{font-size:0.7rem;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:1px;text-align:center;}
+.sbar-row{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;}
+.sbar-cell{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,0.1);border-radius:8px;
+  padding:4px 10px;min-width:80px;
+}
+.sbar-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.sbar-name{font-size:0.75rem;color:rgba(255,255,255,0.75);font-weight:700;}
+.sbar-score{font-size:0.9rem;color:#fff;font-weight:900;margin-left:auto;}
+.sbar-toggle{
+  position:fixed;top:6px;right:10px;z-index:201;
+  background:rgba(102,126,234,0.85);color:#fff;border:none;
+  border-radius:8px;padding:5px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;
+}
 /* ===TOAST=== */
 #toast{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
@@ -352,10 +375,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   .home-hero .emoji{font-size:3rem;}
 }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 </head>
 <body>
 
 <div id="toast"></div>
+
+<!-- ===SCORE BAR=== -->
+<div id="score-bar">
+  <div class="sbar-title">⭐ 星星網站即時分數（社會課競賽）</div>
+  <div class="sbar-row" id="sbar-row"></div>
+</div>
+<button class="sbar-toggle" id="sbar-toggle-btn" onclick="toggleScoreBar()" style="display:none">📊 分數</button>
 
 <!-- ===HOME=== -->
 <div id="homeScreen" class="screen active">
@@ -442,6 +474,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="votes-grid" id="r2-votes"></div>
     <div class="p-answer" id="r2-answer"></div>
+    <div id="r2-award-row" style="display:none;flex-wrap:wrap;gap:7px;justify-content:center;max-width:580px;width:100%;"></div>
     <div class="r2-nav">
       <button class="btn btn-secondary btn-sm" onclick="r2Prev()">◀ 上一題</button>
       <span id="r2-idx-display" style="color:var(--muted)">1 / 6</span>
@@ -660,6 +693,74 @@ let gameData = {
 })();
 
 // =====================
+// FIREBASE 連動
+// =====================
+let db = null;
+let fbTeamScores = [];
+let scoreBarVisible = false;
+
+(function initFirebase(){
+  try {
+    firebase.initializeApp({
+      apiKey: "AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+      authDomain: "tpedusso-257723.firebaseapp.com",
+      databaseURL: "https://tpedusso-257723-default-rtdb.firebaseio.com",
+      projectId: "tpedusso-257723",
+      storageBucket: "tpedusso-257723.appspot.com",
+      messagingSenderId: "105193372361",
+      appId: "1:105193372361:web:5591b76255cb86cf566b18"
+    });
+    db = firebase.database();
+    // 即時監聽星星網站的組別分數
+    db.ref('class306/teamScores').on('value', snap=>{
+      const val = snap.val();
+      if(Array.isArray(val)) fbTeamScores = val;
+      else if(val && typeof val === 'object') fbTeamScores = Object.values(val);
+      updateScoreBar();
+      // 顯示分數按鈕
+      document.getElementById('sbar-toggle-btn').style.display = 'block';
+    });
+  } catch(e){ console.warn('Firebase init failed:', e); }
+})();
+
+// 加分到星星網站
+function addTeamScore(groupIdx, points){
+  if(!db || points <= 0) return;
+  const cat = gameData.title || '社會課競賽';
+  const path = `class306/teamScores/${groupIdx}/scores`;
+  db.ref(path).once('value').then(snap=>{
+    const scores = snap.val() || {};
+    scores[cat] = (scores[cat] || 0) + points;
+    db.ref(path).set(scores);
+    toast(`🌟 第${groupIdx+1}組 ＋${points}分！已同步到星星網站`);
+  }).catch(()=>toast('⚠️ 加分失敗，請確認 Firebase 連線'));
+}
+
+// 更新分數列
+function updateScoreBar(){
+  const row = document.getElementById('sbar-row');
+  if(!row) return;
+  const cat = gameData.title || '社會課競賽';
+  row.innerHTML = fbTeamScores.map((t,i)=>{
+    const sc = (t.scores && t.scores[cat]) || 0;
+    return `<div class="sbar-cell">
+      <div class="sbar-dot" style="background:${GC[i]}"></div>
+      <span class="sbar-name">${t.name||('第'+(i+1)+'組')}</span>
+      <span class="sbar-score">${sc}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleScoreBar(){
+  scoreBarVisible = !scoreBarVisible;
+  document.getElementById('score-bar').classList.toggle('show', scoreBarVisible);
+  // 給 topbar 騰出空間
+  document.querySelectorAll('.topbar').forEach(tb=>{
+    tb.style.marginTop = scoreBarVisible ? '56px' : '0';
+  });
+}
+
+// =====================
 // NAVIGATION
 // =====================
 function goTo(id){
@@ -862,6 +963,8 @@ function r1Check(){
   banner.textContent = `第${r1CurrentGroup}組：答對 ${correct} / ${total} 張！` + (correct===data.rules.length?'  🎉 全部正確！':'');
   banner.classList.add('show');
   if(correct===data.rules.length) confetti();
+  // Firebase 加分（每張答對 +1）
+  if(correct > 0) addTeamScore(r1CurrentGroup - 1, correct);
 }
 
 function r1ShowAnswer(){
@@ -903,6 +1006,7 @@ function renderR2(){
   document.getElementById('r2-idx-display').textContent = `${r2Idx+1} / ${proposals.length}`;
   document.getElementById('r2-proposal').classList.toggle('p-hidden', r2Hidden);
   document.getElementById('r2-answer').classList.remove('show');
+  document.getElementById('r2-award-row').style.display = 'none';
   buildVoteGrid();
 }
 
@@ -966,6 +1070,28 @@ function r2ShowAnswer(){
   const ans = document.getElementById('r2-answer');
   ans.className = 'p-answer show ' + (p.isGood ? 'good' : 'bad');
   ans.innerHTML = (p.isGood ? '✅ 好公約！' : '❌ 要修改！') + '<br><span style="font-size:0.9rem;font-weight:400">' + p.reason + '</span>';
+
+  // 顯示加分按鈕：判斷哪些組投對了
+  const awardRow = document.getElementById('r2-award-row');
+  awardRow.style.display = 'flex';
+  awardRow.innerHTML = `<span style="font-size:0.8rem;color:var(--muted);font-weight:700;width:100%;text-align:center">答對的組 +1分 ↓</span>`;
+  const votes = r2Votes[p.id] || {};
+  for(let g=1; g<=gameData.numGroups; g++){
+    const voted = votes[g];
+    // 答對：好公約投○，壞公約投✕
+    const isCorrect = p.isGood ? voted==='ok' : voted==='ng';
+    const btn = document.createElement('button');
+    btn.style.cssText = `
+      padding:7px 14px;border-radius:12px;border:none;cursor:pointer;
+      font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.85rem;
+      background:${isCorrect?GC[g-1]:'#DDD'};color:${isCorrect?'#fff':'#999'};
+      transition:all 0.18s;
+    `;
+    btn.innerHTML = `第${g}組 ${isCorrect?'✓ ＋1':voted?'✗':'—'}`;
+    btn.onclick = ()=>{ addTeamScore(g-1, 1); btn.disabled=true; btn.style.opacity='0.5'; };
+    if(!isCorrect) btn.disabled = true;
+    awardRow.appendChild(btn);
+  }
 }
 
 function r2ResetVotes(){
@@ -979,9 +1105,12 @@ function r2ResetVotes(){
 // =====================
 let r3Current = []; // current order of step ids
 let r3DragSrc = null;
+let r3CurrentGroup = 1;
 
 function initR3(){
-  buildGroupTabs('r3-group-tabs', 1, function(){});
+  buildGroupTabs('r3-group-tabs', r3CurrentGroup, function(g){
+    r3CurrentGroup = g;
+  });
   r3Reset();
 }
 
@@ -1050,8 +1179,9 @@ function r3Check(){
     }
   });
   if(correct === steps.length){
-    toast('🎉 全部正確！太厲害了！');
     confetti();
+    // Firebase 加分：全對 +4分
+    addTeamScore(r3CurrentGroup - 1, steps.length);
   } else {
     toast(`答對 ${correct} / ${steps.length} 個，繼續加油！`);
   }
