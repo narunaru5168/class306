@@ -235,6 +235,35 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .exit-thank .et-emoji{font-size:3rem;display:block;margin-bottom:10px;}
 .exit-thank h3{font-size:1.4rem;font-weight:900;margin-bottom:6px;}
 
+/* ===HINTS=== */
+.eq-hint-box{background:#EEF4FF;border-radius:10px;padding:12px 14px;margin-bottom:12px;border-left:4px solid var(--accent);}
+.eq-hint-title{font-size:0.75rem;font-weight:900;color:var(--accent);letter-spacing:0.5px;margin-bottom:8px;}
+.eq-hint-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+.eq-hint-chip{font-size:0.78rem;font-weight:700;padding:4px 10px;border-radius:20px;}
+.eq-hint-chip.good{background:#D4EDDA;color:#155724;}
+.eq-hint-chip.bad{background:#F8D7DA;color:#721c24;}
+.eq-hint-eg{font-size:0.75rem;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* ===TEACHER ZONE=== */
+.teacher-zone{background:#FFF9E6;border:2px dashed #F4A030;border-radius:var(--radius);padding:18px;margin-top:6px;}
+.teacher-toggle{background:none;border:none;cursor:pointer;font-weight:900;font-size:0.85rem;color:#B7791F;display:flex;align-items:center;gap:6px;padding:0;}
+.teacher-toggle .tz-arrow{transition:transform 0.2s;display:inline-block;}
+.teacher-toggle.open .tz-arrow{transform:rotate(90deg);}
+.teacher-panel{display:none;margin-top:14px;}
+.teacher-panel.show{display:block;animation:fadeIn 0.3s;}
+.teacher-panel label{font-size:0.82rem;font-weight:700;color:#92400E;display:block;margin-bottom:5px;}
+.teacher-panel textarea{width:100%;border:2px solid #F4A030;border-radius:10px;padding:10px 13px;font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;resize:vertical;min-height:70px;background:#FFFCF0;transition:border-color 0.2s;}
+.teacher-panel textarea:focus{border-color:#E97A00;}
+.teacher-panel .tp-desc{font-size:0.78rem;color:#A16207;margin-bottom:10px;line-height:1.5;}
+.teacher-panel .tp-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+.tp-save-btn{background:#F4A030;color:#fff;border:none;border-radius:10px;padding:8px 18px;font-family:'Noto Sans TC',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer;transition:all 0.18s;}
+.tp-save-btn:hover{background:#E97A00;}
+.tp-status{font-size:0.8rem;font-weight:700;color:#15803D;display:none;}
+.tp-status.show{display:inline;}
+.convention-preview{background:#FFF3CD;border-radius:8px;padding:10px 13px;margin-top:10px;font-size:0.88rem;color:#856404;display:none;}
+.convention-preview.show{display:block;}
+.convention-preview strong{display:block;font-size:0.75rem;letter-spacing:0.5px;margin-bottom:3px;}
+
 /* ===SETTINGS=== */
 #settingsScreen{background:#F8F9FA;}
 .stgs-body{flex:1;padding:14px;max-width:900px;margin:0 auto;width:100%;overflow:auto;}
@@ -497,6 +526,29 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <span class="et-emoji">🌟</span>
       <h3>太棒了！出場券完成！</h3>
       <p>你真是今天的規範小專家！</p>
+    </div>
+
+    <!-- TEACHER ZONE -->
+    <div class="teacher-zone">
+      <button class="teacher-toggle" id="teacher-toggle-btn" onclick="toggleTeacherZone()">
+        <span class="tz-arrow">▶</span> 👩‍🏫 老師區：全班共同公約
+      </button>
+      <div class="teacher-panel" id="teacher-panel">
+        <div class="tp-desc">
+          全班討論完成後，在這裡輸入大家共同決定的班級公約，<br>
+          儲存後會自動更新到班級星星網站，作為加星⭐ / 扣星的依據。
+        </div>
+        <div id="convention-current-preview" class="convention-preview">
+          <strong>📌 目前網站上的公約：</strong>
+          <span id="convention-current-text"></span>
+        </div>
+        <label>✏️ 輸入全班共同決定的公約：</label>
+        <textarea id="teacher-convention-input" placeholder="例如：上課時舉手發言，不隨意打斷別人說話。" rows="3"></textarea>
+        <div class="tp-row">
+          <button class="tp-save-btn" onclick="saveConvention()">📢 發布到班級網站</button>
+          <span class="tp-status" id="tp-status">✅ 已更新到星星網站！</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1146,10 +1198,70 @@ function initExit(){
   gameData.exitTicket.questions.forEach((q,i)=>{
     const div = document.createElement('div');
     div.className = 'exit-q';
-    div.innerHTML = `<div class="eq-label">問題 ${i+1}</div><div class="eq-text">${q.text}</div><textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}`;
+    // hint box for convention question (index 1 or if hasReason)
+    const isConventionQ = q.hasReason || (q.text && q.text.includes('公約'));
+    const hintHtml = isConventionQ ? `
+      <div class="eq-hint-box">
+        <div class="eq-hint-title">💡 好公約要符合三個條件</div>
+        <div class="eq-hint-row">
+          <span class="eq-hint-chip good">✅ 說清楚要做什麼</span>
+          <span class="eq-hint-chip good">✅ 每個人都做得到</span>
+          <span class="eq-hint-chip good">✅ 對大家一樣公平</span>
+        </div>
+        <div class="eq-hint-row">
+          <span class="eq-hint-chip bad">❌ 太模糊：「大家都要乖」</span>
+          <span class="eq-hint-chip bad">❌ 做不到：「每次都100分」</span>
+          <span class="eq-hint-chip bad">❌ 不公平：「只有我才能…」</span>
+        </div>
+        <div class="eq-hint-eg">🌟 好例子：「上課想說話時先舉手，等老師點名再發言。」</div>
+      </div>
+    ` : '';
+    div.innerHTML = `<div class="eq-label">問題 ${i+1}</div><div class="eq-text">${q.text}</div>${hintHtml}<textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}`;
     container.appendChild(div);
   });
   document.getElementById('exit-thank').classList.remove('show');
+  // load existing convention from Firebase
+  loadConventionPreview();
+}
+
+function toggleTeacherZone(){
+  const btn = document.getElementById('teacher-toggle-btn');
+  const panel = document.getElementById('teacher-panel');
+  btn.classList.toggle('open');
+  panel.classList.toggle('show');
+}
+
+function loadConventionPreview(){
+  try {
+    const ref = db.ref('class306/classConvention');
+    ref.once('value').then(snap=>{
+      const val = snap.val();
+      if(val && val.text){
+        document.getElementById('convention-current-text').textContent = val.text;
+        document.getElementById('convention-current-preview').classList.add('show');
+        document.getElementById('teacher-convention-input').value = val.text;
+      }
+    });
+  } catch(e){}
+}
+
+function saveConvention(){
+  const text = document.getElementById('teacher-convention-input').value.trim();
+  if(!text){ toast('⚠️ 請輸入公約內容！'); return; }
+  const data = {
+    text: text,
+    updatedAt: new Date().toLocaleString('zh-TW', {timeZone:'Asia/Taipei'})
+  };
+  try {
+    db.ref('class306/classConvention').set(data).then(()=>{
+      const st = document.getElementById('tp-status');
+      st.classList.add('show');
+      setTimeout(()=>st.classList.remove('show'), 3000);
+      document.getElementById('convention-current-text').textContent = text;
+      document.getElementById('convention-current-preview').classList.add('show');
+      toast('📢 公約已更新到班級網站！');
+    }).catch(e=>toast('⚠️ 儲存失敗：'+e.message));
+  } catch(e){ toast('⚠️ 無法連線 Firebase'); }
 }
 
 function exitSubmit(){
