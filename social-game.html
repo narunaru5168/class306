@@ -230,6 +230,8 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .exit-q textarea:focus{border-color:var(--accent);}
 .exit-reason{margin-top:10px;}
 .exit-reason label{font-size:0.82rem;font-weight:700;color:var(--muted);}
+.exit-info select:focus{border-color:var(--accent)!important;}
+#e-name option[value="__class__"]{background:#FFF9E6;}
 .exit-thank{background:linear-gradient(135deg,#667EEA,#764BA2);color:#fff;border-radius:var(--radius);padding:20px;text-align:center;display:none;}
 .exit-thank.show{display:block;animation:fadeIn 0.4s;}
 .exit-thank .et-emoji{font-size:3rem;display:block;margin-bottom:10px;}
@@ -516,42 +518,38 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
       <h2 id="exit-title-display">306 規範大冒險</h2>
       <p>完成任務前，先填寫今天的出場券！</p>
     </div>
+    <!-- 全班模式提示條 -->
+    <div id="class-mode-banner" style="display:none;background:linear-gradient(135deg,#FFF3CD,#FEF9E7);border:2px solid #F4A030;border-radius:12px;padding:12px 16px;text-align:center;">
+      <div style="font-size:1rem;font-weight:900;color:#92400E;">🏫 全班共同討論模式</div>
+      <div style="font-size:0.82rem;color:#A16207;margin-top:3px;">提交後，公約答案會自動更新到班級星星網站 ⭐</div>
+    </div>
+
     <div class="exit-info">
-      <div class="exit-field"><label>班級</label><input type="text" id="e-class" placeholder="三年六班"></div>
-      <div class="exit-field" style="flex:2"><label>姓名</label><input type="text" id="e-name" placeholder="請輸入姓名"></div>
-      <div class="exit-field"><label>座號</label><input type="text" id="e-seat" placeholder="01"></div>
+      <div class="exit-field"><label>班級</label><input type="text" id="e-class" value="三年六班" readonly style="background:#F8F9FA;"></div>
+      <div class="exit-field" style="flex:2">
+        <label>姓名</label>
+        <select id="e-name" onchange="onStudentSelect(this.value)" style="border:2px solid #DDD;border-radius:10px;padding:9px 13px;font-family:'Noto Sans TC',sans-serif;font-size:0.95rem;outline:none;width:100%;background:#fff;cursor:pointer;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#DDD'">
+          <option value="">請選擇姓名...</option>
+          <option value="__class__" style="font-weight:900;color:#92400E;background:#FFF9E6;">🏫 全班共同決定</option>
+          <option disabled>──────────────</option>
+        </select>
+      </div>
+      <div class="exit-field"><label>座號</label><input type="text" id="e-seat" placeholder="--" readonly style="background:#F8F9FA;text-align:center;font-weight:700;"></div>
     </div>
     <div id="exit-questions"></div>
     <div style="text-align:center;">
-      <button class="btn btn-success btn-lg" onclick="exitSubmit()">🎉 交出場券！</button>
+      <button class="btn btn-success btn-lg" id="exit-submit-btn" onclick="exitSubmit()">🎉 交出場券！</button>
     </div>
     <div class="exit-thank" id="exit-thank">
-      <span class="et-emoji">🌟</span>
-      <h3>太棒了！出場券完成！</h3>
-      <p>你真是今天的規範小專家！</p>
+      <span class="et-emoji" id="exit-thank-emoji">🌟</span>
+      <h3 id="exit-thank-title">太棒了！出場券完成！</h3>
+      <p id="exit-thank-msg">你真是今天的規範小專家！</p>
     </div>
 
-    <!-- TEACHER ZONE -->
-    <div class="teacher-zone">
-      <button class="teacher-toggle" id="teacher-toggle-btn" onclick="toggleTeacherZone()">
-        <span class="tz-arrow">▶</span> 👩‍🏫 老師區：全班共同公約
-      </button>
-      <div class="teacher-panel" id="teacher-panel">
-        <div class="tp-desc">
-          全班討論完成後，在這裡輸入大家共同決定的班級公約，<br>
-          儲存後會自動更新到班級星星網站，作為加星⭐ / 扣星的依據。
-        </div>
-        <div id="convention-current-preview" class="convention-preview">
-          <strong>📌 目前網站上的公約：</strong>
-          <span id="convention-current-text"></span>
-        </div>
-        <label>✏️ 輸入全班共同決定的公約：</label>
-        <textarea id="teacher-convention-input" placeholder="例如：上課時舉手發言，不隨意打斷別人說話。" rows="3"></textarea>
-        <div class="tp-row">
-          <button class="tp-save-btn" onclick="saveConvention()">📢 發布到班級網站</button>
-          <span class="tp-status" id="tp-status">✅ 已更新到星星網站！</span>
-        </div>
-      </div>
+    <!-- 目前公約顯示 -->
+    <div id="convention-current-preview" class="convention-preview">
+      <strong>📌 目前網站上的全班公約：</strong>
+      <span id="convention-current-text"></span>
     </div>
   </div>
 </div>
@@ -630,6 +628,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <!-- Exit -->
     <div id="s-exit" class="spanel">
       <div class="sbox">
+        <h3>👥 學生名單（下拉選單用）</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">每行一位，格式：座號 姓名（例如：01 王小明）</p>
+        <textarea id="s-students-input" style="width:100%;border:2px solid #DDD;border-radius:10px;padding:10px;font-family:'Noto Sans TC',sans-serif;font-size:0.88rem;min-height:200px;outline:none;resize:vertical;" placeholder="01 王小明&#10;02 李小花&#10;03 張大偉&#10;..."></textarea>
+      </div>
+      <div class="sbox">
         <h3>📝 出場券問題</h3>
         <div id="s-eq-editor"></div>
         <button class="add-btn" onclick="addExitQ()">＋ 新增問題</button>
@@ -697,7 +700,12 @@ let gameData = {
       {id:"eq1", text:"學校訂定規範是為了：", hasReason:false},
       {id:"eq2", text:"我願意遵守的一條 306 公約是：", hasReason:true}
     ]
-  }
+  },
+  students: [
+    "01 ","02 ","03 ","04 ","05 ","06 ","07 ","08 ","09 ","10 ",
+    "11 ","12 ","13 ","14 ","15 ","16 ","17 ","18 ","19 ","20 ",
+    "21 ","22 ","23 ","24 ","25 ","26 "
+  ]
 };
 
 // Load from localStorage
@@ -1196,12 +1204,41 @@ function r3ShowAnswer(){
 // =====================
 function initExit(){
   document.getElementById('exit-title-display').textContent = gameData.title;
+
+  // 填入下拉選單
+  const sel = document.getElementById('e-name');
+  // 保留前3個固定選項（請選擇、全班、分隔線），清除其他
+  while(sel.options.length > 3) sel.remove(3);
+  // 嘗試從 Firebase 載入最新學生名單，否則用 gameData.students
+  const tryLoadFirebase = ()=>{
+    try {
+      db.ref('class306/students').once('value').then(snap=>{
+        const fbStudents = snap.val();
+        if(fbStudents && Array.isArray(fbStudents) && fbStudents.length > 0){
+          while(sel.options.length > 3) sel.remove(3);
+          fbStudents.forEach(s=>{
+            if(!s) return;
+            const name = s.name || s;
+            const seat = s.seat || '';
+            const opt = document.createElement('option');
+            opt.value = seat ? `${seat}|${name}` : name;
+            opt.textContent = seat ? `${String(seat).padStart(2,'0')} ${name}` : name;
+            sel.appendChild(opt);
+          });
+        } else {
+          fillDefaultStudents(sel);
+        }
+      }).catch(()=>fillDefaultStudents(sel));
+    } catch(e){ fillDefaultStudents(sel); }
+  };
+  tryLoadFirebase();
+
+  // 建題目
   const container = document.getElementById('exit-questions');
   container.innerHTML = '';
   gameData.exitTicket.questions.forEach((q,i)=>{
     const div = document.createElement('div');
     div.className = 'exit-q';
-    // hint box for convention question (index 1 or if hasReason)
     const isConventionQ = q.hasReason || (q.text && q.text.includes('公約'));
     const hintHtml = isConventionQ ? `
       <div class="eq-hint-box">
@@ -1222,57 +1259,105 @@ function initExit(){
     div.innerHTML = `<div class="eq-label">問題 ${i+1}</div><div class="eq-text">${q.text}</div>${hintHtml}<textarea id="eq-ans-${q.id}" placeholder="寫下你的想法..."></textarea>${q.hasReason?`<div class="exit-reason"><label>理由：</label><textarea id="eq-reason-${q.id}" placeholder="因為..."></textarea></div>`:''}`;
     container.appendChild(div);
   });
+
   document.getElementById('exit-thank').classList.remove('show');
-  // load existing convention from Firebase
+  document.getElementById('class-mode-banner').style.display = 'none';
+  document.getElementById('exit-submit-btn').textContent = '🎉 交出場券！';
+  document.getElementById('e-seat').value = '';
   loadConventionPreview();
 }
 
-function toggleTeacherZone(){
-  const btn = document.getElementById('teacher-toggle-btn');
-  const panel = document.getElementById('teacher-panel');
-  btn.classList.toggle('open');
-  panel.classList.toggle('show');
+function fillDefaultStudents(sel){
+  (gameData.students||[]).forEach(s=>{
+    const parts = s.trim().split(/\s+/);
+    const seat = parts[0]||'';
+    const name = parts.slice(1).join(' ')||'';
+    const opt = document.createElement('option');
+    opt.value = s.trim();
+    opt.textContent = name ? `${seat} ${name}` : (seat ? `座號 ${seat}` : s);
+    sel.appendChild(opt);
+  });
+}
+
+function onStudentSelect(val){
+  const isClass = val === '__class__';
+  const banner = document.getElementById('class-mode-banner');
+  const btn = document.getElementById('exit-submit-btn');
+  const seatField = document.getElementById('e-seat');
+
+  if(isClass){
+    banner.style.display = 'block';
+    btn.textContent = '📢 全班共識發布！';
+    btn.style.background = 'linear-gradient(135deg,#F4A030,#E97A00)';
+    seatField.value = '全班';
+  } else {
+    banner.style.display = 'none';
+    btn.textContent = '🎉 交出場券！';
+    btn.style.background = '';
+    // 解析座號
+    if(val){
+      const parts = val.split('|');
+      seatField.value = parts.length > 1 ? String(parts[0]).padStart(2,'0') : val.split(/\s/)[0]||'';
+    } else {
+      seatField.value = '';
+    }
+  }
 }
 
 function loadConventionPreview(){
   try {
-    const ref = db.ref('class306/classConvention');
-    ref.once('value').then(snap=>{
+    db.ref('class306/classConvention').once('value').then(snap=>{
       const val = snap.val();
       if(val && val.text){
         document.getElementById('convention-current-text').textContent = val.text;
         document.getElementById('convention-current-preview').classList.add('show');
-        document.getElementById('teacher-convention-input').value = val.text;
       }
     });
   } catch(e){}
 }
 
-function saveConvention(){
-  const text = document.getElementById('teacher-convention-input').value.trim();
-  if(!text){ toast('⚠️ 請輸入公約內容！'); return; }
-  const data = {
-    text: text,
-    updatedAt: new Date().toLocaleString('zh-TW', {timeZone:'Asia/Taipei'})
-  };
+function saveConvention(text){
+  const data = { text: text, updatedAt: new Date().toLocaleString('zh-TW', {timeZone:'Asia/Taipei'}) };
   try {
-    db.ref('class306/classConvention').set(data).then(()=>{
-      const st = document.getElementById('tp-status');
-      st.classList.add('show');
-      setTimeout(()=>st.classList.remove('show'), 3000);
+    return db.ref('class306/classConvention').set(data).then(()=>{
       document.getElementById('convention-current-text').textContent = text;
       document.getElementById('convention-current-preview').classList.add('show');
-      toast('📢 公約已更新到班級網站！');
-    }).catch(e=>toast('⚠️ 儲存失敗：'+e.message));
-  } catch(e){ toast('⚠️ 無法連線 Firebase'); }
+    });
+  } catch(e){ return Promise.reject(e); }
 }
 
 function exitSubmit(){
-  const name = document.getElementById('e-name').value.trim();
-  if(!name){ toast('⚠️ 請先填寫姓名！'); return; }
-  document.getElementById('exit-thank').classList.add('show');
-  document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
-  confetti(); toast('🌟 出場券送出！');
+  const sel = document.getElementById('e-name');
+  const val = sel.value;
+  if(!val){ toast('⚠️ 請先從下拉選單選擇姓名！'); return; }
+
+  const isClass = val === '__class__';
+
+  if(isClass){
+    // 全班模式：找公約題目的答案，推送到 Firebase
+    const conventionQ = gameData.exitTicket.questions.find(q=>q.hasReason || q.text.includes('公約'));
+    const conventionAns = conventionQ ? (document.getElementById('eq-ans-'+conventionQ.id)||{}).value||'' : '';
+    if(!conventionAns.trim()){ toast('⚠️ 請先填寫全班公約答案！'); return; }
+
+    saveConvention(conventionAns.trim()).then(()=>{
+      document.getElementById('exit-thank-emoji').textContent = '🏫';
+      document.getElementById('exit-thank-title').textContent = '全班共識發布成功！';
+      document.getElementById('exit-thank-msg').textContent = '公約已更新到班級星星網站 ⭐';
+      document.getElementById('exit-thank').classList.add('show');
+      document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
+      confetti(); toast('📢 全班公約已發布到星星網站！');
+    }).catch(e=>{
+      toast('⚠️ 發布失敗，請確認網路連線：'+e.message);
+    });
+  } else {
+    // 個人模式
+    document.getElementById('exit-thank-emoji').textContent = '🌟';
+    document.getElementById('exit-thank-title').textContent = '太棒了！出場券完成！';
+    document.getElementById('exit-thank-msg').textContent = '你真是今天的規範小專家！';
+    document.getElementById('exit-thank').classList.add('show');
+    document.getElementById('exit-thank').scrollIntoView({behavior:'smooth'});
+    confetti(); toast('🌟 出場券送出！');
+  }
 }
 
 // =====================
@@ -1289,6 +1374,9 @@ function initSettings(){
   buildProposalsEditor();
   buildStepsEditor();
   buildExitQEditor();
+  // 學生名單
+  const inp = document.getElementById('s-students-input');
+  if(inp) inp.value = (gameData.students||[]).join('\n');
 }
 
 function switchTab(el, panelId){
@@ -1435,6 +1523,11 @@ function saveSettings(){
   gameData.title = document.getElementById('s-title').value || gameData.title;
   gameData.subtitle = document.getElementById('s-subtitle').value || gameData.subtitle;
   gameData.numGroups = parseInt(document.getElementById('s-groups').value) || 6;
+  // 儲存學生名單
+  const inp = document.getElementById('s-students-input');
+  if(inp){
+    gameData.students = inp.value.split('\n').map(s=>s.trim()).filter(s=>s);
+  }
   try{ localStorage.setItem('social_game_data', JSON.stringify(gameData)); } catch(e){}
   toast('💾 設定已儲存！');
   setTimeout(()=>goTo('homeScreen'), 700);
