@@ -680,6 +680,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="s-timers-grid"></div>
       </div>
       <div class="sbox">
+        <h3>🔄 重置分數</h3>
+        <p style="font-size:.88rem;color:#666;margin-bottom:12px;">將全部組別分數歸零（測試結束後使用）</p>
+        <button onclick="resetAllScores()" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:.95rem;font-weight:700;cursor:pointer;">🔄 全部分數歸零</button>
+      </div>
+      <div class="sbox">
         <h3>🏷 關卡名稱與說明（首頁顯示）</h3>
         <div id="s-labels-editor"></div>
       </div>
@@ -1770,6 +1775,16 @@ function buildExitQEditor(){
 }
 
 function addExitQ(){ gameData.exitTicket.questions.push({id:'eq'+Date.now(), text:'新問題', hasReason:false}); buildExitQEditor(); }
+
+function resetAllScores(){
+  if(!confirm('確定要將全部組別分數歸零嗎？')) return;
+  const n = gameData.groups || 6;
+  const zeros = [];
+  for(let i=0;i<n;i++) zeros.push({scores:[]});
+  db.ref('class306/teamScores').set(zeros).then(()=>{
+    alert('✅ 分數已全部歸零！');
+  }).catch(()=>alert('❌ 重置失敗，請確認網路連線'));
+}
 
 function saveSettings(){
   gameData.title = document.getElementById('s-title').value || gameData.title;
