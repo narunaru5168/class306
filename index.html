@@ -2245,7 +2245,17 @@ document.body && (document.body.scrollLeft = 0);
     <div class="card" style="background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid #ef4444;text-align:center;padding:20px;">
       <div style="font-size:2.5rem;margin-bottom:8px;" id="bombBoomEmoji">💥</div>
       <div style="font-weight:900;font-size:.95rem;color:#fca5a5;margin-bottom:6px;">💣 炸彈爆炸！點名——</div>
-      <div id="bombResultName" style="font-size:1.6rem;font-weight:900;color:#fff;"></div>
+      <div id="bombResultName" style="font-size:1.6rem;font-weight:900;color:#fff;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="bombAddPersonalStar()"
+          style="background:rgba(251,191,36,.2);border:1.5px solid #fbbf24;border-radius:50px;color:#fbbf24;font-weight:800;font-size:.88rem;padding:8px 18px;cursor:pointer;font-family:inherit;">
+          ⭐ 答對了！個人 +1星
+        </button>
+        <button onclick="bombAddGroupStar()"
+          style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.4);border-radius:50px;color:#fff;font-weight:800;font-size:.88rem;padding:8px 18px;cursor:pointer;font-family:inherit;">
+          🌟 全組表現好！+1星
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -5684,7 +5694,7 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','starshow','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay','africa','writing'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay','africa','writing'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
@@ -8590,6 +8600,8 @@ function stopBombTimer(){
   document.getElementById('bombStopBtn').disabled = true;
 }
 
+let bombLastWinner = null; // 最後一次炸彈抽到的學生，供加星按鈕使用
+
 function triggerBomb(){
   playBombExplosion();
   if(!students.length){ toast('⚠️ 請先新增學生！'); stopBombTimer(); return; }
@@ -8599,6 +8611,7 @@ function triggerBomb(){
     if(remaining.length) pool = remaining;
   }
   const winner = pool[Math.floor(Math.random()*pool.length)];
+  bombLastWinner = winner; // 記下這位同學供加星用
   if(drawState.excludeMode){ drawState.drawnIds.push(winner.id); }
   save(); renderDrawState();
   const nameEl = document.getElementById('bombResultName');
@@ -8612,6 +8625,47 @@ function triggerBomb(){
   const disp = document.getElementById('bombCountDisplay');
   if(disp){ disp.textContent='💥'; }
   confetti();
+}
+
+function bombAddPersonalStar(){
+  const s = bombLastWinner;
+  if(!s){ toast('⚠️ 請先啟動炸彈抽到同學'); return; }
+  const today = new Date().toLocaleDateString('zh-TW');
+  const granted = grantStars(s, 1);
+  if(granted !== false){
+    s.log = s.log||[];
+    s.log.push({ id: generateId(), reason:'💣 炸彈計時器答對', amt: 1, date: today });
+    save(); renderStudents(); updateStats();
+    toast(`⭐ ${s.name} 答對加 1 顆星！`);
+  }
+}
+
+function bombAddGroupStar(){
+  const s = bombLastWinner;
+  if(!s){ toast('⚠️ 請先啟動炸彈抽到同學'); return; }
+  const group = (mutualAidGroups||[]).find(g=>(g.studentIds||[]).includes(s.id));
+  const today = new Date().toLocaleDateString('zh-TW');
+  if(!group){
+    // 找不到小組就只加個人
+    grantStars(s, 1);
+    s.log = s.log||[];
+    s.log.push({ id: generateId(), reason:'💣 炸彈計時器答對（全組）', amt: 1, date: today });
+    save(); renderStudents(); updateStats();
+    toast(`⭐ 找不到所屬小組，只幫 ${s.name} 加 1 星`);
+    return;
+  }
+  let count = 0;
+  group.studentIds.forEach(sid=>{
+    const member = students.find(st=>st.id===sid);
+    if(!member) return;
+    // 小組課堂表現不受修復任務封鎖（與 autoGrantGameStars 同邏輯）
+    member.stars = (member.stars||0) + 1;
+    member.log = member.log||[];
+    member.log.push({ id: generateId(), reason:`💣 炸彈計時器全組表現好（${group.name||'小組'}）`, amt: 1, date: today });
+    count++;
+  });
+  save(); renderStudents(); updateStats();
+  toast(`🌟 ${group.name||'小組'} 全組 ${count} 人各加 1 顆星！`);
 }
 
 function playBombExplosion(){
