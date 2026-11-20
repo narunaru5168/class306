@@ -1841,6 +1841,12 @@ document.body && (document.body.scrollLeft = 0);
       <button class="btn" id="undoSpinBtn" style="display:none;background:#fee2e2;color:#dc2626;font-size:.8rem;padding:6px 14px;margin-top:8px;" onclick="undoLastWheelSpin()">↩️ 撤銷剛剛這次抽選</button>
       <div style="margin-top:12px;font-size:.78rem;color:#94a3b8;text-align:center;">✨ 轉盤結果由機率決定，鼓勵繼續努力！</div>
       <button class="btn" onclick="openFortuneSlipManage()" style="margin-top:10px;background:#fff;border:2px solid #e2e8f0;color:#94a3b8;font-size:.72rem;padding:5px 12px;">🧧 管理幸運詩籤內容</button>
+      <!-- 今日日記題目小卡 -->
+      <div id="diaryPromptCard" style="display:none;margin-top:14px;background:linear-gradient(135deg,#d1fae5,#a7f3d0);border-radius:12px;padding:10px 14px;text-align:left;border:2px solid #6ee7b7;">
+        <div style="font-size:.78rem;font-weight:800;color:#065f46;margin-bottom:3px;">📝 今日日記題目</div>
+        <div id="diaryPromptText" style="font-weight:800;font-size:.95rem;color:#047857;"></div>
+        <div id="diaryPromptDate" style="font-size:.72rem;color:#6ee7b7;margin-top:2px;"></div>
+      </div>
     </div>
 
     <!-- DART -->
@@ -9954,6 +9960,46 @@ function renderMathLeaderboard(){
   });
 }
 
+// ─── 每日日記題目（由抽到的學生決定）───
+function submitDiaryPrompt(){
+  const input = document.getElementById('diaryPromptInput');
+  if(!input) return;
+  const prompt = input.value.trim();
+  if(!prompt){ input.focus(); return; }
+  const today = new Date().toLocaleDateString('zh-TW');
+  const data = { prompt, date: today, updatedAt: Date.now() };
+  const save = ()=>{
+    const el = document.getElementById('diaryPromptDisplay');
+    if(el){ el.textContent = prompt; el.closest('[id="diaryPromptCard"]') && (document.getElementById('diaryPromptCard').style.display=''); }
+    renderDiaryPromptCard(prompt, today);
+    const res = document.getElementById('wheelResult');
+    if(res) res.innerHTML = `<div style="font-weight:800;color:#065f46;font-size:1rem;">✅ 已送出！今天的日記題目是：<br>📝 ${prompt}</div>`;
+    toast(`📝 今天的日記題目由同學決定：${prompt}`);
+  };
+  if(useCloud && db){
+    db.ref('class306/diaryPrompt').set(data).then(save).catch(save);
+  } else { save(); }
+}
+
+function renderDiaryPromptCard(prompt, date){
+  const card = document.getElementById('diaryPromptCard');
+  if(!card) return;
+  card.style.display = prompt ? '' : 'none';
+  if(prompt){
+    document.getElementById('diaryPromptText').textContent = prompt;
+    document.getElementById('diaryPromptDate').textContent = date || '';
+  }
+}
+
+function loadDiaryPrompt(){
+  if(!(useCloud && db)) return;
+  db.ref('class306/diaryPrompt').get().then(snap=>{
+    if(!snap.exists()) return;
+    const data = snap.val()||{};
+    if(data.prompt) renderDiaryPromptCard(data.prompt, data.date||'');
+  }).catch(()=>{});
+}
+
 // ─── 每週遊戲進步獎勵（全自動）───
 // 每次開啟班網時自動檢查：進入新的一週，就對比上週快照計算進步幅度，
 // 語詞遊戲 & 數學遊戲各取進步前3名，分別＋3/+2/+1顆星。
@@ -10101,6 +10147,7 @@ const wheelSegments=[
   {label:'🙏 找一位老師說一句感謝的話（非導師）', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類
   {label:'🎮 語詞遊戲挑戰', color:'#FF6B6B', weight:2}, // 🎲 驚喜/趣味類：90秒內拿到目標分數，額外得到星星
   {label:'💌 抽一張鼓勵小卡', color:'#f472b6', weight:3}, // 💌 鼓勵類：隨機抽一張鼓勵卡片，讓學生感受到被看見
+  {label:'📝 幫全班訂今天日記題目', color:'#34d399', weight:2}, // 📝 創意參與類：由這位同學決定今天全班的日記題目
 ];
 let wheelAngle=0, spinning=false;
 function drawWheel(angle=0){
@@ -10153,7 +10200,7 @@ let lastSpinRecord = null;
 // 跟任務倒數計時／整理時間倒數鈴一樣，改用「結束時間點」反推剩餘秒數（而不是每秒單純 -1），
 // 避免分頁被瀏覽器丟到背景時，倒數畫面卡住不動、永遠停在某個數字。
 let wheelResultTimerInterval = null, wheelResultTimerRunning = false, wheelResultTimerEndAt = 0;
-const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰','鼓勵小卡']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
+const WHEEL_SKIP_AUTO_TIMER = ['加3顆星','全班加一顆星','再轉一次','語詞遊戲挑戰','鼓勵小卡','日記題目']; // 立即生效或本身已經有自己的計時流程，不需要額外限時
 function tickWheelResultTimer(){
   if(!wheelResultTimerRunning) return;
   const el = document.getElementById('wheelResultTimer');
@@ -10282,6 +10329,20 @@ function spinWheel(){
     if(result.label.includes('鼓勵小卡')){
       const s=students.find(x=>x.id==sid);
       setTimeout(()=>{ showEncourageCard(s ? s.name : ''); }, 700);
+    }
+    // 特殊獎勵：幫全班訂今天日記題目 → 顯示輸入框讓學生填題目
+    if(result.label.includes('日記題目')){
+      const s=students.find(x=>x.id==sid);
+      const sName = s ? s.name : '這位同學';
+      res.innerHTML = `
+        <div style="text-align:left;margin-top:4px;">
+          <div style="font-weight:800;font-size:1rem;margin-bottom:8px;">📝 ${sName} 來幫全班訂今天的日記題目！</div>
+          <input id="diaryPromptInput" type="text" maxlength="40" placeholder="輸入今天的日記題目…"
+            style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:2px solid #34d399;font-size:.95rem;font-family:'Nunito',sans-serif;margin-bottom:8px;"
+            onkeydown="if(event.key==='Enter')submitDiaryPrompt()">
+          <button class="btn" style="background:#34d399;color:#fff;width:100%;font-weight:800;" onclick="submitDiaryPrompt()">✅ 確認送出</button>
+        </div>`;
+      setTimeout(()=>{ const el=document.getElementById('diaryPromptInput'); if(el) el.focus(); }, 100);
     }
     toast('🎊 '+document.getElementById('wheelStudent').selectedOptions[0].text+' 獲得：'+result.label);
     confetti();
@@ -12140,6 +12201,8 @@ async function initApp() {
   try { setupMainDataListeners(); } catch(e) { console.warn('即時同步監聽啟動失敗', e); }
   // 自動檢查每週遊戲進步獎勵（進入新的一週時自動結算，不需手動）
   try { setTimeout(checkWeeklyGameAwards, 2000); } catch(e) { console.warn('週進步獎勵初始化失敗', e); }
+  // 載入今日日記題目（如果有同學抽到並設定過）
+  try { loadDiaryPrompt(); } catch(e) { console.warn('日記題目載入失敗', e); }
   // 載入非洲海報任務
   try { loadAfricaTasks(); } catch(e) { console.warn('Africa tasks init failed', e); }
 
