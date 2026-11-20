@@ -2257,7 +2257,19 @@ document.body && (document.body.scrollLeft = 0);
     <div style="flex:1;"></div>
     <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.78rem;padding:5px 14px;" onclick="openAddStarSentenceModal()">＋ 新增造句</button>
   </div>
-  <div id="starSentenceList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+  <!-- 單句輪播預覽（不疊長清單，完整展示請到⭐造句展示） -->
+  <div id="starSentencePreview" style="min-height:90px;"></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+    <button onclick="starWallNav(-1)"
+      style="background:#ede9fe;border:none;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer;color:#7c3aed;flex-shrink:0;">◀</button>
+    <span id="starWallCounter" style="font-size:.8rem;font-weight:800;color:#a78bfa;min-width:48px;text-align:center;"></span>
+    <button onclick="starWallNav(1)"
+      style="background:#ede9fe;border:none;border-radius:50%;width:34px;height:34px;font-size:1rem;cursor:pointer;color:#7c3aed;flex-shrink:0;">▶</button>
+    <button onclick="showPage('starshow')"
+      style="margin-left:auto;background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border:none;border-radius:50px;padding:5px 14px;font-size:.78rem;font-weight:800;cursor:pointer;font-family:inherit;">
+      📺 投影展示 →
+    </button>
+  </div>
 </div>
 
 <!-- 新增造句 Modal -->
@@ -2277,10 +2289,23 @@ document.body && (document.body.scrollLeft = 0);
       <input id="starSentWord" type="text" placeholder="例如：五彩繽紛"
         style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
     </div>
-    <div style="margin-bottom:14px;">
+    <div style="margin-bottom:10px;">
       <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">精彩造句</label>
       <textarea id="starSentText" rows="3" placeholder="請輸入精彩的造句內容"
         style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;resize:vertical;"></textarea>
+    </div>
+    <div style="margin-bottom:14px;background:#faf5ff;border-radius:12px;padding:10px 12px;border:1.5px solid #e9d5ff;">
+      <label style="font-size:.8rem;font-weight:700;color:#7c3aed;display:block;margin-bottom:6px;">⭐ 貢獻獎勵</label>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <select id="starSentAwardCount" style="border:2px solid #ddd6fe;border-radius:10px;padding:6px 12px;font-size:.88rem;font-family:inherit;background:#fff;color:#333;cursor:pointer;">
+          <option value="0">不加星星</option>
+          <option value="1">⭐ 1 顆星</option>
+          <option value="2" selected>⭐⭐ 2 顆星（建議）</option>
+          <option value="3">⭐⭐⭐ 3 顆星</option>
+          <option value="5">🌟×5 超讚造句！</option>
+        </select>
+        <span style="font-size:.78rem;color:#7c3aed;">張貼同時自動發放給該同學</span>
+      </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="btn" style="background:#f1f5f9;color:#555;" onclick="closeModal('starSentenceModal')">取消</button>
@@ -10717,26 +10742,47 @@ function loadStarSentences(){
   });
 }
 
+let starWallIdx = 0; // 目前輪播到哪一句
+
 function renderStarSentenceWall(){
   const wrap = document.getElementById('starSentenceWallWrap');
-  const list = document.getElementById('starSentenceList');
-  if(!wrap || !list) return;
+  const preview = document.getElementById('starSentencePreview');
+  const counter = document.getElementById('starWallCounter');
+  if(!wrap || !preview) return;
   wrap.style.display = '';
   if(!starSentences.length){
-    list.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5fd;font-size:.85rem;">還沒有造句，批改後點「＋ 新增造句」貼上牆 ✨</div>';
+    preview.innerHTML = '<div style="text-align:center;padding:24px 0;color:#c4b5fd;font-size:.85rem;">還沒有造句，批改後點「＋ 新增造句」貼上牆 ✨</div>';
+    if(counter) counter.textContent = '0 / 0';
     return;
   }
-  list.innerHTML = starSentences.slice(0,10).map(s=>`
-    <div style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-radius:14px;padding:12px 16px;border-left:5px solid #a855f7;position:relative;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+  starWallIdx = Math.max(0, Math.min(starWallIdx, starSentences.length - 1));
+  const s = starSentences[starWallIdx];
+  // 在句子中高亮語詞
+  let sentHtml = escHtml(s.sentence||'');
+  if(s.word && s.sentence && s.sentence.includes(s.word)){
+    sentHtml = escHtml(s.sentence).replace(
+      escHtml(s.word),
+      `<span style="color:#7c3aed;font-weight:900;border-bottom:2px solid #a855f7;">${escHtml(s.word)}</span>`
+    );
+  }
+  preview.innerHTML = `
+    <div style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-radius:14px;padding:14px 16px;border-left:5px solid #a855f7;position:relative;cursor:pointer;" onclick="starWallNav(1)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         <span style="font-weight:900;font-size:.88rem;color:#7c3aed;">✨ ${escHtml(s.studentName||'')}</span>
         ${s.word?`<span style="background:#a855f7;color:#fff;border-radius:20px;padding:2px 10px;font-size:.74rem;font-weight:800;">${escHtml(s.word)}</span>`:''}
         <span style="font-size:.7rem;color:#a78bfa;margin-left:auto;">${escHtml(s.date||'')}</span>
       </div>
-      <div style="font-size:.95rem;color:#4c1d95;font-weight:700;line-height:1.6;">${escHtml(s.sentence||'')}</div>
-      <button onclick="deleteStarSentence('${s.id}')" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#c4b5fd;cursor:pointer;font-size:.8rem;padding:2px 6px;" title="刪除">✕</button>
-    </div>
-  `).join('');
+      <div style="font-size:.95rem;color:#4c1d95;font-weight:700;line-height:1.6;">${sentHtml}</div>
+      <button onclick="event.stopPropagation();deleteStarSentence('${s.id}')"
+        style="position:absolute;top:8px;right:10px;background:none;border:none;color:#c4b5fd;cursor:pointer;font-size:.8rem;padding:2px 6px;" title="刪除">✕</button>
+    </div>`;
+  if(counter) counter.textContent = `${starWallIdx+1} / ${starSentences.length}`;
+}
+
+function starWallNav(dir){
+  if(!starSentences.length) return;
+  starWallIdx = (starWallIdx + dir + starSentences.length) % starSentences.length;
+  renderStarSentenceWall();
 }
 
 function openAddStarSentenceModal(){
@@ -10744,19 +10790,25 @@ function openAddStarSentenceModal(){
   const sel = document.getElementById('starSentStudentName');
   const sorted = [...students].sort((a,b)=>(a.seatNo||0)-(b.seatNo||0));
   sel.innerHTML = '<option value="">── 請選擇同學 ──</option>'
-    + sorted.map(s=>`<option value="${s.seatNo||''}號 ${s.name}">${s.seatNo||'?'}號 ${s.name}</option>`).join('');
+    + sorted.map(s=>`<option value="${s.id}">${s.seatNo||'?'}號 ${s.name}</option>`).join('');
   sel.value = '';
   document.getElementById('starSentWord').value = '';
   document.getElementById('starSentText').value = '';
+  const awardSel = document.getElementById('starSentAwardCount');
+  if(awardSel) awardSel.value = '2';
   openModal('starSentenceModal');
   setTimeout(()=>sel.focus(), 100);
 }
 
 function submitStarSentence(){
-  const studentName = document.getElementById('starSentStudentName').value.trim();
+  const sel = document.getElementById('starSentStudentName');
+  const studentId = sel.value.trim();
+  const student = studentId ? students.find(s=>s.id===studentId) : null;
+  const studentName = student ? `${student.seatNo||'?'}號 ${student.name}` : '';
   const word = document.getElementById('starSentWord').value.trim();
   const sentence = document.getElementById('starSentText').value.trim();
   if(!sentence){ document.getElementById('starSentText').focus(); return; }
+  const awardAmt = parseInt((document.getElementById('starSentAwardCount')||{}).value||'0')||0;
   const id = generateId();
   const today = new Date().toLocaleDateString('zh-TW');
   const entry = { id, studentName, word, sentence, date: today, ts: Date.now() };
@@ -10765,7 +10817,18 @@ function submitStarSentence(){
     renderStarSentenceWall();
     document.getElementById('starSentenceWallWrap').style.display = '';
     closeModal('starSentenceModal');
-    toast(`✨ ${studentName || '同學'} 的造句已貼上明星造句牆！`);
+    if(student && awardAmt > 0){
+      const granted = grantStars(student, awardAmt);
+      if(granted !== false){
+        student.log = student.log||[];
+        student.log.push({ id: generateId(), reason:'⭐ 明星造句貢獻', amt: awardAmt, date: today });
+        save(); renderStudents(); updateStats();
+        setTimeout(()=>toast(`🌟 造句貼牆！${student.name} 獲得 ${awardAmt} 顆⭐！`), 200);
+      }
+      // 若有修復任務，grantStars 已開啟提示彈窗；造句仍然貼上
+    } else {
+      toast(`✨ ${studentName || '同學'} 的造句已貼上明星造句牆！`);
+    }
   };
   if(useCloud && db){
     db.ref(`class306/starSentences/${id}`).set(entry).then(done).catch(done);
