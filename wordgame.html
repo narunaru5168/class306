@@ -840,10 +840,8 @@ buildLessonSelect();
 function loadStarSentencesIntoGame(){
   if(!firebaseReady()) return;
   firebase.database().ref('class306/starSentences').get().then(snap=>{
-    if(!snap.exists()) return;
-    const raw = snap.val();
-    const arr = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw||{});
-    if(!arr.length) return;
+    const raw = snap.exists() ? snap.val() : null;
+    const arr = raw ? (Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw)) : [];
     // 轉成填空題：把 word 在 sentence 中替換成 【＿＿】
     const bank = [...new Set(arr.map(s=>s.word).filter(Boolean))];
     starSentenceRounds = arr
@@ -851,21 +849,27 @@ function loadStarSentencesIntoGame(){
       .map(s=>({
         sentence: s.sentence.replace(s.word, '【＿＿】') + `  ——${s.studentName||'同學'}的造句`,
         answer: s.word,
-        _bank: bank,
+        _bank: bank.length >= 3 ? bank : [...bank, ...['好', '快', '美麗'].filter(w=>!bank.includes(w))],
         _starAuthor: s.studentName||''
       }));
-    if(!starSentenceRounds.length) return;
-    // 加入 select 選項
+    // 更新或新增選項
     const sel = document.getElementById('lessonSelect');
-    if(!sel || sel.querySelector('option[value="starsentences"]')) return;
-    const opt = document.createElement('option');
-    opt.value = 'starsentences';
-    opt.textContent = `⭐ 明星造句挑戰（${starSentenceRounds.length} 題）`;
-    sel.appendChild(opt);
+    if(!sel) return;
+    let opt = sel.querySelector('option[value="starsentences"]');
+    if(starSentenceRounds.length){
+      if(!opt){ opt = document.createElement('option'); opt.value='starsentences'; sel.appendChild(opt); }
+      opt.textContent = `⭐ 明星造句挑戰（${starSentenceRounds.length} 題）`;
+    } else if(opt){
+      opt.remove();
+    }
   }).catch(()=>{});
 }
-// Firebase 初始化完成後延遲呼叫（等 Firebase SDK 準備好）
-setTimeout(loadStarSentencesIntoGame, 1500);
+// 在 populatePlayerSelect 之後呼叫（Firebase 此時已初始化）
+function tryLoadStarSentences(retries){
+  if(firebaseReady()){ loadStarSentencesIntoGame(); return; }
+  if(retries>0) setTimeout(()=>tryLoadStarSentences(retries-1), 800);
+}
+setTimeout(()=>tryLoadStarSentences(5), 500);
 
 function getActiveRounds(){
   const key = document.getElementById('lessonSelect').value;
