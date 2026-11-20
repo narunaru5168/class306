@@ -2267,8 +2267,10 @@ document.body && (document.body.scrollLeft = 0);
     <div style="font-weight:900;font-size:1.1rem;color:#7c3aed;margin-bottom:14px;">✨ 新增明星造句</div>
     <div style="margin-bottom:10px;">
       <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">同學姓名</label>
-      <input id="starSentStudentName" type="text" placeholder="例如：王小明"
-        style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
+      <select id="starSentStudentName"
+        style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;background:#fff;color:#333;cursor:pointer;">
+        <option value="">── 請選擇同學 ──</option>
+      </select>
     </div>
     <div style="margin-bottom:10px;">
       <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">使用的語詞</label>
@@ -10619,11 +10621,16 @@ function renderStarSentenceWall(){
 }
 
 function openAddStarSentenceModal(){
-  document.getElementById('starSentStudentName').value = '';
+  // 動態填入學生下拉清單（依座號排序）
+  const sel = document.getElementById('starSentStudentName');
+  const sorted = [...students].sort((a,b)=>(a.seatNo||0)-(b.seatNo||0));
+  sel.innerHTML = '<option value="">── 請選擇同學 ──</option>'
+    + sorted.map(s=>`<option value="${s.seatNo||''}號 ${s.name}">${s.seatNo||'?'}號 ${s.name}</option>`).join('');
+  sel.value = '';
   document.getElementById('starSentWord').value = '';
   document.getElementById('starSentText').value = '';
   openModal('starSentenceModal');
-  setTimeout(()=>document.getElementById('starSentStudentName').focus(), 100);
+  setTimeout(()=>sel.focus(), 100);
 }
 
 function submitStarSentence(){
