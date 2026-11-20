@@ -10857,8 +10857,13 @@ function openAddStarSentenceModal(){
 function submitStarSentence(){
   const sel = document.getElementById('starSentStudentName');
   const studentId = sel.value.trim();
+  // 先從 option 文字取顯示名稱（不依賴 ID 是否能匹配）
+  const optText = sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : '';
   const student = studentId ? students.find(s=>s.id===studentId) : null;
-  const studentName = student ? `${student.seatNo||'?'}號 ${student.name}` : '';
+  // studentName：有 student 物件就用，否則用 option 文字，都沒有才放空
+  const studentName = student
+    ? `${student.seatNo||'?'}號 ${student.name}`
+    : optText;
   const word = document.getElementById('starSentWord').value.trim();
   const sentence = document.getElementById('starSentText').value.trim();
   if(!sentence){ document.getElementById('starSentText').focus(); return; }
@@ -10871,17 +10876,18 @@ function submitStarSentence(){
     renderStarSentenceWall();
     document.getElementById('starSentenceWallWrap').style.display = '';
     closeModal('starSentenceModal');
+    const displayName = studentName || '同學';
     if(student && awardAmt > 0){
       const granted = grantStars(student, awardAmt);
       if(granted !== false){
         student.log = student.log||[];
         student.log.push({ id: generateId(), reason:'⭐ 明星造句貢獻', amt: awardAmt, date: today });
         save(); renderStudents(); updateStats();
-        setTimeout(()=>toast(`🌟 造句貼牆！${student.name} 獲得 ${awardAmt} 顆⭐！`), 200);
+        setTimeout(()=>toast(`🌟 ${displayName} 的造句貼上牆！獲得 ${awardAmt} 顆⭐`), 200);
       }
       // 若有修復任務，grantStars 已開啟提示彈窗；造句仍然貼上
     } else {
-      toast(`✨ ${studentName || '同學'} 的造句已貼上明星造句牆！`);
+      toast(`✨ ${displayName} 的造句已貼上明星造句牆！`);
     }
   };
   if(useCloud && db){
