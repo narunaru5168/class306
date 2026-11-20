@@ -1385,6 +1385,42 @@ document.body && (document.body.scrollLeft = 0);
     <div id="classTrophyList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
+  <!-- ════════════════ 明星造句牆 ════════════════ -->
+  <div id="starSentenceWallWrap" style="margin-top:16px;display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="font-weight:900;font-size:1.05rem;color:#7c3aed;">✨ 明星造句牆</div>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.78rem;padding:5px 14px;" onclick="openAddStarSentenceModal()">＋ 新增造句</button>
+    </div>
+    <div id="starSentenceList" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+  <!-- 新增造句 Modal -->
+  <div id="starSentenceModal" class="modal" style="display:none;">
+    <div class="modal-backdrop" onclick="closeModal('starSentenceModal')"></div>
+    <div class="modal-box" style="max-width:420px;">
+      <div style="font-weight:900;font-size:1.1rem;color:#7c3aed;margin-bottom:14px;">✨ 新增明星造句</div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">同學姓名</label>
+        <input id="starSentStudentName" type="text" placeholder="例如：王小明"
+          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">使用的語詞</label>
+        <input id="starSentWord" type="text" placeholder="例如：五彩繽紛"
+          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">精彩造句</label>
+        <textarea id="starSentText" rows="3" placeholder="請輸入精彩的造句內容"
+          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" style="background:#f1f5f9;color:#555;" onclick="closeModal('starSentenceModal')">取消</button>
+        <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;" onclick="submitStarSentence()">張貼上牆 🌟</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card" style="margin-top:24px;cursor:pointer;background:linear-gradient(135deg,#fef9c3,#fde68a);border-left:6px solid var(--sun);"
        onclick="const p=document.getElementById('dutyRolePanel'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
     <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -1979,6 +2015,62 @@ document.body && (document.body.scrollLeft = 0);
   <div class="section-title" style="margin-top:28px;">🔢 數學遊戲高手榜</div>
   <div class="lead">學生在數學練習遊戲頁面選了自己的名字之後，紀錄就會同步到這裡（選擇搶答／計時衝刺比各單元最高分）。</div>
   <div id="mathGameLeaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;margin-top:10px;"></div>
+
+  <!-- ════════════════ 組別對戰 + 爬格子 ════════════════ -->
+  <div style="margin-top:32px;">
+    <div class="section-title">⚔️ 語詞組別對戰</div>
+    <div class="lead">隨機配對兩組，限時搶答語詞意思，答對往前走一格，先到終點的組別獲勝！</div>
+
+    <!-- 設定區 -->
+    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:5px solid #3b82f6;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <div style="font-weight:800;color:#1d4ed8;font-size:.95rem;">選擇對戰組別</div>
+        <select id="battleGroupA" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
+        <div style="font-weight:900;color:#1d4ed8;">VS</div>
+        <select id="battleGroupB" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
+        <button class="btn" style="background:#3b82f6;color:#fff;padding:6px 16px;font-size:.82rem;" onclick="randomizeBattleGroups()">🎲 隨機配對</button>
+      </div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="font-size:.82rem;color:#3b82f6;font-weight:700;">倒計時：</div>
+        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(30)">30秒</button>
+        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(60)">1分鐘</button>
+        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(90)">1分30秒</button>
+        <div id="battleTimerDisplay" style="font-size:1.5rem;font-weight:900;font-family:'Courier New',monospace;color:#1d4ed8;min-width:60px;text-align:center;">30</div>
+        <button class="btn" style="background:#3b82f6;color:#fff;padding:5px 14px;font-size:.82rem;" onclick="startBattleTimer()" id="battleStartBtn">▶ 開始</button>
+        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;padding:5px 14px;font-size:.82rem;" onclick="resetBattleTimer()">↺ 重設</button>
+      </div>
+    </div>
+
+    <!-- 爬格子視覺 + 加分 -->
+    <div class="card" style="margin-top:10px;">
+      <!-- 爬格子棋盤 -->
+      <div id="ladderBoard" style="margin-bottom:16px;"></div>
+
+      <!-- 加分操作 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <!-- 組A -->
+        <div style="text-align:center;">
+          <div id="battleGroupAName" style="font-weight:900;font-size:1rem;color:#2563eb;margin-bottom:6px;">A組</div>
+          <div id="battleGroupAPos" style="font-size:2rem;font-weight:900;color:#2563eb;margin-bottom:8px;">0</div>
+          <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
+          <button class="btn" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('A')">✅ 答對 ＋1格</button>
+        </div>
+        <!-- 組B -->
+        <div style="text-align:center;">
+          <div id="battleGroupBName" style="font-weight:900;font-size:1rem;color:#dc2626;margin-bottom:6px;">B組</div>
+          <div id="battleGroupBPos" style="font-size:2rem;font-weight:900;color:#dc2626;margin-bottom:8px;">0</div>
+          <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
+          <button class="btn" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('B')">✅ 答對 ＋1格</button>
+        </div>
+      </div>
+
+      <!-- 控制 -->
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn" style="background:#f1f5f9;color:#555;font-size:.8rem;padding:6px 16px;" onclick="resetBattleGame()">🔄 重新開始</button>
+        <button class="btn" style="background:#fff;border:2px solid #fbbf24;color:#b45309;font-size:.8rem;padding:6px 16px;" onclick="awardBattleWinner()">🏆 結算獎勵</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ─────────────── CORRECTION TRACKER ─────────────── -->
@@ -2969,7 +3061,162 @@ document.body && (document.body.scrollLeft = 0);
 1/12(二)、1/13(三)。國語、數學排課集中於週一至週四（方案C），週五留給社會、有品麗山，以降低國定假日對主科進度的影響。以下為逐日詳細教學內容與回家作業規劃。</em></p>
 
   </div>
-  <div class="section-title" style="font-size:1.1rem;margin-top:20px;">📅 五、逐日教學進度暨回家作業詳細規劃</div>
+  <!-- ════ 國語週教學 SOP ════ -->
+  <div class="card" style="margin-bottom:12px;cursor:pointer;background:linear-gradient(135deg,#faf5ff,#ede9fe);border-left:6px solid #7c3aed;"
+       onclick="const p=document.getElementById('planChineseSOP'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-weight:800;font-size:.95rem;">📚 五、國語課週教學 SOP（翰林版 · 一週四堂，含班網輔助）</div>
+      <div class="arrow" style="font-size:1.1rem;">▼</div>
+    </div>
+  </div>
+  <div id="planChineseSOP" style="display:none;margin-bottom:16px;">
+
+    <!-- 設計理念 -->
+    <div class="card" style="background:#faf5ff;border-left:4px solid #a855f7;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:900;font-size:.88rem;color:#7c3aed;margin-bottom:6px;">🧩 為什麼這樣設計？</div>
+      <div style="font-size:.82rem;color:#4c1d95;line-height:1.7;">
+        原本用組別輪流問答方式講語詞，常常週一講到週四還沒結束，修辭和課文理解幾乎沒有時間上。
+        新設計改為：<strong>限時切割</strong>（每段有明確上限）＋<strong>競爭驅動</strong>（組別對戰取代單純舉答）＋<strong>作品展示</strong>（造句上牆讓學生當作品寫），並搭配班網星星系統輔助計分。
+      </div>
+    </div>
+
+    <!-- 週計畫表 -->
+    <div style="overflow-x:auto;margin-bottom:12px;">
+    <table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:580px;">
+      <thead>
+        <tr>
+          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:center;border:1px solid #e2e8f0;white-space:nowrap;">星期</th>
+          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:left;border:1px solid #e2e8f0;">課堂主軸（40分鐘）</th>
+          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:center;border:1px solid #e2e8f0;white-space:nowrap;">回家作業</th>
+          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:left;border:1px solid #e2e8f0;">🔧 班網輔助功能</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 週一 -->
+        <tr>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#faf5ff;white-space:nowrap;">一</td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
+            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">🔤 生字快攻（10分）</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">帶全班拼讀生字 → 請學生從上下文猜意思 → 猜對加星星<br><span style="color:#94a3b8;">不查字典、不背解釋，10分到就收</span></div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文第一遍（25分）</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">師生輪流朗讀 → 提問 2–3 個理解題 → 組別舉答加星星</div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📢 收尾佈達（5分）</div>
+            <div style="font-size:.78rem;color:#555;">預告明天語詞對戰主題，讓學生回家有動機預習</div>
+          </td>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲本生字</strong><br><span style="font-size:.72rem;color:#94a3b8;">（描紅＋仿寫）</span></td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 學生猜對生字意思</div>
+            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答活動</div>
+          </td>
+        </tr>
+        <!-- 週二 -->
+        <tr style="background:#f8f4ff;">
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#f3ecff;white-space:nowrap;">二</td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
+            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">⚔️ 語詞對戰限時賽（15分）⭐</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">開班網組別對戰 → 設 30 秒計時 → 兩組各推一人搶答語詞意思<br>答對得分往前爬格，答不出換對方答（答對得 bonus）<br><span style="color:#dc2626;font-weight:700;">15分到就停，沒講到的改日補</span></div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文精讀（25分）</div>
+            <div style="font-size:.78rem;color:#555;">繼續閱讀課文第二、三段，提問討論，組別舉答加星星</div>
+          </td>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲乙本語詞</strong></td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 組別對戰</span> 排行榜頁面最下方</div>
+            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">🔵🔴 爬格子</span> 對戰得分視覺化</div>
+            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🏆 結算獎勵</span> 獲勝組全員 +2顆星</div>
+          </td>
+        </tr>
+        <!-- 週三 -->
+        <tr>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#faf5ff;white-space:nowrap;">三</td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
+            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">✨ 明星造句展示（5分）⭐</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">開班網明星造句牆 → 展示昨晚批改時選出的 2–3 句優秀造句<br>請全班念一遍，作者獲得 +2 顆星</div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文精讀後半（20分）</div>
+            <div style="font-size:.78rem;color:#555;">閱讀剩餘段落，組別輪流提問、回答</div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">🎨 修辭教學（10分）</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">找出本課 1–2 個修辭手法 → 老師示範造句 → 學生試造<br>優秀者直接上明星造句牆</div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📢 收尾（5分）</div>
+            <div style="font-size:.78rem;color:#555;">說明作業：造詞造句（有條件版）</div>
+          </td>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>造詞造句</strong><br><span style="font-size:.72rem;color:#94a3b8;">（有條件版，<br>5–8個語詞）</span></td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="margin-bottom:6px;"><span style="background:#fce7f3;color:#be185d;border-radius:8px;padding:2px 7px;font-weight:700;">✨ 明星造句牆</span> 首頁下方</div>
+            <div style="margin-bottom:6px;font-size:.76rem;color:#555;">→ 新增造句：姓名＋語詞＋內容</div>
+            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 作者 +2顆星</div>
+          </td>
+        </tr>
+        <!-- 週四 -->
+        <tr style="background:#f8f4ff;">
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#f3ecff;white-space:nowrap;">四</td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
+            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">💬 課文理解提問（15分）</div>
+            <div style="font-size:.78rem;color:#555;line-height:1.6;">提 4–5 個深度問題（「你覺得⋯為什麼⋯」）<br>組別討論 10 秒後舉手，答得有創意者額外加星星</div>
+            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📓 國語作業簿（20–25分）</div>
+            <div style="font-size:.78rem;color:#555;">學生當堂完成，老師巡視批改、蓋章</div>
+            <div style="font-size:.76rem;color:#a855f7;margin-top:6px;font-weight:700;">🔵 若作業簿提前完成 → 開爬格子語詞複習（彈性）</div>
+          </td>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>國語作業簿</strong></td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答</div>
+            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 爬格子</span> 若有剩餘時間</div>
+            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🎲 抽抽樂</span> 隨機選人</div>
+          </td>
+        </tr>
+        <!-- 週五 -->
+        <tr>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#94a3b8;background:#f8fafc;white-space:nowrap;">五</td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
+            <div style="font-weight:700;color:#94a3b8;font-size:.82rem;">（本日無國語課）</div>
+          </td>
+          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>國習</strong></td>
+          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;color:#94a3b8;">——</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <!-- 造句作業說明 -->
+    <div class="card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);border-left:4px solid #f97316;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:900;font-size:.88rem;color:#9a3412;margin-bottom:6px;">📝 週三作業：造詞造句（有條件版）說明</div>
+      <div style="font-size:.8rem;color:#7c2d12;line-height:1.7;">
+        • 每課選 <strong>5–8 個語詞</strong>讓學生造句（不是每個字都要）<br>
+        • 老師批改後，<strong>最好的 2–3 句</strong>隔天貼上明星造句牆，作者 <strong>＋2顆星</strong><br>
+        • 批改技巧：順手圈出精彩造句（1–2 分鐘），重複句型不加分，鼓勵創意<br>
+        • 學生知道造句有機會上牆，就會認真寫，不隨便應付
+      </div>
+    </div>
+
+    <!-- 班網功能速查表 -->
+    <div class="card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:12px 16px;">
+      <div style="font-weight:900;font-size:.88rem;color:#166534;margin-bottom:8px;">🔧 國語課可用班網功能速查</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;">
+        <div style="background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #bbf7d0;">
+          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✅ 已有功能</div>
+          <div style="color:#166534;line-height:1.8;">
+            🌟 加星星（個人）<br>
+            👥 小組加星星<br>
+            🎯 抽抽樂轉盤<br>
+            📊 排行榜
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #bbf7d0;">
+          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✨ 本次新增</div>
+          <div style="color:#166534;line-height:1.8;">
+            ✨ 明星造句牆（首頁）<br>
+            ⚔️ 組別對戰計時器<br>
+            🔵🔴 爬格子視覺賽道<br>
+            🏆 對戰結算自動加星
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:.76rem;color:#166534;border-top:1px solid #bbf7d0;padding-top:8px;">
+        💡 <strong>常見狀況：</strong>15分到語詞還沒講完 → 直接停，改日用爬格子補。某組一直輸 → 每週重新隨機配對，不固定。
+      </div>
+    </div>
+
+  </div>
+  <!-- ════ 逐日教學進度 ════ -->
+  <div class="section-title" style="font-size:1.1rem;margin-top:20px;">📅 六、逐日教學進度暨回家作業詳細規劃</div>
   <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.75rem;color:#555;margin-bottom:6px;align-items:center;"><span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:#e5e7eb;display:inline-block;"></span>放假</span><span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:#fed7aa;display:inline-block;"></span>考試日</span><span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;border-radius:4px;background:#7c3aed;display:inline-block;"></span>日期欄（每天分隔）</span></div>
   <div style="font-size:.78rem;color:#94a3b8;margin-bottom:14px;">灰底＝國定假日（不排課）；橘底＝期中／期末考試日；內容已自動避開假日，順延至下一個實際上課日；藍色✏標示為當日回家作業</div>
 
@@ -10104,6 +10351,225 @@ function checkWeeklyGameAwards(){
   }).catch(e=>console.warn('週進步獎勵：讀取快照失敗', e));
 }
 
+// ─── 明星造句牆 ───
+let starSentences = []; // [{id, studentName, word, sentence, date}]
+
+function loadStarSentences(){
+  if(!(useCloud && db)) { renderStarSentenceWall(); return; }
+  db.ref('class306/starSentences').on('value', snap=>{
+    starSentences = snap.exists() ? Object.values(snap.val()||{}) : [];
+    starSentences.sort((a,b)=>(b.ts||0)-(a.ts||0));
+    renderStarSentenceWall();
+  });
+}
+
+function renderStarSentenceWall(){
+  const wrap = document.getElementById('starSentenceWallWrap');
+  const list = document.getElementById('starSentenceList');
+  if(!wrap || !list) return;
+  wrap.style.display = starSentences.length ? '' : 'none';
+  if(!starSentences.length){ list.innerHTML=''; return; }
+  list.innerHTML = starSentences.slice(0,10).map(s=>`
+    <div style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-radius:14px;padding:12px 16px;border-left:5px solid #a855f7;position:relative;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-weight:900;font-size:.88rem;color:#7c3aed;">✨ ${escHtml(s.studentName||'')}</span>
+        ${s.word?`<span style="background:#a855f7;color:#fff;border-radius:20px;padding:2px 10px;font-size:.74rem;font-weight:800;">${escHtml(s.word)}</span>`:''}
+        <span style="font-size:.7rem;color:#a78bfa;margin-left:auto;">${escHtml(s.date||'')}</span>
+      </div>
+      <div style="font-size:.95rem;color:#4c1d95;font-weight:700;line-height:1.6;">${escHtml(s.sentence||'')}</div>
+      <button onclick="deleteStarSentence('${s.id}')" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#c4b5fd;cursor:pointer;font-size:.8rem;padding:2px 6px;" title="刪除">✕</button>
+    </div>
+  `).join('');
+}
+
+function openAddStarSentenceModal(){
+  document.getElementById('starSentStudentName').value = '';
+  document.getElementById('starSentWord').value = '';
+  document.getElementById('starSentText').value = '';
+  openModal('starSentenceModal');
+  setTimeout(()=>document.getElementById('starSentStudentName').focus(), 100);
+}
+
+function submitStarSentence(){
+  const studentName = document.getElementById('starSentStudentName').value.trim();
+  const word = document.getElementById('starSentWord').value.trim();
+  const sentence = document.getElementById('starSentText').value.trim();
+  if(!sentence){ document.getElementById('starSentText').focus(); return; }
+  const id = generateId();
+  const today = new Date().toLocaleDateString('zh-TW');
+  const entry = { id, studentName, word, sentence, date: today, ts: Date.now() };
+  const done = ()=>{
+    starSentences.unshift(entry);
+    renderStarSentenceWall();
+    document.getElementById('starSentenceWallWrap').style.display = '';
+    closeModal('starSentenceModal');
+    toast(`✨ ${studentName || '同學'} 的造句已貼上明星造句牆！`);
+  };
+  if(useCloud && db){
+    db.ref(`class306/starSentences/${id}`).set(entry).then(done).catch(done);
+  } else { done(); }
+}
+
+function deleteStarSentence(id){
+  if(useCloud && db) db.ref(`class306/starSentences/${id}`).remove().catch(()=>{});
+  starSentences = starSentences.filter(s=>s.id!==id);
+  renderStarSentenceWall();
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── 組別對戰 + 爬格子 ───
+const BATTLE_TOTAL_CELLS = 15; // 爬格子終點格數
+let battleState = { groupA: null, groupB: null, posA: 0, posB: 0, timer: 30, running: false, intervalId: null };
+
+function populateBattleGroupSelects(){
+  const selectA = document.getElementById('battleGroupA');
+  const selectB = document.getElementById('battleGroupB');
+  if(!selectA || !selectB) return;
+  const groups = mutualAidGroups && mutualAidGroups.length ? mutualAidGroups : [];
+  const opts = groups.map((g,i)=>`<option value="${i}">${escHtml(g.name||'第'+(i+1)+'組')}</option>`).join('');
+  const defaultOpts = opts || '<option value="0">藍隊</option><option value="1">紅隊</option>';
+  selectA.innerHTML = defaultOpts;
+  selectB.innerHTML = defaultOpts;
+  if(selectB.options.length > 1) selectB.selectedIndex = 1;
+  updateBattleGroupNames();
+}
+
+function updateBattleGroupNames(){
+  const selectA = document.getElementById('battleGroupA');
+  const selectB = document.getElementById('battleGroupB');
+  const nameA = document.getElementById('battleGroupAName');
+  const nameB = document.getElementById('battleGroupBName');
+  if(!selectA || !nameA) return;
+  const groups = mutualAidGroups && mutualAidGroups.length ? mutualAidGroups : [];
+  const getLabel = (sel) => {
+    const idx = parseInt(sel.value);
+    return groups[idx] ? (groups[idx].name || '第'+(idx+1)+'組') : sel.options[sel.selectedIndex]?.text || '隊伍';
+  };
+  if(nameA) nameA.textContent = getLabel(selectA);
+  if(nameB) nameB.textContent = getLabel(selectB);
+  battleState.groupA = nameA?.textContent || 'A組';
+  battleState.groupB = nameB?.textContent || 'B組';
+  renderLadderBoard();
+}
+
+function randomizeBattleGroups(){
+  const selectA = document.getElementById('battleGroupA');
+  const selectB = document.getElementById('battleGroupB');
+  if(!selectA || !selectB || selectA.options.length < 2) return;
+  let a, b;
+  do { a = Math.floor(Math.random()*selectA.options.length); } while(false);
+  do { b = Math.floor(Math.random()*selectB.options.length); } while(b === a && selectB.options.length > 1);
+  selectA.selectedIndex = a;
+  selectB.selectedIndex = b;
+  updateBattleGroupNames();
+  resetBattleGame(false);
+  toast(`⚔️ 本輪對戰：${selectA.options[a].text} VS ${selectB.options[b].text}！`);
+}
+
+function setBattleTimer(secs){
+  resetBattleTimer();
+  battleState.timer = secs;
+  document.getElementById('battleTimerDisplay').textContent = secs;
+}
+
+function startBattleTimer(){
+  if(battleState.running) return;
+  battleState.running = true;
+  document.getElementById('battleStartBtn').textContent = '⏸ 暫停中';
+  battleState.intervalId = setInterval(()=>{
+    battleState.timer--;
+    document.getElementById('battleTimerDisplay').textContent = battleState.timer;
+    if(battleState.timer <= 0){
+      clearInterval(battleState.intervalId);
+      battleState.running = false;
+      document.getElementById('battleStartBtn').textContent = '▶ 開始';
+      document.getElementById('battleTimerDisplay').textContent = '時間到！';
+      toast('⏰ 時間到！');
+      try{ const ctx=new AudioContext(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.setValueAtTime(880,ctx.currentTime); g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.8); o.start(); o.stop(ctx.currentTime+0.8); }catch(e){}
+    }
+  }, 1000);
+}
+
+function resetBattleTimer(){
+  if(battleState.intervalId) clearInterval(battleState.intervalId);
+  battleState.running = false;
+  const btn = document.getElementById('battleStartBtn');
+  if(btn) btn.textContent = '▶ 開始';
+  const disp = document.getElementById('battleTimerDisplay');
+  if(disp) disp.textContent = battleState.timer;
+}
+
+function battleScore(team){
+  if(team === 'A'){
+    battleState.posA = Math.min(battleState.posA + 1, BATTLE_TOTAL_CELLS);
+    document.getElementById('battleGroupAPos').textContent = battleState.posA;
+  } else {
+    battleState.posB = Math.min(battleState.posB + 1, BATTLE_TOTAL_CELLS);
+    document.getElementById('battleGroupBPos').textContent = battleState.posB;
+  }
+  renderLadderBoard();
+  if(battleState.posA >= BATTLE_TOTAL_CELLS || battleState.posB >= BATTLE_TOTAL_CELLS){
+    const winner = battleState.posA >= BATTLE_TOTAL_CELLS ? battleState.groupA : battleState.groupB;
+    resetBattleTimer();
+    toast(`🏆 ${winner} 先到終點，贏得本輪對戰！按「結算獎勵」發放星星`);
+    setTimeout(confetti, 200);
+  }
+}
+
+function renderLadderBoard(){
+  const board = document.getElementById('ladderBoard');
+  if(!board) return;
+  const posA = battleState.posA;
+  const posB = battleState.posB;
+  const nameA = battleState.groupA || '藍隊';
+  const nameB = battleState.groupB || '紅隊';
+  const cells = [];
+  for(let i = 0; i <= BATTLE_TOTAL_CELLS; i++){
+    const hasA = posA === i;
+    const hasB = posB === i;
+    const isEnd = i === BATTLE_TOTAL_CELLS;
+    const isStart = i === 0;
+    let bg = isEnd ? 'linear-gradient(135deg,#fbbf24,#f59e0b)' : isStart ? '#f1f5f9' : '#fff';
+    let border = isEnd ? '2px solid #f59e0b' : '2px solid #e2e8f0';
+    let content = '';
+    if(isEnd) content = '🏁';
+    else if(isStart) content = 'START';
+    if(hasA && hasB) content += '<span style="font-size:1.1rem;">🔵🔴</span>';
+    else if(hasA) content += '<span style="font-size:1.3rem;">🔵</span>';
+    else if(hasB) content += '<span style="font-size:1.3rem;">🔴</span>';
+    cells.push(`<div style="min-width:40px;height:44px;background:${bg};border:${border};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#555;position:relative;flex-shrink:0;">${i===0?'出發':i===BATTLE_TOTAL_CELLS?'🏁':i}<br>${(hasA||hasB)?content:''}</div>`);
+  }
+  board.innerHTML = `
+    <div style="display:flex;gap:4px;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:.8rem;font-weight:800;color:#2563eb;">🔵 ${escHtml(nameA)}</span>
+      <span style="font-size:.8rem;font-weight:800;color:#dc2626;">🔴 ${escHtml(nameB)}</span>
+    </div>
+    <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;">${cells.join('')}</div>
+  `;
+}
+
+function resetBattleGame(showToast=true){
+  battleState.posA = 0;
+  battleState.posB = 0;
+  document.getElementById('battleGroupAPos').textContent = '0';
+  document.getElementById('battleGroupBPos').textContent = '0';
+  resetBattleTimer();
+  renderLadderBoard();
+  if(showToast) toast('🔄 爬格子已重設，準備好就開始！');
+}
+
+function awardBattleWinner(){
+  const posA = battleState.posA;
+  const posB = battleState.posB;
+  if(posA === 0 && posB === 0){ toast('還沒開始對戰，沒有結算喔！'); return; }
+  const nameA = battleState.groupA || '藍隊';
+  const nameB = battleState.groupB || '紅隊';
+  if(posA === posB){ toast(`平手！${nameA} 和 ${nameB} 都很厲害！`); return; }
+  const winner = posA > posB ? nameA : nameB;
+  toast(`🏆 本輪贏家：${winner}！可手動在夥伴名冊給組員加星星。`);
+}
+
 // ─── WHEEL ───
 // 顏色對應下方「獎勵清單說明」的四大類，方便老師和學生一眼對照
 // ─── 鼓勵小卡內容庫 ───
@@ -12204,6 +12670,10 @@ async function initApp() {
   try { setTimeout(checkWeeklyGameAwards, 2000); } catch(e) { console.warn('週進步獎勵初始化失敗', e); }
   // 載入今日日記題目（如果有同學抽到並設定過）
   try { loadDiaryPrompt(); } catch(e) { console.warn('日記題目載入失敗', e); }
+  // 載入明星造句牆
+  try { loadStarSentences(); } catch(e) { console.warn('明星造句牆載入失敗', e); }
+  // 初始化組別對戰選單（等 mutualAidGroups 資料載入後）
+  try { setTimeout(()=>{ populateBattleGroupSelects(); renderLadderBoard(); }, 1500); } catch(e) { console.warn('組別對戰初始化失敗', e); }
   // 載入非洲海報任務
   try { loadAfricaTasks(); } catch(e) { console.warn('Africa tasks init failed', e); }
 
