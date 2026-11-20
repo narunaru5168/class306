@@ -1385,41 +1385,6 @@ document.body && (document.body.scrollLeft = 0);
     <div id="classTrophyList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 
-  <!-- ════════════════ 明星造句牆 ════════════════ -->
-  <div id="starSentenceWallWrap" style="margin-top:16px;display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-      <div style="font-weight:900;font-size:1.05rem;color:#7c3aed;">✨ 明星造句牆</div>
-      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.78rem;padding:5px 14px;" onclick="openAddStarSentenceModal()">＋ 新增造句</button>
-    </div>
-    <div id="starSentenceList" style="display:flex;flex-direction:column;gap:8px;"></div>
-  </div>
-
-  <!-- 新增造句 Modal -->
-  <div id="starSentenceModal" class="modal" style="display:none;">
-    <div class="modal-backdrop" onclick="closeModal('starSentenceModal')"></div>
-    <div class="modal-box" style="max-width:420px;">
-      <div style="font-weight:900;font-size:1.1rem;color:#7c3aed;margin-bottom:14px;">✨ 新增明星造句</div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">同學姓名</label>
-        <input id="starSentStudentName" type="text" placeholder="例如：王小明"
-          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">使用的語詞</label>
-        <input id="starSentWord" type="text" placeholder="例如：五彩繽紛"
-          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
-      </div>
-      <div style="margin-bottom:14px;">
-        <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">精彩造句</label>
-        <textarea id="starSentText" rows="3" placeholder="請輸入精彩的造句內容"
-          style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;resize:vertical;"></textarea>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button class="btn" style="background:#f1f5f9;color:#555;" onclick="closeModal('starSentenceModal')">取消</button>
-        <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;" onclick="submitStarSentence()">張貼上牆 🌟</button>
-      </div>
-    </div>
-  </div>
 
   <div class="card" style="margin-top:24px;cursor:pointer;background:linear-gradient(135deg,#fef9c3,#fde68a);border-left:6px solid var(--sun);"
        onclick="const p=document.getElementById('dutyRolePanel'); p.style.display = p.style.display==='none' ? 'block' : 'none'; this.querySelector('.arrow').textContent = p.style.display==='none' ? '▼' : '▲';">
@@ -2016,62 +1981,7 @@ document.body && (document.body.scrollLeft = 0);
   <div class="lead">學生在數學練習遊戲頁面選了自己的名字之後，紀錄就會同步到這裡（選擇搶答／計時衝刺比各單元最高分）。</div>
   <div id="mathGameLeaderboard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;align-content:start;margin-top:10px;"></div>
 
-  <!-- ════════════════ 組別對戰 + 爬格子 ════════════════ -->
-  <div style="margin-top:32px;">
-    <div class="section-title">⚔️ 語詞組別對戰</div>
-    <div class="lead">隨機配對兩組，限時搶答語詞意思，答對往前走一格，先到終點的組別獲勝！</div>
-
-    <!-- 設定區 -->
-    <div class="card" style="margin-top:12px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:5px solid #3b82f6;">
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-        <div style="font-weight:800;color:#1d4ed8;font-size:.95rem;">選擇對戰組別</div>
-        <select id="battleGroupA" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
-        <div style="font-weight:900;color:#1d4ed8;">VS</div>
-        <select id="battleGroupB" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
-        <button class="btn" style="background:#3b82f6;color:#fff;padding:6px 16px;font-size:.82rem;" onclick="randomizeBattleGroups()">🎲 隨機配對</button>
-      </div>
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
-        <div style="font-size:.82rem;color:#3b82f6;font-weight:700;">倒計時：</div>
-        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(30)">30秒</button>
-        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(60)">1分鐘</button>
-        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(90)">1分30秒</button>
-        <div id="battleTimerDisplay" style="font-size:1.5rem;font-weight:900;font-family:'Courier New',monospace;color:#1d4ed8;min-width:60px;text-align:center;">30</div>
-        <button class="btn" style="background:#3b82f6;color:#fff;padding:5px 14px;font-size:.82rem;" onclick="startBattleTimer()" id="battleStartBtn">▶ 開始</button>
-        <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;padding:5px 14px;font-size:.82rem;" onclick="resetBattleTimer()">↺ 重設</button>
-      </div>
-    </div>
-
-    <!-- 爬格子視覺 + 加分 -->
-    <div class="card" style="margin-top:10px;">
-      <!-- 爬格子棋盤 -->
-      <div id="ladderBoard" style="margin-bottom:16px;"></div>
-
-      <!-- 加分操作 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <!-- 組A -->
-        <div style="text-align:center;">
-          <div id="battleGroupAName" style="font-weight:900;font-size:1rem;color:#2563eb;margin-bottom:6px;">A組</div>
-          <div id="battleGroupAPos" style="font-size:2rem;font-weight:900;color:#2563eb;margin-bottom:8px;">0</div>
-          <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
-          <button class="btn" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('A')">✅ 答對 ＋1格</button>
-        </div>
-        <!-- 組B -->
-        <div style="text-align:center;">
-          <div id="battleGroupBName" style="font-weight:900;font-size:1rem;color:#dc2626;margin-bottom:6px;">B組</div>
-          <div id="battleGroupBPos" style="font-size:2rem;font-weight:900;color:#dc2626;margin-bottom:8px;">0</div>
-          <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
-          <button class="btn" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('B')">✅ 答對 ＋1格</button>
-        </div>
-      </div>
-
-      <!-- 控制 -->
-      <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn" style="background:#f1f5f9;color:#555;font-size:.8rem;padding:6px 16px;" onclick="resetBattleGame()">🔄 重新開始</button>
-        <button class="btn" style="background:#fff;border:2px solid #fbbf24;color:#b45309;font-size:.8rem;padding:6px 16px;" onclick="awardBattleWinner()">🏆 結算獎勵</button>
-      </div>
-    </div>
   </div>
-</div>
 
 <!-- ─────────────── CORRECTION TRACKER ─────────────── -->
 <div id="page-correction" class="page">
@@ -2271,7 +2181,95 @@ document.body && (document.body.scrollLeft = 0);
     <button class="btn" style="background:#fee2e2;color:#dc2626;font-size:.78rem;padding:6px 14px;" onclick="resetDrawRound()">🔄 重新開始一輪</button>
   </div>
   <div id="drawnList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+
+<!-- ════════════════ 明星造句牆（搬到抽籤筒頁） ════════════════ -->
+<div id="starSentenceWallWrap" style="margin-top:0;display:none;">
+  <div style="display:flex;align-items:center;margin-bottom:16px;padding-top:8px;">
+    <span class="section-title" style="margin-bottom:0;">✨ 明星造句牆</span>
+    <div style="flex:1;"></div>
+    <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-size:.78rem;padding:5px 14px;" onclick="openAddStarSentenceModal()">＋ 新增造句</button>
+  </div>
+  <div id="starSentenceList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
 </div>
+
+<!-- 新增造句 Modal -->
+<div id="starSentenceModal" class="modal" style="display:none;">
+  <div class="modal-backdrop" onclick="closeModal('starSentenceModal')"></div>
+  <div class="modal-box" style="max-width:420px;">
+    <div style="font-weight:900;font-size:1.1rem;color:#7c3aed;margin-bottom:14px;">✨ 新增明星造句</div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">同學姓名</label>
+      <input id="starSentStudentName" type="text" placeholder="例如：王小明"
+        style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">使用的語詞</label>
+      <input id="starSentWord" type="text" placeholder="例如：五彩繽紛"
+        style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.8rem;font-weight:700;color:#555;display:block;margin-bottom:4px;">精彩造句</label>
+      <textarea id="starSentText" rows="3" placeholder="請輸入精彩的造句內容"
+        style="width:100%;box-sizing:border-box;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:.9rem;font-family:inherit;resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" style="background:#f1f5f9;color:#555;" onclick="closeModal('starSentenceModal')">取消</button>
+      <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;" onclick="submitStarSentence()">張貼上牆 🌟</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ 組別對戰 + 爬格子（搬到抽籤筒頁） ════════════════ -->
+<div id="battleSection" style="margin-top:0;">
+  <div style="display:flex;align-items:center;margin-bottom:16px;padding-top:8px;">
+    <span class="section-title" style="margin-bottom:0;">⚔️ 語詞組別對戰</span>
+  </div>
+  <div class="lead" style="margin-bottom:12px;">隨機配對兩組，限時搶答語詞意思，答對往前走一格，先到終點的組別獲勝！</div>
+
+  <!-- 設定區 -->
+  <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:5px solid #3b82f6;">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+      <div style="font-weight:800;color:#1d4ed8;font-size:.95rem;">選擇對戰組別</div>
+      <select id="battleGroupA" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
+      <div style="font-weight:900;color:#1d4ed8;">VS</div>
+      <select id="battleGroupB" style="border:2px solid #93c5fd;border-radius:8px;padding:5px 10px;font-family:inherit;font-size:.85rem;color:#1e40af;"></select>
+      <button class="btn" style="background:#3b82f6;color:#fff;padding:6px 16px;font-size:.82rem;" onclick="randomizeBattleGroups()">🎲 隨機配對</button>
+    </div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:.82rem;color:#3b82f6;font-weight:700;">倒計時：</div>
+      <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(30)">30秒</button>
+      <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(60)">1分鐘</button>
+      <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;font-size:.8rem;padding:4px 12px;" onclick="setBattleTimer(90)">1分30秒</button>
+      <div id="battleTimerDisplay" style="font-size:1.5rem;font-weight:900;font-family:'Courier New',monospace;color:#1d4ed8;min-width:60px;text-align:center;">30</div>
+      <button class="btn" style="background:#3b82f6;color:#fff;padding:5px 14px;font-size:.82rem;" onclick="startBattleTimer()" id="battleStartBtn">▶ 開始</button>
+      <button class="btn" style="background:#fff;border:2px solid #93c5fd;color:#1d4ed8;padding:5px 14px;font-size:.82rem;" onclick="resetBattleTimer()">↺ 重設</button>
+    </div>
+  </div>
+
+  <!-- 爬格子視覺 + 加分 -->
+  <div class="card" style="margin-top:10px;">
+    <div id="ladderBoard" style="margin-bottom:16px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="text-align:center;">
+        <div id="battleGroupAName" style="font-weight:900;font-size:1rem;color:#2563eb;margin-bottom:6px;">A組</div>
+        <div id="battleGroupAPos" style="font-size:2rem;font-weight:900;color:#2563eb;margin-bottom:8px;">0</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
+        <button class="btn" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('A')">✅ 答對 ＋1格</button>
+      </div>
+      <div style="text-align:center;">
+        <div id="battleGroupBName" style="font-weight:900;font-size:1rem;color:#dc2626;margin-bottom:6px;">B組</div>
+        <div id="battleGroupBPos" style="font-size:2rem;font-weight:900;color:#dc2626;margin-bottom:8px;">0</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-bottom:8px;">格</div>
+        <button class="btn" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;font-size:1rem;padding:10px 24px;width:100%;" onclick="battleScore('B')">✅ 答對 ＋1格</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn" style="background:#f1f5f9;color:#555;font-size:.8rem;padding:6px 16px;" onclick="resetBattleGame()">🔄 重新開始</button>
+      <button class="btn" style="background:#fff;border:2px solid #fbbf24;color:#b45309;font-size:.8rem;padding:6px 16px;" onclick="awardBattleWinner()">🏆 結算獎勵</button>
+    </div>
+  </div>
+</div>
+</div><!-- end page-draw -->
 
 <!-- ─────────────── SEATING CHART ─────────────── -->
 <div id="page-seating" class="page">
@@ -3105,6 +3103,7 @@ document.body && (document.body.scrollLeft = 0);
           </td>
           <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲本生字</strong><br><span style="font-size:.72rem;color:#94a3b8;">（描紅＋仿寫）</span></td>
           <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
             <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 學生猜對生字意思</div>
             <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答活動</div>
           </td>
@@ -3120,8 +3119,9 @@ document.body && (document.body.scrollLeft = 0);
           </td>
           <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲乙本語詞</strong></td>
           <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 組別對戰</span> 排行榜頁面最下方</div>
-            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">🔵🔴 爬格子</span> 對戰得分視覺化</div>
+            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
+            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 組別對戰</span> 計時器＋隨機配對</div>
+            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">🔵🔴 爬格子</span> 得分視覺化賽道</div>
             <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🏆 結算獎勵</span> 獲勝組全員 +2顆星</div>
           </td>
         </tr>
@@ -3140,8 +3140,8 @@ document.body && (document.body.scrollLeft = 0);
           </td>
           <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>造詞造句</strong><br><span style="font-size:.72rem;color:#94a3b8;">（有條件版，<br>5–8個語詞）</span></td>
           <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="margin-bottom:6px;"><span style="background:#fce7f3;color:#be185d;border-radius:8px;padding:2px 7px;font-weight:700;">✨ 明星造句牆</span> 首頁下方</div>
-            <div style="margin-bottom:6px;font-size:.76rem;color:#555;">→ 新增造句：姓名＋語詞＋內容</div>
+            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
+            <div style="margin-bottom:6px;"><span style="background:#fce7f3;color:#be185d;border-radius:8px;padding:2px 7px;font-weight:700;">✨ 明星造句牆</span> 展示＋新增造句</div>
             <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 作者 +2顆星</div>
           </td>
         </tr>
@@ -3157,9 +3157,10 @@ document.body && (document.body.scrollLeft = 0);
           </td>
           <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>國語作業簿</strong></td>
           <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
+            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
             <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答</div>
             <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 爬格子</span> 若有剩餘時間</div>
-            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🎲 抽抽樂</span> 隨機選人</div>
+            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🎲 抽籤筒</span> 隨機選人</div>
           </td>
         </tr>
         <!-- 週五 -->
@@ -3200,9 +3201,9 @@ document.body && (document.body.scrollLeft = 0);
           </div>
         </div>
         <div style="background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #bbf7d0;">
-          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✨ 本次新增</div>
+          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✨ 本次新增（全在抽籤筒）</div>
           <div style="color:#166534;line-height:1.8;">
-            ✨ 明星造句牆（首頁）<br>
+            ✨ 明星造句牆<br>
             ⚔️ 組別對戰計時器<br>
             🔵🔴 爬格子視覺賽道<br>
             🏆 對戰結算自動加星
