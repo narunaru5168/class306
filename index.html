@@ -2341,6 +2341,49 @@ document.body && (document.body.scrollLeft = 0);
 </div>
 </div><!-- end page-draw -->
 
+<!-- ══════════════════════════════════════════════════════════
+     ⭐ 造句展示頁（全螢幕投影用）
+══════════════════════════════════════════════════════════ -->
+<div id="page-starshow" class="page">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <span class="section-title" style="margin-bottom:0;">⭐ 明星造句展示台</span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;color:#7c3aed;cursor:pointer;">
+        <input type="checkbox" id="starShowAutoAdv" style="accent-color:#7c3aed;" onchange="toggleStarShowAuto()">
+        每 <input id="starShowInterval" type="number" value="6" min="2" max="30"
+          style="width:38px;border:1.5px solid #c4b5fd;border-radius:6px;padding:2px 4px;font-size:.8rem;text-align:center;"> 秒自動換頁
+      </label>
+      <button class="btn" style="background:#7c3aed;color:#fff;font-size:.78rem;padding:5px 14px;" onclick="enterStarShowFullscreen()">⛶ 全螢幕</button>
+    </div>
+  </div>
+
+  <!-- 主展示區 -->
+  <div id="starShowStage"
+    style="background:linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95);border-radius:20px;min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px;position:relative;overflow:hidden;cursor:pointer;"
+    onclick="starShowNav(1)">
+    <!-- 裝飾星星 -->
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;">
+      <div style="position:absolute;font-size:2rem;opacity:.12;top:8%;left:5%;">✦</div>
+      <div style="position:absolute;font-size:1.5rem;opacity:.10;top:15%;right:8%;">✦</div>
+      <div style="position:absolute;font-size:3rem;opacity:.08;bottom:12%;left:12%;">✦</div>
+      <div style="position:absolute;font-size:1.8rem;opacity:.10;bottom:8%;right:5%;">✦</div>
+    </div>
+    <div id="starShowContent" style="text-align:center;position:relative;z-index:1;width:100%;max-width:700px;">
+      <div style="color:#c4b5fd;font-size:.9rem;">切換到此頁後自動顯示最新造句</div>
+    </div>
+  </div>
+
+  <!-- 導航列 -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:14px;">
+    <button class="btn" style="background:#ede9fe;color:#7c3aed;font-size:1.1rem;padding:7px 20px;" onclick="starShowNav(-1);event.stopPropagation()">◀ 上一則</button>
+    <div id="starShowCounter" style="font-size:.82rem;color:#7c3aed;min-width:80px;text-align:center;font-weight:700;"></div>
+    <button class="btn" style="background:#ede9fe;color:#7c3aed;font-size:1.1rem;padding:7px 20px;" onclick="starShowNav(1);event.stopPropagation()">下一則 ▶</button>
+  </div>
+
+  <!-- 縮圖列 -->
+  <div id="starShowThumbs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center;"></div>
+</div>
+
 <!-- ─────────────── SEATING CHART ─────────────── -->
 <div id="page-seating" class="page">
   <div id="seatingNormalControls">
@@ -5616,11 +5659,11 @@ let readingLogMoodSelected = '😊';
 let currentPageName = 'home';
 let navLabels = {};
 const NAV_KEYS_ROW1 = ['home','students','grades','missions','reward','rank'];
-const NAV_KEYS_ROW2 = ['weekly','correction','draw','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay','africa','writing'];
+const NAV_KEYS_ROW2 = ['weekly','correction','draw','starshow','seating','cleaning','teachingplan','mutualaid','officers','classfund','essay','africa','writing'];
 const NAV_DEFAULTS = {
   home:'🏕️ 冒險基地', students:'🐾 夥伴名冊', grades:'📜 成長紀錄',
   missions:'⚔️ 成長試煉', reward:'✨ 潛能抽選', rank:'🏆 獵人排名',
-  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支', essay:'✍️ 作文批改', africa:'🌍 海報任務', writing:'📝 練習字庫'
+  weekly:'📅 本週事項', correction:'📝 任務追蹤', draw:'🎯 抽籤筒', starshow:'⭐ 造句展示', seating:'🪑 座位表', cleaning:'🧹 打掃工作', teachingplan:'📋 教學進度', mutualaid:'🤝 互助小組', officers:'🎗️ 班級幹部', classfund:'💰 班費收支', essay:'✍️ 作文批改', africa:'🌍 海報任務', writing:'📝 練習字庫'
 };
 const SITE_TITLE_DEFAULT = '🐾 成長獵人訓練所';
 let siteTitle = SITE_TITLE_DEFAULT;
@@ -6096,6 +6139,7 @@ function showPage(name) {
   if(name==='correction') renderCorrectionTrackers();
   if(name==='weekly') { renderWeeklyTodoList(); renderReadingLogList(); }
   if(name==='draw') renderDrawState();
+  if(name==='starshow') renderStarShowPage();
   if(name==='seating') renderSeatingChart();
   if(name==='cleaning') renderCleaningZones();
   if(name==='mutualaid') renderMutualAidGroups();
@@ -8398,6 +8442,81 @@ function renderDrawState(){
   listEl.innerHTML = drawnStudents.length
     ? drawnStudents.map(s=>`<span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:700;">${s.seatNo||''}號 ${s.name}</span>`).join('')
     : `<div style="font-size:.8rem;color:#cbd5e1;">還沒有人被抽過</div>`;
+}
+
+// ─── 造句展示台 ───
+let starShowIndex = 0;
+let starShowAutoTimer = null;
+
+function renderStarShowPage(){
+  starShowIndex = Math.min(starShowIndex, Math.max(0, starSentences.length-1));
+  renderStarShowCard();
+  renderStarShowThumbs();
+}
+
+function renderStarShowCard(){
+  const content = document.getElementById('starShowContent');
+  const counter = document.getElementById('starShowCounter');
+  if(!content) return;
+  if(!starSentences.length){
+    content.innerHTML = '<div style="color:#c4b5fd;font-size:.95rem;padding:20px;">還沒有造句喔！<br>先到「🎯 抽籤筒」→「✨ 明星造句牆」→「＋ 新增造句」貼上第一句吧</div>';
+    if(counter) counter.textContent = '0 / 0';
+    return;
+  }
+  const s = starSentences[starShowIndex];
+  const highlighted = s.word
+    ? s.sentence.replace(s.word, `<span style="color:#fbbf24;font-weight:900;border-bottom:3px solid #fbbf24;padding:0 2px;">${s.word}</span>`)
+    : s.sentence;
+  content.innerHTML = `
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(251,191,36,.18);border:1.5px solid rgba(251,191,36,.4);border-radius:50px;padding:5px 16px;margin-bottom:20px;">
+      <span style="font-size:1.1rem;">⭐</span>
+      <span style="font-weight:900;color:#fde68a;font-size:.9rem;">${s.studentName || '同學'}</span>
+      ${s.word ? `<span style="color:#c4b5fd;font-size:.78rem;">｜語詞：</span><span style="color:#fbbf24;font-weight:800;font-size:.85rem;">${s.word}</span>` : ''}
+    </div>
+    <div style="font-size:clamp(1.2rem,3.5vw,1.8rem);font-weight:800;color:#fff;line-height:1.65;letter-spacing:.05em;">${highlighted}</div>
+    ${s.date ? `<div style="margin-top:16px;font-size:.75rem;color:#a78bfa;">${s.date}</div>` : ''}
+  `;
+  if(counter) counter.textContent = `${starShowIndex+1} / ${starSentences.length}`;
+}
+
+function renderStarShowThumbs(){
+  const wrap = document.getElementById('starShowThumbs');
+  if(!wrap) return;
+  wrap.innerHTML = starSentences.map((s,i)=>`
+    <button onclick="starShowJump(${i})" style="border:2px solid ${i===starShowIndex?'#a78bfa':'transparent'};background:${i===starShowIndex?'#ede9fe':'rgba(255,255,255,.08)'};border-radius:10px;padding:5px 11px;font-size:.75rem;cursor:pointer;color:${i===starShowIndex?'#7c3aed':'#c4b5fd'};font-weight:${i===starShowIndex?'800':'400'};">
+      ${s.studentName || '同學'}${s.word ? `・${s.word}` : ''}
+    </button>
+  `).join('');
+}
+
+function starShowNav(dir){
+  if(!starSentences.length) return;
+  starShowIndex = (starShowIndex + dir + starSentences.length) % starSentences.length;
+  renderStarShowCard();
+  renderStarShowThumbs();
+}
+
+function starShowJump(i){
+  starShowIndex = i;
+  renderStarShowCard();
+  renderStarShowThumbs();
+}
+
+function toggleStarShowAuto(){
+  const chk = document.getElementById('starShowAutoAdv');
+  if(chk && chk.checked){
+    const sec = parseInt(document.getElementById('starShowInterval')?.value)||6;
+    starShowAutoTimer = setInterval(()=>starShowNav(1), sec*1000);
+  } else {
+    if(starShowAutoTimer){ clearInterval(starShowAutoTimer); starShowAutoTimer=null; }
+  }
+}
+
+function enterStarShowFullscreen(){
+  const el = document.getElementById('starShowStage');
+  if(!el) return;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
 
 // ─── 炸彈計時器 ───
