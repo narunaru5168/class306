@@ -2182,8 +2182,76 @@ document.body && (document.body.scrollLeft = 0);
   </div>
   <div id="drawnList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
 
+<!-- ════════════════ 炸彈計時器 ════════════════ -->
+<div id="bombTimerSection" style="margin-top:20px;margin-bottom:4px;">
+  <!-- 說明卡 (collapsible) -->
+  <div class="card" style="cursor:pointer;background:linear-gradient(135deg,#fff7ed,#fed7aa);border-left:6px solid #ea580c;margin-bottom:0;"
+       onclick="const p=document.getElementById('bombExplain'); p.style.display=p.style.display==='none'?'block':'none'; this.querySelector('.barrow').textContent=p.style.display==='none'?'▼':'▲';">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-weight:800;font-size:.95rem;">💣 炸彈計時器——活動說明與規則</div>
+      <div class="barrow" style="font-size:1.1rem;">▼</div>
+    </div>
+  </div>
+  <div id="bombExplain" style="display:none;margin-bottom:12px;">
+    <div style="background:#fff7ed;border:1.5px solid #fed7aa;border-top:none;border-radius:0 0 12px 12px;padding:14px 16px;font-size:.82rem;line-height:1.75;">
+      <div style="font-weight:800;color:#c2410c;margin-bottom:6px;">🎯 設計理念</div>
+      <div style="margin-bottom:10px;color:#7c3f00;">老師悄悄設定一段隨機時間（例如 60〜180 秒），按下啟動後計時器在背景偷偷倒數。<br>學生不知道炸彈何時引爆——時間到，警報聲響起，系統自動抽出一位同學被點名作答。<br>正是這種「不確定感」讓每個人都必須專注，因為下一個可能就是自己。</div>
+      <div style="font-weight:800;color:#c2410c;margin-bottom:6px;">📋 使用方式</div>
+      <ol style="margin:0 0 10px 16px;padding:0;color:#7c3f00;">
+        <li>設定最短與最長秒數（建議 60〜180 秒）</li>
+        <li>勾選「顯示倒數」讓老師可在螢幕角落看到秒數（投影時可取消勾選，不讓學生猜）</li>
+        <li>按「💣 啟動炸彈」，接著正常上課</li>
+        <li>爆炸聲響起後，被抽到的同學必須回答當下的問題</li>
+        <li>答對得 ⭐，可搭配上方「不重複抽選」確保每人都有機會</li>
+      </ol>
+      <div style="font-weight:800;color:#c2410c;margin-bottom:6px;">📌 規則</div>
+      <div style="color:#7c3f00;line-height:1.8;">
+        ✅ <b>搭配不重複抽選</b>：勾選上方「不重複抽選」，炸彈爆炸時自動從「尚未被抽到」的同學中抽出<br>
+        ✅ <b>救援機制</b>：被抽到的同學可請求「求救」請組員補充，組員答出可幫組加 ⭐<br>
+        ✅ <b>加星</b>：答對者點上方「個人 +⭐」；若全組都很專注，點「小組 +⭐」<br>
+        ✅ <b>連爆</b>：老師可立即再按「💣 啟動炸彈」繼續下一輪隨機倒數
+      </div>
+    </div>
+  </div>
+
+  <!-- 操作卡 -->
+  <div class="card" style="background:linear-gradient(135deg,#1a0a00,#3b1200);border:2px solid #ea580c;padding:16px 18px;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div style="font-weight:900;font-size:1.05rem;color:#fb923c;">💣 炸彈計時器</div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;color:#fdba74;cursor:pointer;margin-left:auto;">
+        <input type="checkbox" id="bombShowCount" checked style="accent-color:#ea580c;">
+        顯示倒數（老師用）
+      </label>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:.8rem;color:#fdba74;white-space:nowrap;">隨機範圍</span>
+      <input id="bombMin" type="number" value="60" min="10" max="600"
+        style="width:70px;border:2px solid #ea580c;border-radius:8px;padding:5px 8px;font-size:.88rem;background:#2a0d00;color:#fff;text-align:center;">
+      <span style="color:#fdba74;font-size:.85rem;">〜</span>
+      <input id="bombMax" type="number" value="180" min="10" max="600"
+        style="width:70px;border:2px solid #ea580c;border-radius:8px;padding:5px 8px;font-size:.88rem;background:#2a0d00;color:#fff;text-align:center;">
+      <span style="font-size:.8rem;color:#fdba74;">秒</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button id="bombStartBtn" class="btn" style="background:linear-gradient(135deg,#dc2626,#ea580c);color:#fff;font-size:.9rem;padding:9px 20px;font-weight:800;"
+        onclick="startBombTimer()">💣 啟動炸彈</button>
+      <button id="bombStopBtn" class="btn" style="background:#374151;color:#9ca3af;font-size:.85rem;padding:9px 16px;" disabled
+        onclick="stopBombTimer()">⛔ 停止</button>
+      <div id="bombCountDisplay" style="font-size:1.6rem;font-weight:900;color:#fb923c;min-width:60px;text-align:center;letter-spacing:1px;display:none;">--</div>
+    </div>
+  </div>
+  <!-- 爆炸結果 -->
+  <div id="bombResultWrap" style="display:none;margin-bottom:4px;">
+    <div class="card" style="background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid #ef4444;text-align:center;padding:20px;">
+      <div style="font-size:2.5rem;margin-bottom:8px;" id="bombBoomEmoji">💥</div>
+      <div style="font-weight:900;font-size:.95rem;color:#fca5a5;margin-bottom:6px;">💣 炸彈爆炸！點名——</div>
+      <div id="bombResultName" style="font-size:1.6rem;font-weight:900;color:#fff;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════ 明星造句牆（搬到抽籤筒頁） ════════════════ -->
-<div id="starSentenceWallWrap" style="margin-top:0;display:none;">
+<div id="starSentenceWallWrap" style="margin-top:0;">
   <div style="display:flex;align-items:center;margin-bottom:16px;padding-top:8px;">
     <span class="section-title" style="margin-bottom:0;">✨ 明星造句牆</span>
     <div style="flex:1;"></div>
@@ -3069,152 +3137,219 @@ document.body && (document.body.scrollLeft = 0);
   </div>
   <div id="planChineseSOP" style="display:none;margin-bottom:16px;">
 
-    <!-- 設計理念 -->
+    <!-- ★ 新版設計理念 -->
     <div class="card" style="background:#faf5ff;border-left:4px solid #a855f7;padding:12px 16px;margin-bottom:12px;">
-      <div style="font-weight:900;font-size:.88rem;color:#7c3aed;margin-bottom:6px;">🧩 為什麼這樣設計？</div>
+      <div style="font-weight:900;font-size:.88rem;color:#7c3aed;margin-bottom:6px;">🧩 為什麼要這樣調整？</div>
       <div style="font-size:.82rem;color:#4c1d95;line-height:1.7;">
-        原本用組別輪流問答方式講語詞，常常週一講到週四還沒結束，修辭和課文理解幾乎沒有時間上。
-        新設計改為：<strong>限時切割</strong>（每段有明確上限）＋<strong>競爭驅動</strong>（組別對戰取代單純舉答）＋<strong>作品展示</strong>（造句上牆讓學生當作品寫），並搭配班網星星系統輔助計分。
+        原本問題：<strong>15個生字＋造詞＋語詞解釋把週一週二全吃掉</strong>，課文理解和修辭幾乎沒有時間。<br>
+        根本原因是串聯式設計——等生字全教完才讀課文，等課文讀完才教修辭，一個拖就全拖。<br><br>
+        新設計的兩個關鍵轉換：<br>
+        ① <strong>生字認讀 ≠ 語詞意思教學</strong>：認字形字音只需帶一遍，語詞意思讓學生先從課堂練習自己找，課堂只「競賽驗收」。<br>
+        ② <strong>課文不用等生字全教完才讀</strong>：從週一就開始讀，分4天推進，生字認識了就能讀，讀了反而幫助記憶。<br><br>
+        所有活動加分都在「<strong>🎯 抽籤筒</strong>」頁面操作，分組依首頁互助小組設定。
       </div>
     </div>
 
-    <!-- 週計畫表 -->
-    <div style="overflow-x:auto;margin-bottom:12px;">
-    <table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:580px;">
-      <thead>
-        <tr>
-          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:center;border:1px solid #e2e8f0;white-space:nowrap;">星期</th>
-          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:left;border:1px solid #e2e8f0;">課堂主軸（40分鐘）</th>
-          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:center;border:1px solid #e2e8f0;white-space:nowrap;">回家作業</th>
-          <th style="background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:8px 10px;text-align:left;border:1px solid #e2e8f0;">🔧 班網輔助功能</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- 週一 -->
-        <tr>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#faf5ff;white-space:nowrap;">一</td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
-            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">🔤 生字快攻（10分）</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">帶全班拼讀生字 → 請學生從上下文猜意思 → 猜對加星星<br><span style="color:#94a3b8;">不查字典、不背解釋，10分到就收</span></div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文第一遍（25分）</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">師生輪流朗讀 → 提問 2–3 個理解題 → 組別舉答加星星</div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📢 收尾佈達（5分）</div>
-            <div style="font-size:.78rem;color:#555;">預告明天語詞對戰主題，讓學生回家有動機預習</div>
-          </td>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲本生字</strong><br><span style="font-size:.72rem;color:#94a3b8;">（描紅＋仿寫）</span></td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
-            <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 學生猜對生字意思</div>
-            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答活動</div>
-          </td>
-        </tr>
-        <!-- 週二 -->
-        <tr style="background:#f8f4ff;">
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#f3ecff;white-space:nowrap;">二</td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
-            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">⚔️ 語詞對戰限時賽（15分）⭐</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">開班網組別對戰 → 設 30 秒計時 → 兩組各推一人搶答語詞意思<br>答對得分往前爬格，答不出換對方答（答對得 bonus）<br><span style="color:#dc2626;font-weight:700;">15分到就停，沒講到的改日補</span></div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文精讀（25分）</div>
-            <div style="font-size:.78rem;color:#555;">繼續閱讀課文第二、三段，提問討論，組別舉答加星星</div>
-          </td>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>甲乙本語詞</strong></td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
-            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 組別對戰</span> 計時器＋隨機配對</div>
-            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">🔵🔴 爬格子</span> 得分視覺化賽道</div>
-            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🏆 結算獎勵</span> 獲勝組全員 +2顆星</div>
-          </td>
-        </tr>
-        <!-- 週三 -->
-        <tr>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#faf5ff;white-space:nowrap;">三</td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
-            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">✨ 明星造句展示（5分）⭐</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">開班網明星造句牆 → 展示昨晚批改時選出的 2–3 句優秀造句<br>請全班念一遍，作者獲得 +2 顆星</div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📖 課文精讀後半（20分）</div>
-            <div style="font-size:.78rem;color:#555;">閱讀剩餘段落，組別輪流提問、回答</div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">🎨 修辭教學（10分）</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">找出本課 1–2 個修辭手法 → 老師示範造句 → 學生試造<br>優秀者直接上明星造句牆</div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📢 收尾（5分）</div>
-            <div style="font-size:.78rem;color:#555;">說明作業：造詞造句（有條件版）</div>
-          </td>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>造詞造句</strong><br><span style="font-size:.72rem;color:#94a3b8;">（有條件版，<br>5–8個語詞）</span></td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
-            <div style="margin-bottom:6px;"><span style="background:#fce7f3;color:#be185d;border-radius:8px;padding:2px 7px;font-weight:700;">✨ 明星造句牆</span> 展示＋新增造句</div>
-            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">加星星</span> 作者 +2顆星</div>
-          </td>
-        </tr>
-        <!-- 週四 -->
-        <tr style="background:#f8f4ff;">
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#7c3aed;background:#f3ecff;white-space:nowrap;">四</td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
-            <div style="font-weight:800;color:#4c1d95;margin-bottom:4px;">💬 課文理解提問（15分）</div>
-            <div style="font-size:.78rem;color:#555;line-height:1.6;">提 4–5 個深度問題（「你覺得⋯為什麼⋯」）<br>組別討論 10 秒後舉手，答得有創意者額外加星星</div>
-            <div style="font-weight:800;color:#4c1d95;margin-top:8px;margin-bottom:4px;">📓 國語作業簿（20–25分）</div>
-            <div style="font-size:.78rem;color:#555;">學生當堂完成，老師巡視批改、蓋章</div>
-            <div style="font-size:.76rem;color:#a855f7;margin-top:6px;font-weight:700;">🔵 若作業簿提前完成 → 開爬格子語詞複習（彈性）</div>
-          </td>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>國語作業簿</strong></td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;">
-            <div style="font-size:.76rem;color:#7c3aed;font-weight:700;margin-bottom:4px;">→ 抽籤筒頁面</div>
-            <div style="margin-bottom:6px;"><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">小組加星星</span> 組別舉答</div>
-            <div style="margin-bottom:6px;"><span style="background:#dbeafe;color:#1d4ed8;border-radius:8px;padding:2px 7px;font-weight:700;">⚔️ 爬格子</span> 若有剩餘時間</div>
-            <div><span style="background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 7px;font-weight:700;">🎲 抽籤筒</span> 隨機選人</div>
-          </td>
-        </tr>
-        <!-- 週五 -->
-        <tr>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#94a3b8;background:#f8fafc;white-space:nowrap;">五</td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;">
-            <div style="font-weight:700;color:#94a3b8;font-size:.82rem;">（本日無國語課）</div>
-          </td>
-          <td style="padding:10px;border:1px solid #e2e8f0;text-align:center;vertical-align:top;white-space:nowrap;"><strong>國習</strong></td>
-          <td style="padding:10px;border:1px solid #e2e8f0;vertical-align:top;font-size:.78rem;color:#94a3b8;">——</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 週作業對照 -->
+    <div class="card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:10px 16px;margin-bottom:12px;">
+      <div style="font-weight:900;font-size:.85rem;color:#166534;margin-bottom:6px;">📋 每週作業一覽（固定）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:.78rem;">
+        <span style="background:#bbf7d0;color:#166534;border-radius:8px;padding:3px 10px;font-weight:700;">週一 → 甲乙本生字</span>
+        <span style="background:#bbf7d0;color:#166534;border-radius:8px;padding:3px 10px;font-weight:700;">週二 → 甲乙本語詞</span>
+        <span style="background:#bbf7d0;color:#166534;border-radius:8px;padding:3px 10px;font-weight:700;">週三 → 造詞造句</span>
+        <span style="background:#bbf7d0;color:#166534;border-radius:8px;padding:3px 10px;font-weight:700;">週四 → 國語作業簿</span>
+        <span style="background:#d1fae5;color:#166534;border-radius:8px;padding:3px 10px;">週五 → 國語習作（無課）</span>
+      </div>
+    </div>
+
+    <!-- 四天詳細流程 -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;">
+
+      <!-- 週一 -->
+      <div class="card" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-left:5px solid #7c3aed;padding:12px 16px;">
+        <div style="font-weight:900;font-size:.92rem;color:#6d28d9;margin-bottom:10px;">📅 週一｜生字上半（1–8）＋ 課文導入</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#7c3aed;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">10分</span>
+            <div style="font-size:.82rem;color:#4c1d95;">
+              <strong>生字快攻 1~8</strong>：老師帶拼讀，學生猜字意（查課堂練習），猜對加星星<br>
+              <span style="color:#94a3b8;font-size:.76rem;">10分到就收，不逐字解釋造詞意思</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#7c3aed;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">20分</span>
+            <div style="font-size:.82rem;color:#4c1d95;">
+              <strong>課文朗讀 P1~P3</strong>：師生輪流，抽籤筒選人，提 2 題理解問答，答對組別加星星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#7c3aed;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">10分</span>
+            <div style="font-size:.82rem;color:#4c1d95;">
+              <strong>課堂練習「語詞解釋」預填</strong>：學生對著課文自己找，不教，讓他們帶著問題回家預習<br>
+              <span style="color:#94a3b8;font-size:.76rem;">翻轉：有準備才能參加週二的對戰</span>
+            </div>
+          </div>
+
+          <div style="background:#ede9fe;border-radius:8px;padding:6px 10px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;font-size:.76rem;">
+            <span style="color:#7c3aed;font-weight:800;">🎯 抽籤筒：</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#4c1d95;">抽籤選人朗讀</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#4c1d95;">個人加星星（猜對生字意思）</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#4c1d95;">小組加星星（理解問答）</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 週二 -->
+      <div class="card" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left:5px solid #2563eb;padding:12px 16px;">
+        <div style="font-weight:900;font-size:.92rem;color:#1d4ed8;margin-bottom:10px;">📅 週二｜生字下半（9–15）＋ ⚔️ 語詞組別對戰</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#2563eb;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">10分</span>
+            <div style="font-size:.82rem;color:#1e3a8a;">
+              <strong>生字快攻 9~15</strong>：同週一方式，猜對加星星，10分到就收
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#2563eb;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">15分</span>
+            <div style="font-size:.82rem;color:#1e3a8a;">
+              <strong>⚔️ 語詞組別對戰</strong>：學生昨天已填語詞解釋，現在拿來競賽！<br>
+              開抽籤筒隨機配對兩組 → 設 30 秒計時 → 老師唸語詞，兩組搶答意思或造句<br>
+              答對爬格子前進，15分到就停，獲勝組全員 +2顆星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#2563eb;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">10分</span>
+            <div style="font-size:.82rem;color:#1e3a8a;">
+              <strong>課文朗讀 P4~P6</strong>：繼續推進，抽籤筒選人，2 題理解問答，組別加星星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#2563eb;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">5分</span>
+            <div style="font-size:.82rem;color:#1e3a8a;">
+              課堂練習「成語/短語」快速帶過，請回家看，週四組別搶答驗收
+            </div>
+          </div>
+
+          <div style="background:#dbeafe;border-radius:8px;padding:6px 10px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;font-size:.76rem;">
+            <span style="color:#1d4ed8;font-weight:800;">🎯 抽籤筒：</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#1e3a8a;">隨機配對組別對戰</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#1e3a8a;">30秒計時器</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#1e3a8a;">🔵🔴 爬格子</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#1e3a8a;">🏆 結算→獲勝組 +2星</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#1e3a8a;">抽籤選人朗讀</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 週三 -->
+      <div class="card" style="background:linear-gradient(135deg,#fdf4ff,#fae8ff);border-left:5px solid #a855f7;padding:12px 16px;">
+        <div style="font-weight:900;font-size:.92rem;color:#9333ea;margin-bottom:10px;">📅 週三｜✨ 明星造句展示 ＋ 修辭教學</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#a855f7;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">5分</span>
+            <div style="font-size:.82rem;color:#581c87;">
+              <strong>✨ 明星造句牆展示</strong>：批改後選 2~3 句優秀造句，全班朗讀，作者 +2顆星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#a855f7;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">15分</span>
+            <div style="font-size:.82rem;color:#581c87;">
+              <strong>課文深讀後半</strong>：討論主旨、深度問答（「你覺得為什麼⋯？」）<br>
+              組別輪流舉答，答得有創意加星星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#a855f7;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">15分</span>
+            <div style="font-size:.82rem;color:#581c87;">
+              <strong>修辭教學</strong>：本課 1~2 個修辭 → 課堂練習「修辭/造句」部分當堂做<br>
+              老師示範 → 學生討論 → 優秀造句直接抽籤筒「新增造句」貼上牆，作者 +2星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#a855f7;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">5分</span>
+            <div style="font-size:.82rem;color:#581c87;">
+              說明作業：造詞造句（選 5~8 個語詞有條件版），批改後將選出造句貼牆
+            </div>
+          </div>
+
+          <div style="background:#fae8ff;border-radius:8px;padding:6px 10px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;font-size:.76rem;">
+            <span style="color:#9333ea;font-weight:800;">🎯 抽籤筒：</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#581c87;">✨ 明星造句牆展示＋新增</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#581c87;">個人加星星（造句作者）</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#581c87;">小組加星星（深度問答）</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#581c87;">抽籤選人</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 週四 -->
+      <div class="card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);border-left:5px solid #f97316;padding:12px 16px;">
+        <div style="font-weight:900;font-size:.92rem;color:#c2410c;margin-bottom:10px;">📅 週四｜課堂練習掃尾 ＋ 國語作業簿</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#f97316;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">3分</span>
+            <div style="font-size:.82rem;color:#7c2d12;">
+              明星造句牆展示（前一天批改新造句），作者 +2顆星
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#f97316;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">12分</span>
+            <div style="font-size:.82rem;color:#7c2d12;">
+              <strong>課堂練習剩餘題目組別搶答</strong>（成語、短語任何未完成的）<br>
+              抽籤筒選人或組別舉答，答對加星星；若有時間開爬格子語詞複習賽
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="background:#f97316;color:#fff;border-radius:6px;padding:2px 8px;font-size:.74rem;font-weight:800;white-space:nowrap;flex-shrink:0;">25分</span>
+            <div style="font-size:.82rem;color:#7c2d12;">
+              <strong>國語作業簿當堂寫</strong>，老師巡視批改、蓋章<br>
+              <span style="color:#a855f7;font-weight:700;">提早完成 → 繼續開爬格子語詞複習（彈性）</span>
+            </div>
+          </div>
+
+          <div style="background:#fed7aa;border-radius:8px;padding:6px 10px;margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;font-size:.76rem;">
+            <span style="color:#c2410c;font-weight:800;">🎯 抽籤筒：</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#7c2d12;">抽籤選人</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#7c2d12;">小組加星星</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#7c2d12;">⚔️ 爬格子（彈性）</span>
+            <span style="background:#fff;border-radius:6px;padding:1px 8px;color:#7c2d12;">✨ 明星造句牆展示</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 週五 -->
+      <div class="card" style="background:#f8fafc;border-left:5px solid #cbd5e1;padding:10px 16px;">
+        <div style="font-weight:700;font-size:.88rem;color:#94a3b8;margin-bottom:4px;">📅 週五｜本日無國語課</div>
+        <div style="font-size:.8rem;color:#94a3b8;">作業：<strong style="color:#475569;">國語習作</strong></div>
+      </div>
+
     </div>
 
     <!-- 造句作業說明 -->
     <div class="card" style="background:linear-gradient(135deg,#fff7ed,#fed7aa);border-left:4px solid #f97316;padding:12px 16px;margin-bottom:12px;">
-      <div style="font-weight:900;font-size:.88rem;color:#9a3412;margin-bottom:6px;">📝 週三作業：造詞造句（有條件版）說明</div>
+      <div style="font-weight:900;font-size:.88rem;color:#9a3412;margin-bottom:6px;">📝 週三作業：造詞造句（有條件版）</div>
       <div style="font-size:.8rem;color:#7c2d12;line-height:1.7;">
-        • 每課選 <strong>5–8 個語詞</strong>讓學生造句（不是每個字都要）<br>
-        • 老師批改後，<strong>最好的 2–3 句</strong>隔天貼上明星造句牆，作者 <strong>＋2顆星</strong><br>
-        • 批改技巧：順手圈出精彩造句（1–2 分鐘），重複句型不加分，鼓勵創意<br>
-        • 學生知道造句有機會上牆，就會認真寫，不隨便應付
+        • 每課選 <strong>5~8 個語詞</strong>造句（不是每個字都要）<br>
+        • 老師批改後選 <strong>2~3 句最精彩</strong>的，開抽籤筒「＋ 新增造句」貼上明星造句牆，作者 <strong>+2顆星</strong><br>
+        • 批改技巧：順手圈出精彩句（1~2分鐘），重複句型不加分，鼓勵創意<br>
+        • 學生知道造句有機會上牆，自然會認真寫，不隨便應付
       </div>
     </div>
 
-    <!-- 班網功能速查表 -->
+    <!-- 分組說明 -->
     <div class="card" style="background:#f0fdf4;border-left:4px solid #22c55e;padding:12px 16px;">
-      <div style="font-weight:900;font-size:.88rem;color:#166534;margin-bottom:8px;">🔧 國語課可用班網功能速查</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.78rem;">
-        <div style="background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #bbf7d0;">
-          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✅ 已有功能</div>
-          <div style="color:#166534;line-height:1.8;">
-            🌟 加星星（個人）<br>
-            👥 小組加星星<br>
-            🎯 抽抽樂轉盤<br>
-            📊 排行榜
-          </div>
-        </div>
-        <div style="background:#fff;border-radius:10px;padding:8px 12px;border:1px solid #bbf7d0;">
-          <div style="font-weight:800;color:#15803d;margin-bottom:3px;">✨ 本次新增（全在抽籤筒）</div>
-          <div style="color:#166534;line-height:1.8;">
-            ✨ 明星造句牆<br>
-            ⚔️ 組別對戰計時器<br>
-            🔵🔴 爬格子視覺賽道<br>
-            🏆 對戰結算自動加星
-          </div>
-        </div>
-      </div>
-      <div style="margin-top:10px;font-size:.76rem;color:#166534;border-top:1px solid #bbf7d0;padding-top:8px;">
-        💡 <strong>常見狀況：</strong>15分到語詞還沒講完 → 直接停，改日用爬格子補。某組一直輸 → 每週重新隨機配對，不固定。
+      <div style="font-weight:900;font-size:.88rem;color:#166534;margin-bottom:6px;">👥 分組方式＋常見狀況處理</div>
+      <div style="font-size:.8rem;color:#166534;line-height:1.7;">
+        • 組別對戰依「<strong>首頁互助小組</strong>」設定，抽籤筒隨機配對兩組，每週重新抽，不固定。<br>
+        • 15分到語詞還沒講完 → 直接停，改日用爬格子彈性補。<br>
+        • 某組一直輸 → 下週重新隨機配對。<br>
+        • 生字1~8 / 9~15 只是參考分法，依該課難易度可調整為 1~7 / 8~15。
       </div>
     </div>
-
   </div>
   <!-- ════ 逐日教學進度 ════ -->
   <div class="section-title" style="font-size:1.1rem;margin-top:20px;">📅 六、逐日教學進度暨回家作業詳細規劃</div>
@@ -8263,6 +8398,103 @@ function renderDrawState(){
     : `<div style="font-size:.8rem;color:#cbd5e1;">還沒有人被抽過</div>`;
 }
 
+// ─── 炸彈計時器 ───
+let bombTimerInterval = null;
+let bombSecondsLeft = 0;
+
+function updateBombCountDisplay(){
+  const show = document.getElementById('bombShowCount');
+  const disp = document.getElementById('bombCountDisplay');
+  if(!disp) return;
+  if(show && show.checked){
+    disp.style.display = '';
+    disp.textContent = bombSecondsLeft + '秒';
+  } else {
+    disp.style.display = 'none';
+  }
+}
+
+function startBombTimer(){
+  const minEl = document.getElementById('bombMin');
+  const maxEl = document.getElementById('bombMax');
+  const min = Math.max(1, parseInt(minEl?.value)||60);
+  const max = Math.max(min+1, parseInt(maxEl?.value)||180);
+  const duration = Math.floor(Math.random()*(max-min+1))+min;
+  bombSecondsLeft = duration;
+  document.getElementById('bombStartBtn').disabled = true;
+  document.getElementById('bombStopBtn').disabled = false;
+  document.getElementById('bombResultWrap').style.display = 'none';
+  updateBombCountDisplay();
+  bombTimerInterval = setInterval(()=>{
+    bombSecondsLeft--;
+    updateBombCountDisplay();
+    if(bombSecondsLeft<=0){
+      clearInterval(bombTimerInterval);
+      bombTimerInterval = null;
+      triggerBomb();
+    }
+  }, 1000);
+}
+
+function stopBombTimer(){
+  if(bombTimerInterval){ clearInterval(bombTimerInterval); bombTimerInterval=null; }
+  const disp = document.getElementById('bombCountDisplay');
+  if(disp){ disp.style.display='none'; disp.textContent='--'; }
+  document.getElementById('bombStartBtn').disabled = false;
+  document.getElementById('bombStopBtn').disabled = true;
+}
+
+function triggerBomb(){
+  playBombExplosion();
+  if(!students.length){ toast('⚠️ 請先新增學生！'); stopBombTimer(); return; }
+  let pool = students;
+  if(drawState.excludeMode){
+    const remaining = students.filter(s=>!drawState.drawnIds.includes(s.id));
+    if(remaining.length) pool = remaining;
+  }
+  const winner = pool[Math.floor(Math.random()*pool.length)];
+  if(drawState.excludeMode){ drawState.drawnIds.push(winner.id); }
+  save(); renderDrawState();
+  const nameEl = document.getElementById('bombResultName');
+  const emojiEl = document.getElementById('bombBoomEmoji');
+  const wrap = document.getElementById('bombResultWrap');
+  if(nameEl) nameEl.textContent = `${winner.seatNo||''}號 ${winner.name}`;
+  if(emojiEl){ emojiEl.textContent='💥'; setTimeout(()=>{ emojiEl.textContent='🎯'; },500); }
+  if(wrap) wrap.style.display = '';
+  document.getElementById('bombStartBtn').disabled = false;
+  document.getElementById('bombStopBtn').disabled = true;
+  const disp = document.getElementById('bombCountDisplay');
+  if(disp){ disp.textContent='💥'; }
+  confetti();
+}
+
+function playBombExplosion(){
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    // 滴答聲（快速連擊，製造緊張感）
+    [0, 0.09, 0.17, 0.23, 0.28, 0.32].forEach((t)=>{
+      const osc=ctx.createOscillator(), g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='square';
+      osc.frequency.setValueAtTime(880, ctx.currentTime+t);
+      g.gain.setValueAtTime(0.25, ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+0.05);
+      osc.start(ctx.currentTime+t); osc.stop(ctx.currentTime+t+0.06);
+    });
+    // 爆炸聲（低頻轟炸）
+    [0.42, 0.52, 0.64, 0.82].forEach((t,i)=>{
+      const osc=ctx.createOscillator(), g=ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type='sawtooth';
+      osc.frequency.setValueAtTime(580-i*110, ctx.currentTime+t);
+      osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime+t+0.55);
+      g.gain.setValueAtTime(0.6, ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+t+0.55);
+      osc.start(ctx.currentTime+t); osc.stop(ctx.currentTime+t+0.6);
+    });
+  } catch(e){}
+}
+
 // ─── 座位表 ───
 function seatKey(c,r){ return c+'-'+r; }
 function totalSeatsCount(){ return (seatingChart.colSizes||[]).reduce((a,n)=>a+n,0); }
@@ -10368,8 +10600,11 @@ function renderStarSentenceWall(){
   const wrap = document.getElementById('starSentenceWallWrap');
   const list = document.getElementById('starSentenceList');
   if(!wrap || !list) return;
-  wrap.style.display = starSentences.length ? '' : 'none';
-  if(!starSentences.length){ list.innerHTML=''; return; }
+  wrap.style.display = '';
+  if(!starSentences.length){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:#c4b5fd;font-size:.85rem;">還沒有造句，批改後點「＋ 新增造句」貼上牆 ✨</div>';
+    return;
+  }
   list.innerHTML = starSentences.slice(0,10).map(s=>`
     <div style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-radius:14px;padding:12px 16px;border-left:5px solid #a855f7;position:relative;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
