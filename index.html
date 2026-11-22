@@ -1365,7 +1365,17 @@ document.body && (document.body.scrollLeft = 0);
         <div style="font-size:.7rem;color:rgba(255,255,255,.3);padding-left:2px;">連續吵幾秒才算太吵</div>
       </div>
     </div>
-    <button onclick="openQuietOverlay()" style="width:100%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:50px;padding:11px;font-size:.92rem;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:1px;">🎤 全螢幕啟動</button>
+    <!-- 角色選擇 -->
+    <div style="display:flex;gap:7px;align-items:center;margin-bottom:12px;">
+      <span style="font-size:.72rem;color:rgba(255,255,255,.4);flex-shrink:0;">🐾 角色</span>
+      <button onclick="qSetCharHome('mali')" id="qHomeCharMali" style="flex:1;padding:7px 4px;border-radius:8px;border:2px solid #a78bfa;background:rgba(167,139,250,.2);color:white;cursor:pointer;font-size:.77rem;font-weight:900;font-family:inherit;transition:all .2s;">🐕 馬里諾</button>
+      <button onclick="qSetCharHome('gosig')" id="qHomeCharGosig" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);cursor:pointer;font-size:.77rem;font-weight:700;font-family:inherit;transition:all .2s;">🐶 黃金犬</button>
+      <button onclick="qSetCharHome('panda')" id="qHomeCharPanda" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);cursor:pointer;font-size:.77rem;font-weight:700;font-family:inherit;transition:all .2s;">🐼 熊貓</button>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="openQuietMini()" style="flex:1;background:rgba(255,255,255,.12);color:white;border:1.5px solid rgba(255,255,255,.25);border-radius:50px;padding:10px;font-size:.85rem;font-weight:900;cursor:pointer;font-family:inherit;">🪟 小視窗</button>
+      <button onclick="openQuietOverlay()" style="flex:2;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;border:none;border-radius:50px;padding:10px;font-size:.85rem;font-weight:900;cursor:pointer;font-family:inherit;">🎤 全螢幕</button>
+    </div>
   </div>
 
   <div class="section-title">🌈 今日概覽</div>
@@ -2505,6 +2515,15 @@ document.body && (document.body.scrollLeft = 0);
     font-size:1rem;font-weight:800;color:rgba(255,255,255,0.3);letter-spacing:3px;
   ">00:00</div>
 
+  <!-- 角色切換 & 小視窗按鈕 -->
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+    <button onclick="qSetChar('mali')" id="qOvCharMali" title="馬里諾犬" style="background:rgba(167,139,250,.25);border:2px solid #a78bfa;border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:900;color:white;font-family:inherit;transition:all .2s;">🐕</button>
+    <button onclick="qSetChar('gosig')" id="qOvCharGosig" title="IKEA黃金犬" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;transition:all .2s;">🐶</button>
+    <button onclick="qSetChar('panda')" id="qOvCharPanda" title="熊貓" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;transition:all .2s;">🐼</button>
+    <div style="flex:1"></div>
+    <button onclick="switchToQuietMini()" title="縮小視窗" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;">🪟 小視窗</button>
+  </div>
+
   <!-- Character -->
   <div style="position:relative;width:200px;height:200px;margin-bottom:16px;" id="quietCharWrap">
     <!-- ZZZ -->
@@ -2514,39 +2533,7 @@ document.body && (document.body.scrollLeft = 0);
       <span style="position:absolute;font-size:1.4rem;font-weight:900;color:#a5b4fc;animation:qFloatUp 2.5s ease-out infinite;animation-delay:1.6s;opacity:0;left:28px;top:15px;">Z</span>
     </div>
     <div id="quietExclaim" style="position:absolute;top:-15px;right:-35px;font-size:2rem;display:none;animation:qPop .2s ease-out;">❗</div>
-    <svg id="quietCharSVG" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:200px;height:200px;">
-      <defs>
-        <radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/><stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/></radialGradient>
-      </defs>
-      <ellipse cx="100" cy="175" rx="65" ry="18" fill="url(#qBg)"/>
-      <circle cx="52" cy="62" r="29" fill="#b08050"/><circle cx="148" cy="62" r="29" fill="#b08050"/>
-      <circle cx="52" cy="62" r="19" fill="#f0d4a8"/><circle cx="148" cy="62" r="19" fill="#f0d4a8"/>
-      <circle cx="100" cy="115" r="83" fill="#c8a070"/>
-      <circle cx="80" cy="90" r="22" fill="rgba(255,255,255,0.07)"/>
-      <ellipse cx="100" cy="140" rx="35" ry="25" fill="#edd8b0"/>
-      <ellipse cx="100" cy="128" rx="12" ry="8.5" fill="#5a3020"/>
-      <ellipse cx="97" cy="126" rx="4.5" ry="3" fill="rgba(255,255,255,0.28)"/>
-      <g id="qEyesSleep">
-        <path d="M68 105 Q76 97 84 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-        <path d="M116 105 Q124 97 132 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-        <line x1="70" y1="103" x2="67" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="82" y1="103" x2="85" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="118" y1="103" x2="115" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
-        <line x1="130" y1="103" x2="133" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
-      </g>
-      <g id="qEyesAwake" display="none">
-        <circle cx="76" cy="102" r="12" fill="white"/><circle cx="124" cy="102" r="12" fill="white"/>
-        <circle cx="79" cy="104" r="7.5" fill="#5a3020"/><circle cx="121" cy="104" r="7.5" fill="#5a3020"/>
-        <circle cx="82" cy="101" r="2.8" fill="white"/><circle cx="124" cy="101" r="2.8" fill="white"/>
-        <path d="M145 80 Q151 73 148 86 Q144 94 145 80" fill="#93c5fd" opacity="0.85"/>
-        <path d="M68 92 Q76 87 84 92" stroke="#5a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M116 92 Q124 87 132 92" stroke="#5a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
-      </g>
-      <path id="qSmileSleep" d="M88 148 Q100 158 112 148" stroke="#5a3020" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <path id="qMouthAwake" d="M88 152 Q95 145 100 152 Q105 159 112 152" stroke="#5a3020" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>
-      <ellipse cx="66" cy="132" rx="14" ry="8" fill="rgba(255,130,80,0.28)"/>
-      <ellipse cx="134" cy="132" rx="14" ry="8" fill="rgba(255,130,80,0.28)"/>
-    </svg>
+    <svg id="quietCharSVG" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:200px;height:200px;"></svg>
   </div>
 
   <!-- Status -->
@@ -2591,6 +2578,57 @@ document.body && (document.body.scrollLeft = 0);
     </div>
   </div>
 </div><!-- end quietOverlay -->
+
+<!-- ══ 靜悄悄小視窗 ══ -->
+<div id="quietMini" style="display:none;position:fixed;bottom:80px;right:16px;width:188px;
+  background:linear-gradient(160deg,#0d1b3e,#1a2050);
+  border:1.5px solid rgba(255,255,255,.12);border-radius:18px;
+  z-index:8900;box-shadow:0 8px 32px rgba(0,0,0,.55);
+  font-family:'Segoe UI',system-ui,'Microsoft JhengHei',sans-serif;
+  overflow:hidden;user-select:none;transition:background .6s;">
+  <!-- 拖曳標題列 -->
+  <div id="quietMiniHdr" style="display:flex;align-items:center;justify-content:space-between;
+    padding:8px 12px 6px;cursor:grab;background:rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(255,255,255,.07);">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span id="quietMiniCharBadge" style="font-size:.88rem;">🐕</span>
+      <span style="font-size:.7rem;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:1px;">靜悄悄</span>
+    </div>
+    <div style="display:flex;gap:4px;">
+      <button onclick="switchToQuietFull()" title="全螢幕" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:.88rem;padding:3px 6px;border-radius:5px;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">⛶</button>
+      <button onclick="closeQuietOverlay()" title="關閉" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:.9rem;padding:3px 6px;border-radius:5px;font-family:inherit;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">✕</button>
+    </div>
+  </div>
+  <!-- 動物顯示 -->
+  <div style="text-align:center;padding:14px 12px 8px;position:relative;">
+    <div style="position:relative;display:inline-block;">
+      <div id="quietMiniAnimal" style="font-size:3.2rem;line-height:1;transition:filter .3s;">🐕</div>
+      <div id="quietMiniZzz" style="position:absolute;top:-8px;right:-20px;">
+        <span style="font-size:.7rem;font-weight:900;color:#a5b4fc;animation:qFloatUp 2.5s ease-out infinite;animation-delay:0s;opacity:0;position:absolute;left:0;top:14px;">z</span>
+        <span style="font-size:.85rem;font-weight:900;color:#a5b4fc;animation:qFloatUp 2.5s ease-out infinite;animation-delay:.9s;opacity:0;position:absolute;left:6px;top:6px;">z</span>
+        <span style="font-size:1rem;font-weight:900;color:#a5b4fc;animation:qFloatUp 2.5s ease-out infinite;animation-delay:1.8s;opacity:0;position:absolute;left:12px;top:0;">Z</span>
+      </div>
+    </div>
+    <div id="quietMiniStatus" style="font-size:.72rem;font-weight:800;color:#c7d2fe;margin-top:10px;letter-spacing:.5px;">😴 安靜中～</div>
+  </div>
+  <!-- 進度條 -->
+  <div style="padding:0 12px 8px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:.63rem;color:rgba(255,255,255,.35);">🌙 進度</span>
+      <span id="quietMiniPct" style="font-size:.67rem;font-weight:900;color:#a78bfa;">0%</span>
+    </div>
+    <div style="height:7px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;">
+      <div id="quietMiniProgressFill" style="height:100%;width:0%;background:linear-gradient(90deg,#4f46e5,#a855f7);border-radius:4px;transition:width .5s;"></div>
+    </div>
+  </div>
+  <!-- 音量條 -->
+  <div style="padding:0 12px 12px;">
+    <div style="position:relative;height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:visible;">
+      <div id="quietMiniVolFill" style="height:100%;width:0%;background:linear-gradient(90deg,#34d399,#fbbf24,#ef4444);border-radius:2px;transition:width .06s;"></div>
+      <div id="quietMiniVolThreshold" style="position:absolute;top:-2px;width:2px;height:8px;background:rgba(255,255,255,.65);border-radius:1px;transform:translateX(-50%);"></div>
+    </div>
+  </div>
+</div>
 
 <style>
 @keyframes qFlash{0%{opacity:1}100%{opacity:0}}
@@ -8907,6 +8945,10 @@ let qWallSec=0, qWallInt=null, qFwRaf=null;
 const qFwParts=[];
 
 function openQuietOverlay(){
+  if(qMode==='mini'){
+    // 已在執行中，只是切換到全螢幕
+    switchToQuietFull(); return;
+  }
   const ov=document.getElementById('quietOverlay');
   ov.style.display='flex';
   // 讀設定
@@ -8923,10 +8965,13 @@ function openQuietOverlay(){
   document.getElementById('quietStarMsg').textContent='';
   const sb=document.getElementById('quietStarAllBtn');
   if(sb){ sb.disabled=false; sb.textContent='⭐ 全班加 1 顆星！'; sb.style.background='linear-gradient(135deg,#b45309,#d97706,#fbbf24)'; }
+  // 設定角色
+  qSetChar(qCurrentChar);
   qSetSleeping(true);
   // 設定音量門檻標記
   const th=document.getElementById('quietVolThreshold');
   if(th) th.style.left=qThreshold+'%';
+  qMode='full';
   // 啟動麥克風
   qStartMic();
 }
@@ -8966,8 +9011,13 @@ function qLoop(now){
   const dt=Math.min((now-qPrevTime)/1000,0.12);
   qPrevTime=now;
   const vol=qGetVol();
-  // update vol bar
-  document.getElementById('quietVolFill').style.width=Math.min(100,vol)+'%';
+  const volPct=Math.min(100,vol)+'%';
+  // update vol bars
+  document.getElementById('quietVolFill').style.width=volPct;
+  if(qMode==='mini'){
+    const mv=document.getElementById('quietMiniVolFill');
+    if(mv) mv.style.width=volPct;
+  }
   const noisy=(vol>qThreshold);
   if(noisy){
     qQuietAt=null;
@@ -8981,8 +9031,15 @@ function qLoop(now){
     } else {
       qQuietSec=Math.min(qGoalSec, qQuietSec+dt);
       const pct=Math.min(100,qQuietSec/qGoalSec*100);
+      const pctStr=Math.round(pct)+'%';
       document.getElementById('quietProgressFill').style.width=pct+'%';
-      document.getElementById('quietProgressPct').textContent=Math.round(pct)+'%';
+      document.getElementById('quietProgressPct').textContent=pctStr;
+      if(qMode==='mini'){
+        const mp=document.getElementById('quietMiniProgressFill');
+        const mpp=document.getElementById('quietMiniPct');
+        if(mp) mp.style.width=pct+'%';
+        if(mpp) mpp.textContent=pctStr;
+      }
       if(qQuietSec>=qGoalSec){ qCelebrate(); return; }
     }
   }
@@ -8996,8 +9053,14 @@ function qSetSleeping(val){
   const st=document.getElementById('quietStatus');
   const zzz=document.getElementById('quietZZZ');
   const exc=document.getElementById('quietExclaim');
+  const c=Q_CHARS[qCurrentChar]||Q_CHARS.mali;
+  const miniWin=document.getElementById('quietMini');
+  const miniStatus=document.getElementById('quietMiniStatus');
+  const miniAnimal=document.getElementById('quietMiniAnimal');
+  const miniZzz=document.getElementById('quietMiniZzz');
   if(val){
     ov?.classList.remove('noisy');
+    if(ov) ov.style.background=c.bgSleep;
     cw?.classList.remove('noisy'); cw?.classList.add('sleeping');
     st?.classList.remove('noisy');
     if(zzz) zzz.style.display='';
@@ -9007,9 +9070,15 @@ function qSetSleeping(val){
     document.getElementById('qSmileSleep')?.setAttribute('display','block');
     document.getElementById('qMouthAwake')?.setAttribute('display','none');
     if(st) st.textContent='安靜中～ 🌙';
+    // 小視窗
+    if(miniAnimal) miniAnimal.textContent=c.emoji;
+    if(miniStatus){ miniStatus.textContent='😴 安靜中～'; miniStatus.style.color='#c7d2fe'; }
+    if(miniZzz) miniZzz.style.visibility='visible';
+    if(miniWin) miniWin.style.background='linear-gradient(160deg,#0d1b3e,#1a2050)';
     qQuietAt=null;
   } else {
     ov?.classList.add('noisy');
+    if(ov) ov.style.background=c.bgNoisy;
     cw?.classList.add('noisy'); cw?.classList.remove('sleeping');
     st?.classList.add('noisy');
     if(zzz) zzz.style.display='none';
@@ -9019,18 +9088,34 @@ function qSetSleeping(val){
     document.getElementById('qSmileSleep')?.setAttribute('display','none');
     document.getElementById('qMouthAwake')?.setAttribute('display','block');
     if(st) st.textContent='太吵了！😱 請保持安靜！';
+    // 小視窗
+    if(miniAnimal){ miniAnimal.style.filter='drop-shadow(0 0 8px rgba(239,68,68,.8))'; }
+    if(miniStatus){ miniStatus.textContent='😱 太吵了！'; miniStatus.style.color='#fca5a5'; }
+    if(miniZzz) miniZzz.style.visibility='hidden';
+    if(miniWin) miniWin.style.background='linear-gradient(160deg,#2a0505,#180808)';
     // flash
-    const fl=document.createElement('div');
-    fl.style.cssText='position:fixed;inset:0;background:rgba(239,68,68,.3);pointer-events:none;z-index:10000;animation:qFlash .5s ease-out forwards;';
-    document.getElementById('quietOverlay').appendChild(fl);
-    setTimeout(()=>fl.remove(),500);
+    if(qMode==='full'){
+      const fl=document.createElement('div');
+      fl.style.cssText='position:fixed;inset:0;background:rgba(239,68,68,.3);pointer-events:none;z-index:10000;animation:qFlash .5s ease-out forwards;';
+      document.getElementById('quietOverlay').appendChild(fl);
+      setTimeout(()=>fl.remove(),500);
+    }
   }
+  if(val && miniAnimal) miniAnimal.style.filter='';
 }
 
 function qCelebrate(){
   qRunning=false;
   cancelAnimationFrame(qRaf);
   clearInterval(qWallInt);
+  // 小視窗模式 → 展開全螢幕慶祝
+  if(qMode==='mini'){
+    document.getElementById('quietMini').style.display='none';
+    const ov=document.getElementById('quietOverlay');
+    ov.style.display='flex';
+    ov.style.background=Q_CHARS[qCurrentChar]?.bgSleep||'linear-gradient(180deg,#0d1b3e,#0a2040)';
+    qMode='full';
+  }
   const mins=Math.round(qGoalSec/60);
   document.getElementById('quietCelSub').innerHTML=
     `全班保持安靜 ${mins} 分鐘！<br>🌟 太棒了！老師好驕傲！`;
@@ -9091,8 +9176,204 @@ function closeQuietOverlay(){
   cancelAnimationFrame(qFwRaf);
   clearInterval(qWallInt);
   qFwParts.length=0;
+  qMode='none';
   document.getElementById('quietOverlay').style.display='none';
   document.getElementById('quietCelebrate').style.display='none';
+  document.getElementById('quietMini').style.display='none';
+}
+
+// ══ 靜悄悄：角色系統 ══
+const Q_CHARS={
+  mali:{
+    id:'mali',name:'馬里諾犬',emoji:'🐕',
+    bgSleep:'linear-gradient(180deg,#120d00 0%,#0a0800 100%)',
+    bgNoisy:'linear-gradient(180deg,#3d0a0a 0%,#1a0505 100%)',
+    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#d97706" stop-opacity="0.3"/><stop offset="100%" stop-color="#d97706" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="100" cy="178" rx="65" ry="16" fill="url(#qBg)"/>
+<polygon points="58,80 40,16 82,70" fill="#B07830"/>
+<polygon points="142,80 160,16 118,70" fill="#B07830"/>
+<polygon points="61,78 48,22 79,69" fill="#6B4510" opacity="0.55"/>
+<polygon points="139,78 152,22 121,69" fill="#6B4510" opacity="0.55"/>
+<circle cx="100" cy="112" r="76" fill="#C8903A"/>
+<ellipse cx="100" cy="96" rx="46" ry="41" fill="#1C0C00" opacity="0.78"/>
+<ellipse cx="100" cy="130" rx="32" ry="22" fill="#D4A050"/>
+<ellipse cx="100" cy="124" rx="10" ry="7.5" fill="#0d0500"/>
+<ellipse cx="97" cy="121" rx="3.5" ry="2.5" fill="rgba(255,255,255,.3)"/>
+<ellipse cx="66" cy="136" rx="12" ry="7.5" fill="rgba(255,130,80,.3)"/>
+<ellipse cx="134" cy="136" rx="12" ry="7.5" fill="rgba(255,130,80,.3)"/>
+<g id="qEyesSleep"><path d="M68 96 Q77 87 86 96" stroke="#f5d090" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M114 96 Q123 87 132 96" stroke="#f5d090" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+<g id="qEyesAwake" display="none"><circle cx="77" cy="93" r="13" fill="white"/><circle cx="123" cy="93" r="13" fill="white"/><circle cx="80" cy="95" r="8" fill="#3d1500"/><circle cx="120" cy="95" r="8" fill="#3d1500"/><circle cx="83" cy="92" r="3" fill="white"/><circle cx="123" cy="92" r="3" fill="white"/></g>
+<path id="qSmileSleep" d="M88 148 Q100 157 112 148" stroke="#6B4510" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<path id="qMouthAwake" d="M88 150 Q95 142 100 150 Q105 158 112 150" stroke="#6B4510" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+  },
+  gosig:{
+    id:'gosig',name:'IKEA黃金犬',emoji:'🐶',
+    bgSleep:'linear-gradient(180deg,#15110000 0%,#0f0d0000 100%)',
+    bgNoisy:'linear-gradient(180deg,#3d1a0a 0%,#200f05 100%)',
+    bgSleep:'linear-gradient(180deg,#141000 0%,#0d0a00 100%)',
+    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="100" cy="178" rx="68" ry="16" fill="url(#qBg)"/>
+<ellipse cx="44" cy="102" rx="27" ry="43" fill="#C89830" transform="rotate(-8,44,102)"/>
+<ellipse cx="156" cy="102" rx="27" ry="43" fill="#C89830" transform="rotate(8,156,102)"/>
+<ellipse cx="44" cy="104" rx="17" ry="32" fill="#E8C050" opacity="0.55" transform="rotate(-8,44,104)"/>
+<ellipse cx="156" cy="104" rx="17" ry="32" fill="#E8C050" opacity="0.55" transform="rotate(8,156,104)"/>
+<circle cx="100" cy="108" r="80" fill="#E8C060"/>
+<circle cx="80" cy="88" r="26" fill="rgba(255,255,255,.1)"/>
+<ellipse cx="100" cy="130" rx="38" ry="27" fill="#F0D080"/>
+<ellipse cx="100" cy="123" rx="11" ry="8" fill="#2a1500"/>
+<ellipse cx="97" cy="120" rx="3.8" ry="2.8" fill="rgba(255,255,255,.35)"/>
+<ellipse cx="64" cy="137" rx="14" ry="9" fill="rgba(255,140,90,.35)"/>
+<ellipse cx="136" cy="137" rx="14" ry="9" fill="rgba(255,140,90,.35)"/>
+<g id="qEyesSleep"><path d="M68 103 Q78 93 88 103" stroke="#5a3010" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M112 103 Q122 93 132 103" stroke="#5a3010" stroke-width="5" fill="none" stroke-linecap="round"/><line x1="70" y1="101" x2="68" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="78" y1="96" x2="78" y2="89" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="86" y1="101" x2="88" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="114" y1="101" x2="112" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="122" y1="96" x2="122" y2="89" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="130" y1="101" x2="132" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/></g>
+<g id="qEyesAwake" display="none"><circle cx="78" cy="100" r="16" fill="white"/><circle cx="122" cy="100" r="16" fill="white"/><circle cx="81" cy="102" r="10" fill="#3d1800"/><circle cx="119" cy="102" r="10" fill="#3d1800"/><circle cx="85" cy="98" r="4" fill="white"/><circle cx="123" cy="98" r="4" fill="white"/></g>
+<path id="qSmileSleep" d="M86 150 Q100 162 114 150" stroke="#5a3010" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<path id="qMouthAwake" d="M90 152 Q95 145 100 152 Q105 159 110 152" stroke="#5a3010" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+  },
+  panda:{
+    id:'panda',name:'熊貓',emoji:'🐼',
+    bgSleep:'linear-gradient(180deg,#0d1b3e 0%,#0a2040 100%)',
+    bgNoisy:'linear-gradient(180deg,#1a0d3d 0%,#0d0520 100%)',
+    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient></defs>
+<ellipse cx="100" cy="178" rx="65" ry="16" fill="url(#qBg)"/>
+<circle cx="54" cy="52" r="29" fill="#1a1a1a"/>
+<circle cx="146" cy="52" r="29" fill="#1a1a1a"/>
+<circle cx="54" cy="52" r="18" fill="#2d2d2d"/>
+<circle cx="146" cy="52" r="18" fill="#2d2d2d"/>
+<circle cx="100" cy="112" r="78" fill="#f5f5f0"/>
+<ellipse cx="76" cy="98" rx="23" ry="20" fill="#1a1a1a" transform="rotate(-10,76,98)"/>
+<ellipse cx="124" cy="98" rx="23" ry="20" fill="#1a1a1a" transform="rotate(10,124,98)"/>
+<ellipse cx="100" cy="130" rx="30" ry="20" fill="#ebe8e0"/>
+<ellipse cx="100" cy="124" rx="10" ry="7" fill="#1a1a1a"/>
+<ellipse cx="97" cy="121" rx="3.5" ry="2.5" fill="rgba(255,255,255,.4)"/>
+<ellipse cx="65" cy="136" rx="12" ry="8" fill="rgba(255,130,130,.3)"/>
+<ellipse cx="135" cy="136" rx="12" ry="8" fill="rgba(255,130,130,.3)"/>
+<g id="qEyesSleep"><path d="M66 97 Q76 87 86 97" stroke="white" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M114 97 Q124 87 134 97" stroke="white" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
+<g id="qEyesAwake" display="none"><circle cx="76" cy="96" r="14" fill="white"/><circle cx="124" cy="96" r="14" fill="white"/><circle cx="79" cy="98" r="8.5" fill="#1a1a1a"/><circle cx="121" cy="98" r="8.5" fill="#1a1a1a"/><circle cx="82" cy="95" r="3" fill="white"/><circle cx="124" cy="95" r="3" fill="white"/></g>
+<path id="qSmileSleep" d="M88 148 Q100 157 112 148" stroke="#2a2a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<path id="qMouthAwake" d="M88 150 Q95 143 100 150 Q105 157 112 150" stroke="#2a2a2a" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+  }
+};
+let qCurrentChar='mali';
+let qMode='none'; // 'none'|'full'|'mini'
+
+function qSetChar(id){
+  const c=Q_CHARS[id]; if(!c) return;
+  qCurrentChar=id;
+  const svg=document.getElementById('quietCharSVG');
+  if(svg) svg.innerHTML=c.svgContent;
+  // 恢復眼睛/嘴狀態
+  if(qSleeping!==undefined) qSetSleeping(qSleeping);
+  // 更新小視窗 badge
+  ['quietMiniCharBadge','quietMiniAnimal'].forEach(eid=>{
+    const el=document.getElementById(eid); if(el) el.textContent=c.emoji;
+  });
+  // 更新按鈕選取狀態
+  ['mali','gosig','panda'].forEach(cid=>{
+    const cap=cid.charAt(0).toUpperCase()+cid.slice(1);
+    const ob=document.getElementById('qOvChar'+cap);
+    const hb=document.getElementById('qHomeChar'+cap);
+    const sel=cid===id;
+    if(ob){
+      ob.style.background=sel?'rgba(167,139,250,.25)':'rgba(255,255,255,.08)';
+      ob.style.border=sel?'2px solid #a78bfa':'1.5px solid rgba(255,255,255,.18)';
+      ob.style.color=sel?'white':'rgba(255,255,255,.65)';
+      ob.style.fontWeight=sel?'900':'700';
+    }
+    if(hb){
+      hb.style.background=sel?'rgba(167,139,250,.2)':'rgba(255,255,255,.07)';
+      hb.style.border=sel?'2px solid #a78bfa':'1.5px solid rgba(255,255,255,.18)';
+      hb.style.color=sel?'white':'rgba(255,255,255,.6)';
+      hb.style.fontWeight=sel?'900':'700';
+    }
+  });
+}
+
+function qSetCharHome(id){ qSetChar(id); }
+
+function openQuietMini(){
+  if(qMode==='full'){ switchToQuietMini(); return; }
+  // 讀設定
+  qGoalSec   =parseInt(document.getElementById('quietGoalSelect')?.value||300);
+  qThreshold =parseFloat(document.getElementById('quietThresholdInput')?.value||22);
+  qWakeMs    =parseInt(document.getElementById('quietWakeSelect')?.value||1000);
+  // reset
+  qQuietSec=0; qWallSec=0; qRunning=false; qSleeping=true;
+  qNoiseAt=null; qQuietAt=null;
+  ['quietMiniProgressFill','quietMiniPct'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(el) el[i===0?'style':'textContent']&&(i===0?(el.style.width='0%'):(el.textContent='0%'));
+  });
+  document.getElementById('quietMiniProgressFill').style.width='0%';
+  document.getElementById('quietMiniPct').textContent='0%';
+  const th=document.getElementById('quietMiniVolThreshold');
+  if(th) th.style.left=qThreshold+'%';
+  qSetChar(qCurrentChar);
+  document.getElementById('quietMini').style.display='block';
+  document.getElementById('quietOverlay').style.display='none';
+  qMode='mini';
+  qInitMiniDrag();
+  qStartMic();
+}
+
+function switchToQuietFull(){
+  if(qMode!=='mini') return;
+  document.getElementById('quietMini').style.display='none';
+  const ov=document.getElementById('quietOverlay');
+  ov.style.display='flex';
+  ov.style.background=Q_CHARS[qCurrentChar]?.bgSleep||'linear-gradient(180deg,#0d1b3e,#0a2040)';
+  // 同步進度顯示
+  const pct=Math.min(100,qQuietSec/qGoalSec*100);
+  document.getElementById('quietProgressFill').style.width=pct+'%';
+  document.getElementById('quietProgressPct').textContent=Math.round(pct)+'%';
+  const m=String(Math.floor(qWallSec/60)).padStart(2,'0');
+  const s=String(qWallSec%60).padStart(2,'0');
+  document.getElementById('quietTimerDisplay').textContent=m+':'+s;
+  document.getElementById('quietVolThreshold').style.left=qThreshold+'%';
+  qMode='full';
+  qSetSleeping(qSleeping);
+}
+
+function switchToQuietMini(){
+  if(qMode!=='full') return;
+  document.getElementById('quietOverlay').style.display='none';
+  document.getElementById('quietMini').style.display='block';
+  qMode='mini';
+  qInitMiniDrag();
+}
+
+// 拖曳功能
+let qMiniDragging=false,qMiniDX=0,qMiniDY=0;
+function qInitMiniDrag(){
+  const hdr=document.getElementById('quietMiniHdr');
+  const mini=document.getElementById('quietMini');
+  if(!hdr||!mini||hdr._qDrag) return;
+  hdr._qDrag=true;
+  hdr.addEventListener('mousedown',e=>{
+    qMiniDragging=true;
+    const r=mini.getBoundingClientRect();
+    qMiniDX=e.clientX-r.left; qMiniDY=e.clientY-r.top;
+    hdr.style.cursor='grabbing'; e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!qMiniDragging) return;
+    mini.style.left=(e.clientX-qMiniDX)+'px';
+    mini.style.top=(e.clientY-qMiniDY)+'px';
+    mini.style.bottom='auto'; mini.style.right='auto';
+  });
+  document.addEventListener('mouseup',()=>{ qMiniDragging=false; hdr.style.cursor='grab'; });
+  hdr.addEventListener('touchstart',e=>{
+    qMiniDragging=true;
+    const r=mini.getBoundingClientRect();
+    qMiniDX=e.touches[0].clientX-r.left; qMiniDY=e.touches[0].clientY-r.top;
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchmove',e=>{
+    if(!qMiniDragging) return;
+    mini.style.left=(e.touches[0].clientX-qMiniDX)+'px';
+    mini.style.top=(e.touches[0].clientY-qMiniDY)+'px';
+    mini.style.bottom='auto'; mini.style.right='auto';
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchend',()=>{ qMiniDragging=false; });
 }
 
 function qLaunchFireworks(){
