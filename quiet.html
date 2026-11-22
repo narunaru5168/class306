@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>靜悄悄挑戰 🐻</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-sleep-top:#0d1b3e;--bg-sleep-bot:#0a2040;
+  --bg-noise-top:#3d0a0a;--bg-noise-bot:#1a0505;
+  --accent:#7c3aed;
+}
+body{
+  width:100vw;height:100vh;overflow:hidden;
+  font-family:'Segoe UI',system-ui,'Microsoft JhengHei',sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,var(--bg-sleep-top) 0%,var(--bg-sleep-bot) 100%);
+  transition:background 0.8s ease;
+  user-select:none;
+}
+body.noisy{
+  background:linear-gradient(180deg,var(--bg-noise-top) 0%,var(--bg-noise-bot) 100%);
+}
+
+/* ===== STARS ===== */
+.star{
+  position:fixed;border-radius:50%;background:#fff;
+  animation:twinkle var(--d,2s) ease-in-out infinite;
+  animation-delay:var(--dd,0s);
+}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:.9;transform:scale(1.4)}}
+body.noisy .star{opacity:0;transition:opacity 0.5s}
+
+/* ===== CORNER BUTTONS ===== */
+.top-right{position:fixed;top:16px;right:16px;display:flex;gap:8px;z-index:50}
+.icon-btn{
+  background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.15);
+  border-radius:50%;width:42px;height:42px;font-size:1.1rem;
+  cursor:pointer;color:white;transition:all 0.2s;display:flex;align-items:center;justify-content:center;
+}
+.icon-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.1)}
+
+/* ===== SETTINGS PANEL ===== */
+.settings-panel{
+  position:fixed;top:66px;right:16px;
+  background:rgba(10,12,40,0.97);backdrop-filter:blur(20px);
+  border:1.5px solid rgba(255,255,255,0.1);border-radius:16px;
+  padding:18px 20px;min-width:230px;display:none;z-index:100;
+  box-shadow:0 12px 50px rgba(0,0,0,0.6);
+}
+.settings-panel.open{display:block}
+.settings-panel .row{margin-bottom:14px}
+.settings-panel label{
+  font-size:.74rem;font-weight:700;color:rgba(255,255,255,0.5);
+  display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;
+}
+.settings-panel input[type=range]{
+  width:100%;accent-color:#7c3aed;cursor:pointer;
+}
+.settings-panel select{
+  width:100%;background:rgba(255,255,255,0.08);
+  border:1.5px solid rgba(255,255,255,0.15);color:white;
+  border-radius:8px;padding:7px 10px;font-size:.85rem;font-family:inherit;cursor:pointer;
+}
+.hint-row{font-size:.7rem;color:rgba(255,255,255,0.3);margin-top:3px}
+
+/* ===== TIMER ===== */
+.timer{
+  position:fixed;top:20px;left:20px;
+  font-size:1rem;font-weight:800;color:rgba(255,255,255,0.35);
+  letter-spacing:3px;font-variant-numeric:tabular-nums;
+}
+
+/* ===== MAIN UI ===== */
+.main{
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  display:none;
+}
+
+/* ===== CHARACTER ===== */
+.char-wrap{
+  position:relative;width:200px;height:200px;
+  animation:breathe 4s ease-in-out infinite;
+  transition:filter 0.3s;
+}
+body.noisy .char-wrap{animation:shake 0.25s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(239,68,68,0.6))}
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.02)}}
+@keyframes shake{0%,100%{transform:translateX(0)}30%{transform:translateX(-6px)}70%{transform:translateX(6px)}}
+
+/* ZZZ */
+.zzz-layer{position:absolute;top:-10px;right:-55px;pointer-events:none;width:60px;height:70px}
+.zzz{
+  position:absolute;font-weight:900;color:#a5b4fc;
+  text-shadow:0 0 10px rgba(165,180,252,0.6);
+  animation:floatUp var(--fd,2.5s) ease-out infinite;
+  animation-delay:var(--fdd,0s);
+  opacity:0;
+}
+.zzz:nth-child(1){font-size:.9rem;--fd:2.5s;--fdd:0s;left:0;top:40px}
+.zzz:nth-child(2){font-size:1.1rem;--fd:2.5s;--fdd:.8s;left:14px;top:30px}
+.zzz:nth-child(3){font-size:1.4rem;--fd:2.5s;--fdd:1.6s;left:28px;top:15px}
+@keyframes floatUp{
+  0%{opacity:0;transform:translateY(0) rotate(-8deg) scale(0.7)}
+  15%{opacity:1}
+  100%{opacity:0;transform:translateY(-55px) rotate(8deg) scale(1.1)}
+}
+body.noisy .zzz-layer{display:none}
+
+/* Exclamation */
+.exclaim{
+  position:absolute;top:-15px;right:-35px;
+  font-size:2rem;display:none;
+  animation:popIn 0.2s ease-out;
+}
+body.noisy .exclaim{display:block}
+@keyframes popIn{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1) rotate(0deg)}}
+
+/* ===== STATUS ===== */
+.status{
+  font-size:1.5rem;font-weight:900;
+  color:#c7d2fe;text-shadow:0 0 25px rgba(167,139,250,0.5);
+  letter-spacing:2px;text-align:center;
+  transition:color 0.5s,text-shadow 0.5s;
+  min-height:2.2rem;
+}
+body.noisy .status{color:#fca5a5;text-shadow:0 0 25px rgba(252,165,165,0.8)}
+
+/* ===== PROGRESS AREA ===== */
+.progress-area{width:min(580px,82vw)}
+.progress-top{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:8px;
+}
+.progress-top-label{font-size:.78rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px}
+.progress-pct{font-size:.85rem;font-weight:900;color:#c4b5fd}
+.progress-track{
+  height:26px;background:rgba(255,255,255,0.07);
+  border-radius:50px;overflow:hidden;
+  border:1.5px solid rgba(255,255,255,0.08);
+  position:relative;
+}
+.progress-fill{
+  height:100%;border-radius:50px;width:0%;
+  background:linear-gradient(90deg,#4f46e5,#7c3aed,#a855f7,#c084fc);
+  background-size:200% 100%;
+  transition:width 0.6s ease;
+  animation:shimmer 3s linear infinite;
+  box-shadow:0 0 15px rgba(167,139,250,0.4);
+}
+@keyframes shimmer{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+.goal-markers{position:relative;height:8px;margin-top:3px}
+.goal-marker{
+  position:absolute;top:0;width:2px;height:5px;
+  background:rgba(255,255,255,0.3);border-radius:1px;
+  transform:translateX(-50%);
+}
+.goal-marker-label{
+  position:absolute;top:5px;font-size:.55rem;
+  color:rgba(255,255,255,0.3);transform:translateX(-50%);
+  white-space:nowrap;
+}
+
+/* ===== VOLUME BAR ===== */
+.vol-area{
+  margin-top:12px;display:flex;align-items:center;gap:10px;
+}
+.vol-label{font-size:.72rem;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px;flex-shrink:0}
+.vol-track{
+  flex:1;height:8px;background:rgba(255,255,255,0.08);
+  border-radius:50px;overflow:hidden;position:relative;
+}
+.vol-fill{
+  height:100%;border-radius:50px;width:0%;
+  background:linear-gradient(90deg,#34d399 0%,#fbbf24 55%,#ef4444 85%,#dc2626 100%);
+  transition:width 0.08s;
+}
+.vol-threshold{
+  position:absolute;top:-1px;bottom:-1px;width:2.5px;border-radius:2px;
+  background:rgba(255,255,255,0.7);
+  transform:translateX(-50%);
+  box-shadow:0 0 6px rgba(255,255,255,0.5);
+}
+
+/* ===== START SCREEN ===== */
+#startScreen{display:flex;flex-direction:column;align-items:center;gap:0}
+.start-title{font-size:2rem;font-weight:900;color:white;margin-bottom:6px;letter-spacing:2px}
+.start-sub{font-size:.88rem;color:rgba(255,255,255,0.45);margin-bottom:28px;text-align:center;line-height:1.6}
+.start-btn{
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);
+  color:white;border:none;border-radius:50px;
+  padding:16px 52px;font-size:1.15rem;font-weight:900;
+  cursor:pointer;font-family:inherit;letter-spacing:2px;
+  box-shadow:0 6px 25px rgba(99,102,241,0.5);
+  transition:all 0.2s;
+}
+.start-btn:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 10px 35px rgba(99,102,241,0.7)}
+.start-btn:active{transform:translateY(0) scale(0.98)}
+
+/* ===== CELEBRATE ===== */
+#celebrate{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.88);
+  display:none;align-items:center;justify-content:center;flex-direction:column;
+  z-index:200;text-align:center;
+}
+#celebrate.show{display:flex}
+#fireworks{position:fixed;inset:0;pointer-events:none;z-index:201}
+.cel-emoji{font-size:5rem;margin-bottom:12px;animation:bounce 0.6s ease-in-out infinite alternate}
+.cel-title{font-size:2.5rem;font-weight:900;color:#fbbf24;margin-bottom:6px;text-shadow:0 0 30px rgba(251,191,36,0.6)}
+.cel-sub{font-size:1rem;color:rgba(255,255,255,0.65);margin-bottom:30px;line-height:1.7}
+.reset-btn{
+  background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);
+  color:white;border-radius:50px;padding:12px 36px;
+  font-size:1rem;font-weight:800;cursor:pointer;font-family:inherit;
+  transition:all 0.2s;
+}
+.reset-btn:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5)}
+@keyframes bounce{from{transform:scale(1)}to{transform:scale(1.15) translateY(-8px)}}
+
+/* Flash overlay */
+#flash{
+  position:fixed;inset:0;background:rgba(239,68,68,0.35);
+  pointer-events:none;opacity:0;z-index:30;
+  animation:none;border-radius:0;
+}
+#flash.go{animation:flashAnim 0.5s ease-out forwards}
+@keyframes flashAnim{0%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+<div class="timer" id="timerDisplay">00:00</div>
+
+<!-- Corner buttons -->
+<div class="top-right">
+  <button class="icon-btn" title="重置進度" onclick="confirmReset()">🔄</button>
+  <button class="icon-btn" title="設定" onclick="toggleSettings()" id="settingsBtn">⚙️</button>
+</div>
+
+<!-- Settings -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="row">
+    <label>靈敏度（門檻值）</label>
+    <input type="range" id="thresholdSlider" min="5" max="60" value="22" oninput="setThreshold(this.value)">
+    <div class="hint-row">目前：<span id="thresholdVal">22</span>　越低越容易被吵醒</div>
+  </div>
+  <div class="row">
+    <label>挑戰目標</label>
+    <select id="goalSelect" onchange="setGoal(this.value)">
+      <option value="60">1 分鐘</option>
+      <option value="120">2 分鐘</option>
+      <option value="180">3 分鐘</option>
+      <option value="300" selected>5 分鐘</option>
+      <option value="600">10 分鐘</option>
+      <option value="900">15 分鐘</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>喚醒等待（噪音幾秒才算）</label>
+    <select id="wakeSelect" onchange="setWakeDelay(this.value)">
+      <option value="500">0.5 秒（超靈敏）</option>
+      <option value="1000" selected>1 秒（建議）</option>
+      <option value="2000">2 秒（寬鬆）</option>
+      <option value="3000">3 秒（非常寬鬆）</option>
+    </select>
+  </div>
+</div>
+
+<!-- Start Screen -->
+<div id="startScreen">
+  <div class="char-wrap" style="margin-bottom:16px;">
+    <div class="zzz-layer">
+      <div class="zzz">z</div>
+      <div class="zzz">z</div>
+      <div class="zzz">Z</div>
+    </div>
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bg0" cx="50%" cy="80%" r="50%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="100" cy="175" rx="65" ry="18" fill="url(#bg0)"/>
+      <circle cx="52" cy="62" r="29" fill="#b08050"/><circle cx="148" cy="62" r="29" fill="#b08050"/>
+      <circle cx="52" cy="62" r="19" fill="#f0d4a8"/><circle cx="148" cy="62" r="19" fill="#f0d4a8"/>
+      <circle cx="100" cy="115" r="83" fill="#c8a070"/>
+      <circle cx="80" cy="90" r="22" fill="rgba(255,255,255,0.07)"/>
+      <ellipse cx="100" cy="140" rx="35" ry="25" fill="#edd8b0"/>
+      <ellipse cx="100" cy="128" rx="12" ry="8.5" fill="#5a3020"/>
+      <ellipse cx="97" cy="126" rx="4.5" ry="3" fill="rgba(255,255,255,0.28)"/>
+      <path d="M68 105 Q76 97 84 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M116 105 Q124 97 132 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <line x1="70" y1="103" x2="67" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="82" y1="103" x2="85" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="118" y1="103" x2="115" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="130" y1="103" x2="133" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M88 146 Q100 156 112 146" stroke="#5a3020" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="68" cy="130" rx="13" ry="8" fill="rgba(255,130,80,0.28)"/>
+      <ellipse cx="132" cy="130" rx="13" ry="8" fill="rgba(255,130,80,0.28)"/>
+    </svg>
+  </div>
+  <div class="start-title">靜悄悄挑戰</div>
+  <div class="start-sub">保持安靜，讓小熊繼續甜甜睡夢<br>安靜時進度條前進，太吵了牠就會醒來喔 🌙</div>
+  <button class="start-btn" onclick="startListening()">🎤 開始挑戰</button>
+</div>
+
+<!-- Main UI (hidden until mic granted) -->
+<div class="main" id="mainUI">
+  <div class="char-wrap" id="charWrap">
+    <!-- ZZZ -->
+    <div class="zzz-layer" id="zzzLayer">
+      <div class="zzz">z</div>
+      <div class="zzz">z</div>
+      <div class="zzz">Z</div>
+    </div>
+    <!-- Exclamation -->
+    <div class="exclaim" id="exclaimEl">❗</div>
+
+    <svg id="charSVG" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bgGlow" cx="50%" cy="80%" r="50%">
+          <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="softGlow">
+          <feGaussianBlur stdDeviation="2.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <!-- Shadow -->
+      <ellipse cx="100" cy="175" rx="65" ry="18" fill="url(#bgGlow)"/>
+
+      <!-- Ears -->
+      <circle cx="52" cy="62" r="29" fill="#b08050"/>
+      <circle cx="148" cy="62" r="29" fill="#b08050"/>
+      <circle cx="52" cy="62" r="19" fill="#f0d4a8"/>
+      <circle cx="148" cy="62" r="19" fill="#f0d4a8"/>
+
+      <!-- Head -->
+      <circle cx="100" cy="115" r="83" fill="#c8a070"/>
+
+      <!-- Highlight -->
+      <circle cx="80" cy="90" r="22" fill="rgba(255,255,255,0.07)"/>
+
+      <!-- Muzzle -->
+      <ellipse cx="100" cy="140" rx="35" ry="25" fill="#edd8b0"/>
+
+      <!-- Nose -->
+      <ellipse cx="100" cy="128" rx="12" ry="8.5" fill="#5a3020"/>
+      <ellipse cx="97" cy="126" rx="4.5" ry="3" fill="rgba(255,255,255,0.28)"/>
+
+      <!-- SLEEPING EYES -->
+      <g id="eyesSleep">
+        <path d="M68 105 Q76 97 84 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <path d="M116 105 Q124 97 132 105" stroke="#5a3020" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+        <!-- Lashes -->
+        <line x1="70" y1="103" x2="67" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="82" y1="103" x2="85" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="118" y1="103" x2="115" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="130" y1="103" x2="133" y2="97" stroke="#5a3020" stroke-width="2.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- AWAKE EYES (hidden by default) -->
+      <g id="eyesAwake" display="none">
+        <circle cx="76" cy="102" r="12" fill="white"/>
+        <circle cx="124" cy="102" r="12" fill="white"/>
+        <circle cx="79" cy="104" r="7.5" fill="#5a3020"/>
+        <circle cx="121" cy="104" r="7.5" fill="#5a3020"/>
+        <circle cx="82" cy="101" r="2.8" fill="white"/>
+        <circle cx="124" cy="101" r="2.8" fill="white"/>
+        <!-- Sweat -->
+        <path d="M145 80 Q151 73 148 86 Q144 94 145 80" fill="#93c5fd" opacity="0.85"/>
+        <!-- Brow lines -->
+        <path d="M68 92 Q76 87 84 92" stroke="#5a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M116 92 Q124 87 132 92" stroke="#5a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+
+      <!-- SLEEPING MOUTH -->
+      <path id="smileSleep" d="M88 148 Q100 158 112 148" stroke="#5a3020" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+
+      <!-- AWAKE MOUTH -->
+      <path id="mouthAwake" d="M88 152 Q95 145 100 152 Q105 159 112 152" stroke="#5a3020" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>
+
+      <!-- Cheek blush -->
+      <ellipse cx="66" cy="132" rx="14" ry="8" fill="rgba(255,130,80,0.28)"/>
+      <ellipse cx="134" cy="132" rx="14" ry="8" fill="rgba(255,130,80,0.28)"/>
+    </svg>
+  </div>
+
+  <!-- Status text -->
+  <div class="status" id="statusText">安靜中～ 🌙</div>
+
+  <!-- Progress -->
+  <div class="progress-area">
+    <div class="progress-top">
+      <span class="progress-top-label">🌙 靜悄悄進度</span>
+      <span class="progress-pct" id="progressPct">0%　<span id="progressTime" style="font-weight:600;opacity:.7">0 / 300 秒</span></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="goal-markers" id="goalMarkers"></div>
+
+    <!-- Volume -->
+    <div class="vol-area">
+      <span class="vol-label">音量</span>
+      <div class="vol-track">
+        <div class="vol-fill" id="volFill"></div>
+        <div class="vol-threshold" id="volThreshold"></div>
+      </div>
+      <span class="vol-label" id="volNum" style="min-width:24px;text-align:right">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- Celebrate -->
+<div id="celebrate">
+  <canvas id="fireworks"></canvas>
+  <div class="cel-emoji" id="celEmoji">🎉</div>
+  <div class="cel-title">挑戰成功！</div>
+  <div class="cel-sub" id="celSub">全班保持安靜 5 分鐘！<br>太棒了！老師好驕傲！🌟</div>
+  <button id="starAllBtn" onclick="grantAllStars()" style="
+    background:linear-gradient(135deg,#b45309,#d97706,#fbbf24);
+    border:none;border-radius:50px;color:white;
+    padding:14px 40px;font-size:1.1rem;font-weight:900;
+    cursor:pointer;font-family:inherit;letter-spacing:1px;
+    box-shadow:0 6px 25px rgba(251,191,36,0.5);
+    margin-bottom:12px;transition:all 0.2s;
+  ">⭐ 全班加 1 顆星！</button>
+  <div id="starAllMsg" style="font-size:.85rem;color:#fde68a;min-height:1.4em;margin-bottom:14px;text-align:center;"></div>
+  <button class="reset-btn" onclick="resetChallenge()">🔄 再挑戰一次</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+// ========== FIREBASE ==========
+let db = null;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyCr4Mwo79mj0BetacbYf1QsLoynsTZ00IY",
+    authDomain: "tpedusso-257723.firebaseapp.com",
+    databaseURL: "https://tpedusso-257723-default-rtdb.firebaseio.com",
+    projectId: "tpedusso-257723",
+    storageBucket: "tpedusso-257723.appspot.com",
+    messagingSenderId: "105193372361",
+    appId: "1:105193372361:web:5591b76255cb86cf566b18"
+  });
+  db = firebase.database();
+} catch(e) { console.warn('Firebase init failed', e); }
+
+// ========== CONFIG ==========
+let threshold = 22;    // noise threshold 0-100
+let goalSec   = 300;   // goal quiet seconds
+let wakeMs    = 1000;  // noise duration before waking
+let sleepMs   = 2000;  // quiet duration before sleeping again
+
+// ========== STATE ==========
+let analyser, dataArray;
+let running   = false;
+let sleeping  = true;
+let quietSec  = 0;       // accumulated quiet seconds
+let noiseAt   = null;    // timestamp when noise started
+let quietAt   = null;    // timestamp when quiet started (for sleep recovery)
+let prevTime  = null;
+let raf       = null;
+let wallSec   = 0;
+let wallInt   = null;
+let fwRaf     = null;
+const fwParts = [];
+
+// ========== STARS ==========
+(function(){
+  for(let i=0;i<75;i++){
+    const el=document.createElement('div');
+    el.className='star';
+    const sz=Math.random()*2.5+0.8;
+    el.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${sz}px;height:${sz}px;--d:${1.5+Math.random()*3}s;--dd:${Math.random()*3}s`;
+    document.body.appendChild(el);
+  }
+})();
+
+// ========== SETTINGS ==========
+let settingsOpen=false;
+function toggleSettings(){
+  settingsOpen=!settingsOpen;
+  document.getElementById('settingsPanel').classList.toggle('open',settingsOpen);
+}
+document.addEventListener('click',e=>{
+  if(settingsOpen&&!e.target.closest('#settingsPanel')&&!e.target.closest('#settingsBtn')){
+    settingsOpen=false;
+    document.getElementById('settingsPanel').classList.remove('open');
+  }
+});
+function setThreshold(v){
+  threshold=parseFloat(v);
+  document.getElementById('thresholdVal').textContent=v;
+  placeThresholdMark();
+}
+function setGoal(v){
+  goalSec=parseInt(v);
+  buildGoalMarkers();
+  updateProgressDisplay();
+}
+function setWakeDelay(v){ wakeMs=parseInt(v); }
+function placeThresholdMark(){
+  const el=document.getElementById('volThreshold');
+  if(el) el.style.left=(threshold)+'%';
+}
+function buildGoalMarkers(){
+  const c=document.getElementById('goalMarkers');
+  c.innerHTML='';
+  const steps=[0.25,0.5,0.75];
+  steps.forEach(f=>{
+    const m=document.createElement('div');
+    m.className='goal-marker';
+    m.style.left=(f*100)+'%';
+    c.appendChild(m);
+    const lbl=document.createElement('div');
+    lbl.className='goal-marker-label';
+    lbl.style.left=(f*100)+'%';
+    const s=Math.round(goalSec*f);
+    lbl.textContent=s>=60?`${Math.floor(s/60)}分`:`${s}秒`;
+    c.appendChild(lbl);
+  });
+}
+
+// ========== AUDIO ==========
+async function startListening(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    analyser=ctx.createAnalyser();
+    analyser.fftSize=256;
+    analyser.smoothingTimeConstant=0.65;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    dataArray=new Uint8Array(analyser.frequencyBinCount);
+
+    document.getElementById('startScreen').style.display='none';
+    document.getElementById('mainUI').style.display='flex';
+    running=true;
+    placeThresholdMark();
+    buildGoalMarkers();
+    startWallTimer();
+    prevTime=performance.now();
+    raf=requestAnimationFrame(loop);
+  }catch(e){
+    alert('⚠️ 無法取得麥克風權限\n\n請在瀏覽器允許麥克風，然後重新整理頁面。\n\n'+e.message);
+  }
+}
+
+function getVol(){
+  analyser.getByteFrequencyData(dataArray);
+  let s=0; for(let i=0;i<dataArray.length;i++) s+=dataArray[i];
+  return (s/dataArray.length)/2.55; // 0-100
+}
+
+// ========== MAIN LOOP ==========
+function loop(now){
+  const dt=Math.min((now-prevTime)/1000,0.12);
+  prevTime=now;
+
+  const vol=getVol();
+  updateVol(vol);
+
+  const noisy=(vol>threshold);
+
+  if(noisy){
+    quietAt=null;
+    if(!noiseAt) noiseAt=now;
+    if(sleeping&&(now-noiseAt)>=wakeMs) wakeUp();
+    // progress pauses
+  } else {
+    noiseAt=null;
+    if(!sleeping){
+      if(!quietAt) quietAt=now;
+      if((now-quietAt)>=sleepMs) goToSleep();
+    } else {
+      // sleeping + quiet → advance progress
+      quietSec=Math.min(goalSec, quietSec+dt);
+      updateProgressDisplay();
+      if(quietSec>=goalSec){ celebrate(); return; }
+    }
+  }
+  raf=requestAnimationFrame(loop);
+}
+
+// ========== CHARACTER ==========
+function wakeUp(){
+  if(!sleeping) return;
+  sleeping=false;
+  document.body.classList.add('noisy');
+  document.getElementById('eyesSleep').setAttribute('display','none');
+  document.getElementById('eyesAwake').setAttribute('display','block');
+  document.getElementById('smileSleep').setAttribute('display','none');
+  document.getElementById('mouthAwake').setAttribute('display','block');
+  setStatus('太吵了！😱 請保持安靜！');
+  flashScreen();
+}
+function goToSleep(){
+  if(sleeping) return;
+  sleeping=true;
+  quietAt=null;
+  document.body.classList.remove('noisy');
+  document.getElementById('eyesSleep').setAttribute('display','block');
+  document.getElementById('eyesAwake').setAttribute('display','none');
+  document.getElementById('smileSleep').setAttribute('display','block');
+  document.getElementById('mouthAwake').setAttribute('display','none');
+  setStatus('安靜中～ 🌙');
+}
+function setStatus(txt){ document.getElementById('statusText').textContent=txt; }
+
+// ========== DISPLAYS ==========
+function updateVol(v){
+  document.getElementById('volFill').style.width=Math.min(100,v)+'%';
+  document.getElementById('volNum').textContent=Math.round(v);
+}
+function updateProgressDisplay(){
+  const pct=Math.min(100,quietSec/goalSec*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressPct').innerHTML=
+    `${Math.round(pct)}%&nbsp;&nbsp;<span id="progressTime" style="font-weight:600;opacity:.7">${Math.round(quietSec)} / ${goalSec} 秒</span>`;
+}
+function flashScreen(){
+  const el=document.getElementById('flash');
+  el.classList.remove('go');
+  void el.offsetWidth; // reflow
+  el.classList.add('go');
+}
+
+// ========== TIMER ==========
+function startWallTimer(){
+  wallInt=setInterval(()=>{
+    wallSec++;
+    const m=String(Math.floor(wallSec/60)).padStart(2,'0');
+    const s=String(wallSec%60).padStart(2,'0');
+    document.getElementById('timerDisplay').textContent=m+':'+s;
+  },1000);
+}
+
+// ========== RESET ==========
+function confirmReset(){
+  if(!running){ return; }
+  if(quietSec<2 || confirm('確定要重置進度嗎？')){
+    doReset();
+  }
+}
+function doReset(){
+  quietSec=0;
+  updateProgressDisplay();
+  if(!sleeping){ goToSleep(); }
+  noiseAt=null; quietAt=null;
+}
+
+// ========== CELEBRATE ==========
+function celebrate(){
+  running=false;
+  cancelAnimationFrame(raf);
+  clearInterval(wallInt);
+  const mins=Math.round(goalSec/60);
+  document.getElementById('celSub').innerHTML=
+    `全班保持安靜 ${mins} 分鐘！<br>太棒了！老師好驕傲！🌟`;
+  document.getElementById('celebrate').classList.add('show');
+  launchFireworks();
+}
+function resetChallenge(){
+  document.getElementById('celebrate').classList.remove('show');
+  cancelAnimationFrame(fwRaf);
+  fwParts.length=0;
+  const fc=document.getElementById('fireworks');
+  fc.getContext('2d').clearRect(0,0,fc.width,fc.height);
+
+  quietSec=0; wallSec=0; running=true;
+  sleeping=true; noiseAt=null; quietAt=null;
+  updateProgressDisplay();
+  goToSleep();
+  clearInterval(wallInt);
+  document.getElementById('timerDisplay').textContent='00:00';
+  startWallTimer();
+  prevTime=performance.now();
+  raf=requestAnimationFrame(loop);
+}
+
+// ========== GRANT ALL STARS ==========
+async function grantAllStars(){
+  const btn = document.getElementById('starAllBtn');
+  const msg = document.getElementById('starAllMsg');
+  btn.disabled = true;
+  btn.textContent = '⏳ 加星星中…';
+  msg.textContent = '';
+
+  if(!db){
+    msg.textContent = '⚠️ 無法連接資料庫，請確認網路連線';
+    btn.disabled = false; btn.textContent = '⭐ 全班加 1 顆星！';
+    return;
+  }
+
+  try {
+    const snap = await db.ref('class306/students').get();
+    if(!snap.exists()){ msg.textContent = '⚠️ 找不到學生資料'; btn.disabled=false; btn.textContent='⭐ 全班加 1 顆星！'; return; }
+
+    const data = snap.val();
+    const today = new Date().toLocaleDateString('zh-TW');
+    const mins  = Math.round(goalSec/60);
+    const reason= `🤫 靜悄悄挑戰成功（${mins} 分鐘）`;
+    const updates = {};
+    let count = 0;
+
+    Object.entries(data).forEach(([id, s])=>{
+      if(!s || s.name === undefined) return;
+      const newStars = (s.stars||0) + 1;
+      const logId    = 'q'+Date.now()+Math.random().toString(36).slice(2,6);
+      const newLog   = [...(Array.isArray(s.log)?s.log:[]), { id:logId, reason, amt:1, date:today }];
+      updates[`class306/students/${id}/stars`]   = newStars;
+      updates[`class306/students/${id}/log`]      = newLog;
+      count++;
+    });
+
+    await db.ref().update(updates);
+    btn.textContent = '✅ 已加星！';
+    msg.innerHTML   = `🌟 ${count} 位同學各加了 1 顆星！`;
+    btn.style.background = 'linear-gradient(135deg,#065f46,#059669)';
+  } catch(e) {
+    msg.textContent = '⚠️ 加星星失敗：'+e.message;
+    btn.disabled=false; btn.textContent='⭐ 全班加 1 顆星！';
+  }
+}
+
+// ========== FIREWORKS ==========
+function launchFireworks(){
+  const cv=document.getElementById('fireworks');
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+
+  function burst(){
+    const x=cv.width*(.15+Math.random()*.7);
+    const y=cv.height*(.1+Math.random()*.5);
+    const hue=Math.random()*360;
+    for(let i=0;i<50;i++){
+      const a=(Math.PI*2/50)*i;
+      const sp=1.5+Math.random()*5;
+      fwParts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+        alpha:1,c:`hsl(${hue},100%,${50+Math.random()*30}%)`,r:1.5+Math.random()*3});
+    }
+  }
+  burst();
+  const iv=setInterval(burst,550);
+  setTimeout(()=>clearInterval(iv),8000);
+
+  function draw(){
+    ctx.fillStyle='rgba(0,0,0,0.13)';
+    ctx.fillRect(0,0,cv.width,cv.height);
+    for(let i=fwParts.length-1;i>=0;i--){
+      const p=fwParts[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.07; p.alpha-=0.011;
+      if(p.alpha<=0){fwParts.splice(i,1);continue}
+      ctx.globalAlpha=p.alpha;
+      ctx.fillStyle=p.c;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    fwRaf=requestAnimationFrame(draw);
+  }
+  draw();
+}
+</script>
+</body>
+</html>
