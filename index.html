@@ -2535,7 +2535,11 @@ document.body && (document.body.scrollLeft = 0);
       <span style="position:absolute;font-size:1.4rem;font-weight:900;color:#a5b4fc;animation:qFloatUp 2.5s ease-out infinite;animation-delay:1.6s;opacity:0;left:28px;top:15px;">Z</span>
     </div>
     <div id="quietExclaim" style="position:absolute;top:-15px;right:-35px;font-size:2rem;display:none;animation:qPop .2s ease-out;">❗</div>
-    <svg id="quietCharSVG" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" style="width:200px;height:200px;"></svg>
+    <img id="qLayerBody" src="mali_body.png" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;"/>
+    <img id="qLayerEyesOpen" src="mali_eyes_open.png" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;display:none;"/>
+    <img id="qLayerEyesClosed" src="mali_eyes_closed.png" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;"/>
+    <img id="qLayerMouth" src="mali_mouth.png" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;mix-blend-mode:screen;display:none;"/>
+    <div id="quietDragonOverlay" style="position:absolute;left:0;top:0;width:55%;height:100%;display:none;align-items:center;justify-content:center;pointer-events:none;z-index:10;text-align:center;"><span id="quietDragonText">太吵了！<br>請安靜</span></div>
   </div>
 
   <!-- Status -->
@@ -2641,6 +2645,10 @@ document.body && (document.body.scrollLeft = 0);
 @keyframes qShake{0%,100%{transform:translateX(0)}30%{transform:translateX(-6px)}70%{transform:translateX(6px)}}
 #quietCharWrap.sleeping{animation:qBreathe 4s ease-in-out infinite}
 #quietCharWrap.noisy{animation:qShake .25s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(239,68,68,.6))}
+#quietCharWrap{transform-origin:bottom center;}
+#quietDragonOverlay{display:none;position:absolute;left:0;top:0;width:55%;height:100%;align-items:center;justify-content:center;pointer-events:none;z-index:10;text-align:center;}
+#quietDragonText{font-size:.85rem;font-weight:900;line-height:1.5;color:#fef08a;text-shadow:0 0 8px #ef4444,0 0 20px #f97316,0 0 40px #dc2626;animation:qDrFire .45s ease-in-out infinite alternate;}
+@keyframes qDrFire{0%{opacity:.8;text-shadow:0 0 8px #ef4444,0 0 18px #f97316;}100%{opacity:1;transform:scale(1.08);text-shadow:0 0 16px #ef4444,0 0 32px #f97316,0 0 55px #dc2626;}}
 #quietOverlay.noisy{background:linear-gradient(180deg,#3d0a0a 0%,#1a0505 100%)}
 #quietStatus.noisy{color:#fca5a5;text-shadow:0 0 25px rgba(252,165,165,.8)}
 </style>
@@ -9070,10 +9078,12 @@ function qSetSleeping(val){
     st?.classList.remove('noisy');
     if(zzz) zzz.style.display='';
     if(exc) exc.style.display='none';
-    document.getElementById('qEyesSleep')?.setAttribute('display','block');
-    document.getElementById('qEyesAwake')?.setAttribute('display','none');
-    document.getElementById('qSmileSleep')?.setAttribute('display','block');
-    document.getElementById('qMouthAwake')?.setAttribute('display','none');
+    // 分層動畫：睡覺 → 閉眼
+    const lEO=document.getElementById('qLayerEyesOpen'); if(lEO) lEO.style.display='none';
+    const lEC=document.getElementById('qLayerEyesClosed'); if(lEC) lEC.style.display='';
+    const lM=document.getElementById('qLayerMouth'); if(lM) lM.style.display='none';
+    const dov=document.getElementById('quietDragonOverlay');
+    if(dov) dov.style.display='none';
     if(st) st.textContent='安靜中～ 🌙';
     // 小視窗
     if(miniAnimal) miniAnimal.textContent=c.emoji;
@@ -9088,10 +9098,12 @@ function qSetSleeping(val){
     st?.classList.add('noisy');
     if(zzz) zzz.style.display='none';
     if(exc){ exc.style.display='block'; exc.style.animation='none'; void exc.offsetWidth; exc.style.animation='qPop .2s ease-out'; }
-    document.getElementById('qEyesSleep')?.setAttribute('display','none');
-    document.getElementById('qEyesAwake')?.setAttribute('display','block');
-    document.getElementById('qSmileSleep')?.setAttribute('display','none');
-    document.getElementById('qMouthAwake')?.setAttribute('display','block');
+    // 分層動畫：被吵醒 → 睜眼張嘴
+    const lEO2=document.getElementById('qLayerEyesOpen'); if(lEO2) lEO2.style.display='';
+    const lEC2=document.getElementById('qLayerEyesClosed'); if(lEC2) lEC2.style.display='none';
+    const lM2=document.getElementById('qLayerMouth'); if(lM2) lM2.style.display='';
+    const dov2=document.getElementById('quietDragonOverlay');
+    if(dov2) dov2.style.display=(qCurrentChar==='long')?'flex':'none';
     if(st) st.textContent='太吵了！😱 請保持安靜！';
     // 小視窗
     if(miniAnimal){ miniAnimal.style.filter='drop-shadow(0 0 8px rgba(239,68,68,.8))'; }
@@ -9222,6 +9234,8 @@ const Q_CHARS={
     id:'mali',name:'馬里諾犬',emoji:'🐕',
     bgSleep:'linear-gradient(180deg,#120d00 0%,#0a0800 100%)',
     bgNoisy:'linear-gradient(180deg,#3d0a0a 0%,#1a0505 100%)',
+    imgSrc:'mali_body.png',
+    layers:{body:'mali_body.png',eyesOpen:'mali_eyes_open.png',eyesClosed:'mali_eyes_closed.png',mouth:'mali_mouth.png'},
     svgContent:`<defs>
 <radialGradient id="qFur" cx="38%" cy="30%" r="65%"><stop offset="0%" stop-color="#E0A848"/><stop offset="100%" stop-color="#A06828"/></radialGradient>
 <radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#d97706" stop-opacity="0.35"/><stop offset="100%" stop-color="#d97706" stop-opacity="0"/></radialGradient>
@@ -9291,6 +9305,8 @@ const Q_CHARS={
     id:'gosig',name:'IKEA黃金犬',emoji:'🐶',
     bgSleep:'linear-gradient(180deg,#141000 0%,#0d0a00 100%)',
     bgNoisy:'linear-gradient(180deg,#3d1a0a 0%,#200f05 100%)',
+    imgSrc:'gosig_body.png',
+    layers:{body:'gosig_body.png',eyesOpen:'gosig_eyes_open.png',eyesClosed:'gosig_eyes_closed.png',mouth:'gosig_mouth.png'},
     svgContent:`<defs>
 <radialGradient id="qGFur" cx="40%" cy="28%" r="62%"><stop offset="0%" stop-color="#FAD878"/><stop offset="100%" stop-color="#D4A030"/></radialGradient>
 <radialGradient id="qGEar" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#EAB840"/><stop offset="100%" stop-color="#C08020"/></radialGradient>
@@ -9370,6 +9386,8 @@ const Q_CHARS={
     id:'panda',name:'熊貓',emoji:'🐼',
     bgSleep:'linear-gradient(180deg,#0d1b3e 0%,#0a2040 100%)',
     bgNoisy:'linear-gradient(180deg,#1a0d3d 0%,#0d0520 100%)',
+    imgSrc:'panda_body.png',
+    layers:{body:'panda_body.png',eyesOpen:'panda_eyes_open.png',eyesClosed:'panda_eyes_closed.png',mouth:'panda_mouth.png'},
     svgContent:`<defs>
 <radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.28"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
 </defs>
@@ -9446,6 +9464,8 @@ const Q_CHARS={
     id:'long',name:'噴火龍',emoji:'🐉',
     bgSleep:'linear-gradient(180deg,#06082a 0%,#030418 100%)',
     bgNoisy:'linear-gradient(180deg,#200800 0%,#0a0300 100%)',
+    imgSrc:'long_body.png',
+    layers:{body:'long_body.png',eyesOpen:'long_eyes_open.png',eyesClosed:'long_eyes_closed.png',mouth:'long_mouth.png'},
     svgContent:`<defs>
 <radialGradient id="qDrHead" cx="40%" cy="28%" r="65%"><stop offset="0%" stop-color="#72C8FF"/><stop offset="60%" stop-color="#2070D0"/><stop offset="100%" stop-color="#0D2A80"/></radialGradient>
 <radialGradient id="qDrFace" cx="50%" cy="55%" r="52%"><stop offset="0%" stop-color="#96D8FF"/><stop offset="100%" stop-color="#3080C8"/></radialGradient>
@@ -9541,8 +9561,14 @@ let qMode='none'; // 'none'|'full'|'mini'
 function qSetChar(id){
   const c=Q_CHARS[id]; if(!c) return;
   qCurrentChar=id;
-  const svg=document.getElementById('quietCharSVG');
-  if(svg) svg.innerHTML=c.svgContent;
+  const lBody=document.getElementById('qLayerBody');
+  if(lBody) lBody.src=c.layers?.body||c.imgSrc||'mali_body.png';
+  const lEOpen=document.getElementById('qLayerEyesOpen');
+  if(lEOpen) lEOpen.src=c.layers?.eyesOpen||'';
+  const lEClose=document.getElementById('qLayerEyesClosed');
+  if(lEClose) lEClose.src=c.layers?.eyesClosed||'';
+  const lMouth=document.getElementById('qLayerMouth');
+  if(lMouth) lMouth.src=c.layers?.mouth||'';
   // 恢復眼睛/嘴狀態
   if(qSleeping!==undefined) qSetSleeping(qSleeping);
   // 更新小視窗 badge
