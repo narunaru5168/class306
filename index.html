@@ -1347,7 +1347,7 @@ document.body && (document.body.scrollLeft = 0);
           <span style="font-size:.74rem;color:rgba(255,255,255,.45);white-space:nowrap;">🎚 靈敏度</span>
           <input type="range" id="quietThresholdInput" min="5" max="60" value="22"
             style="flex:1;accent-color:#a78bfa;cursor:pointer;"
-            oninput="document.getElementById('quietThresholdVal').textContent=this.value">
+            oninput="document.getElementById('quietThresholdVal').textContent=this.value;document.getElementById('quietThresholdInput2').value=this.value;document.getElementById('quietThresholdVal2').textContent=this.value">
           <span id="quietThresholdVal" style="font-size:.82rem;font-weight:900;color:#a78bfa;min-width:22px;text-align:right;">22</span>
         </div>
         <div style="font-size:.7rem;color:rgba(255,255,255,.3);padding-left:2px;">數字越小越敏感 · 一般教室建議 15–25 · 啟動後看白線位置微調</div>
@@ -2461,10 +2461,10 @@ document.body && (document.body.scrollLeft = 0);
       <div>
         <div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px;font-weight:700;">靈敏度（越低越靈敏）</div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input type="range" id="quietThresholdInput" min="5" max="60" value="22"
+          <input type="range" id="quietThresholdInput2" min="5" max="60" value="22"
             style="width:120px;accent-color:#7c3aed;"
-            oninput="document.getElementById('quietThresholdVal').textContent=this.value">
-          <span id="quietThresholdVal" style="font-size:.85rem;font-weight:800;color:#7c3aed;min-width:24px;">22</span>
+            oninput="document.getElementById('quietThresholdVal2').textContent=this.value;document.getElementById('quietThresholdInput').value=this.value;document.getElementById('quietThresholdVal').textContent=this.value">
+          <span id="quietThresholdVal2" style="font-size:.85rem;font-weight:800;color:#7c3aed;min-width:24px;">22</span>
         </div>
       </div>
       <div>
