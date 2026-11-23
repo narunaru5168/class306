@@ -1371,6 +1371,7 @@ document.body && (document.body.scrollLeft = 0);
       <button onclick="qSetCharHome('mali')" id="qHomeCharMali" style="flex:1;padding:7px 4px;border-radius:8px;border:2px solid #a78bfa;background:rgba(167,139,250,.2);color:white;cursor:pointer;font-size:.77rem;font-weight:900;font-family:inherit;transition:all .2s;">🐕 馬里諾</button>
       <button onclick="qSetCharHome('gosig')" id="qHomeCharGosig" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);cursor:pointer;font-size:.77rem;font-weight:700;font-family:inherit;transition:all .2s;">🐶 黃金犬</button>
       <button onclick="qSetCharHome('panda')" id="qHomeCharPanda" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);cursor:pointer;font-size:.77rem;font-weight:700;font-family:inherit;transition:all .2s;">🐼 熊貓</button>
+      <button onclick="qSetCharHome('long')" id="qHomeCharLong" style="flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:rgba(255,255,255,.6);cursor:pointer;font-size:.77rem;font-weight:700;font-family:inherit;transition:all .2s;">🐉 噴火龍</button>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="openQuietMini()" style="flex:1;background:rgba(255,255,255,.12);color:white;border:1.5px solid rgba(255,255,255,.25);border-radius:50px;padding:10px;font-size:.85rem;font-weight:900;cursor:pointer;font-family:inherit;">🪟 小視窗</button>
@@ -2520,6 +2521,7 @@ document.body && (document.body.scrollLeft = 0);
     <button onclick="qSetChar('mali')" id="qOvCharMali" title="馬里諾犬" style="background:rgba(167,139,250,.25);border:2px solid #a78bfa;border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:900;color:white;font-family:inherit;transition:all .2s;">🐕</button>
     <button onclick="qSetChar('gosig')" id="qOvCharGosig" title="IKEA黃金犬" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;transition:all .2s;">🐶</button>
     <button onclick="qSetChar('panda')" id="qOvCharPanda" title="熊貓" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;transition:all .2s;">🐼</button>
+    <button onclick="qSetChar('long')" id="qOvCharLong" title="噴火龍" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;transition:all .2s;">🐉</button>
     <div style="flex:1"></div>
     <button onclick="switchToQuietMini()" title="縮小視窗" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.18);border-radius:50px;padding:6px 14px;cursor:pointer;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.65);font-family:inherit;">🪟 小視窗</button>
   </div>
@@ -8942,6 +8944,8 @@ let qAnalyser=null, qDataArray=null, qRunning=false, qSleeping=true;
 let qQuietSec=0, qGoalSec=300, qThreshold=22, qWakeMs=1000, qSleepMs=2000;
 let qNoiseAt=null, qQuietAt=null, qPrevTime=null, qRaf=null;
 let qWallSec=0, qWallInt=null, qFwRaf=null;
+let qWakeCount=0; // 被吵醒次數（睡→吵醒 才算）
+let qAwardStars=1; // 本次應得星星數
 const qFwParts=[];
 
 function openQuietOverlay(){
@@ -8957,7 +8961,7 @@ function openQuietOverlay(){
   qWakeMs    = parseInt(document.getElementById('quietWakeSelect')?.value||1000);
   // reset state
   qQuietSec=0; qWallSec=0; qRunning=false; qSleeping=true;
-  qNoiseAt=null; qQuietAt=null;
+  qNoiseAt=null; qQuietAt=null; qWakeCount=0; qAwardStars=1;
   document.getElementById('quietProgressFill').style.width='0%';
   document.getElementById('quietProgressPct').textContent='0%';
   document.getElementById('quietTimerDisplay').textContent='00:00';
@@ -9047,6 +9051,7 @@ function qLoop(now){
 }
 
 function qSetSleeping(val){
+  if(!val && qSleeping && qRunning) qWakeCount++; // 睡著→被吵醒，計數+1
   qSleeping=val;
   const ov=document.getElementById('quietOverlay');
   const cw=document.getElementById('quietCharWrap');
@@ -9117,8 +9122,35 @@ function qCelebrate(){
     qMode='full';
   }
   const mins=Math.round(qGoalSec/60);
+  // ── 計算星星（依吵醒次數）──
+  let stars, starLabel, starEmoji;
+  if(qWakeCount===0){
+    stars=3; starEmoji='🌟🌟🌟'; starLabel='完美靜音！完全沒有打擾！';
+  } else if(qWakeCount<=3){
+    stars=2; starEmoji='⭐⭐'; starLabel=`非常棒！只被吵醒 ${qWakeCount} 次`;
+  } else if(qWakeCount<=6){
+    stars=1; starEmoji='⭐'; starLabel=`還不錯！被吵醒 ${qWakeCount} 次`;
+  } else {
+    stars=0; starEmoji='😅'; starLabel=`被吵醒 ${qWakeCount} 次，繼續加油！`;
+  }
+  qAwardStars=stars;
   document.getElementById('quietCelSub').innerHTML=
-    `全班保持安靜 ${mins} 分鐘！<br>🌟 太棒了！老師好驕傲！`;
+    `全班保持安靜 ${mins} 分鐘！<br><span style="font-size:1.3rem;letter-spacing:2px;">${starEmoji}</span><br><span style="font-size:.85rem;">${starLabel}</span>`;
+  // 更新按鈕
+  const sb=document.getElementById('quietStarAllBtn');
+  if(sb){
+    if(stars>0){
+      sb.disabled=false;
+      sb.textContent=`⭐ 全班加 ${stars} 顆星！`;
+      sb.style.background='linear-gradient(135deg,#b45309,#d97706,#fbbf24)';
+      sb.style.opacity='1'; sb.style.cursor='pointer';
+    } else {
+      sb.disabled=true;
+      sb.textContent='😅 這次沒有星星，再接再厲！';
+      sb.style.background='rgba(255,255,255,.12)';
+      sb.style.opacity='.6'; sb.style.cursor='default';
+    }
+  }
   const cel=document.getElementById('quietCelebrate');
   cel.style.display='flex';
   qLaunchFireworks();
@@ -9131,17 +9163,19 @@ function quietGrantAllStars(){
   btn.disabled=true; btn.textContent='✅ 加星中…';
   const today=new Date().toLocaleDateString('zh-TW');
   const mins=Math.round(qGoalSec/60);
+  const amt=qAwardStars||1;
+  const wakeNote=qWakeCount===0?'完美靜音':`被吵醒${qWakeCount}次`;
   let count=0;
   students.forEach(s=>{
-    s.stars=(s.stars||0)+1;
+    s.stars=(s.stars||0)+amt;
     s.log=s.log||[];
-    s.log.push({id:generateId(),reason:`🤫 靜悄悄挑戰成功（${mins} 分鐘）`,amt:1,date:today});
+    s.log.push({id:generateId(),reason:`🤫 靜悄悄挑戰（${mins}分鐘，${wakeNote}）`,amt,date:today});
     count++;
   });
   save(); renderStudents(); updateStats();
-  btn.textContent='✅ 已加星！';
+  btn.textContent=`✅ 已加 ${amt} 顆星！`;
   btn.style.background='linear-gradient(135deg,#065f46,#059669)';
-  msg.innerHTML=`🌟 ${count} 位同學各加了 1 顆星！`;
+  msg.innerHTML=`🌟 ${count} 位同學各加了 ${amt} 顆星！`;
 }
 
 function quietResetChallenge(){
@@ -9150,7 +9184,7 @@ function quietResetChallenge(){
   const fc=document.getElementById('quietFireworks');
   if(fc) fc.getContext('2d').clearRect(0,0,fc.width,fc.height);
   qQuietSec=0; qWallSec=0; qRunning=true; qSleeping=true;
-  qNoiseAt=null; qQuietAt=null;
+  qNoiseAt=null; qQuietAt=null; qWakeCount=0; qAwardStars=1;
   document.getElementById('quietProgressFill').style.width='0%';
   document.getElementById('quietProgressPct').textContent='0%';
   document.getElementById('quietTimerDisplay').textContent='00:00';
@@ -9188,69 +9222,276 @@ const Q_CHARS={
     id:'mali',name:'馬里諾犬',emoji:'🐕',
     bgSleep:'linear-gradient(180deg,#120d00 0%,#0a0800 100%)',
     bgNoisy:'linear-gradient(180deg,#3d0a0a 0%,#1a0505 100%)',
-    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#d97706" stop-opacity="0.3"/><stop offset="100%" stop-color="#d97706" stop-opacity="0"/></radialGradient></defs>
-<ellipse cx="100" cy="178" rx="65" ry="16" fill="url(#qBg)"/>
-<polygon points="58,80 40,16 82,70" fill="#B07830"/>
-<polygon points="142,80 160,16 118,70" fill="#B07830"/>
-<polygon points="61,78 48,22 79,69" fill="#6B4510" opacity="0.55"/>
-<polygon points="139,78 152,22 121,69" fill="#6B4510" opacity="0.55"/>
-<circle cx="100" cy="112" r="76" fill="#C8903A"/>
-<ellipse cx="100" cy="96" rx="46" ry="41" fill="#1C0C00" opacity="0.78"/>
-<ellipse cx="100" cy="130" rx="32" ry="22" fill="#D4A050"/>
-<ellipse cx="100" cy="124" rx="10" ry="7.5" fill="#0d0500"/>
-<ellipse cx="97" cy="121" rx="3.5" ry="2.5" fill="rgba(255,255,255,.3)"/>
-<ellipse cx="66" cy="136" rx="12" ry="7.5" fill="rgba(255,130,80,.3)"/>
-<ellipse cx="134" cy="136" rx="12" ry="7.5" fill="rgba(255,130,80,.3)"/>
-<g id="qEyesSleep"><path d="M68 96 Q77 87 86 96" stroke="#f5d090" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M114 96 Q123 87 132 96" stroke="#f5d090" stroke-width="4" fill="none" stroke-linecap="round"/></g>
-<g id="qEyesAwake" display="none"><circle cx="77" cy="93" r="13" fill="white"/><circle cx="123" cy="93" r="13" fill="white"/><circle cx="80" cy="95" r="8" fill="#3d1500"/><circle cx="120" cy="95" r="8" fill="#3d1500"/><circle cx="83" cy="92" r="3" fill="white"/><circle cx="123" cy="92" r="3" fill="white"/></g>
-<path id="qSmileSleep" d="M88 148 Q100 157 112 148" stroke="#6B4510" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-<path id="qMouthAwake" d="M88 150 Q95 142 100 150 Q105 158 112 150" stroke="#6B4510" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+    svgContent:`<defs>
+<radialGradient id="qFur" cx="38%" cy="30%" r="65%"><stop offset="0%" stop-color="#E0A848"/><stop offset="100%" stop-color="#A06828"/></radialGradient>
+<radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#d97706" stop-opacity="0.35"/><stop offset="100%" stop-color="#d97706" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="100" cy="192" rx="54" ry="11" fill="url(#qBg)"/>
+<path d="M124 165 Q156 146 149 128 Q143 116 133 131" fill="none" stroke="#C89040" stroke-width="15" stroke-linecap="round"/>
+<ellipse cx="100" cy="170" rx="40" ry="31" fill="url(#qFur)"/>
+<ellipse cx="100" cy="161" rx="24" ry="20" fill="#2A1500" opacity=".62"/>
+<ellipse cx="80" cy="188" rx="19" ry="12" fill="#C09040"/>
+<ellipse cx="120" cy="188" rx="19" ry="12" fill="#C09040"/>
+<polygon points="49,72 34,6 80,54" fill="#C89040"/>
+<polygon points="52,70 40,12 76,52" fill="#2A1500" opacity=".58"/>
+<polygon points="55,67 46,19 72,50" fill="#F4A898"/>
+<polygon points="151,72 166,6 120,54" fill="#C89040"/>
+<polygon points="148,70 160,12 124,52" fill="#2A1500" opacity=".58"/>
+<polygon points="145,67 154,19 128,50" fill="#F4A898"/>
+<circle cx="100" cy="102" r="68" fill="url(#qFur)"/>
+<ellipse cx="100" cy="88" rx="52" ry="47" fill="#2A1500" opacity=".66"/>
+<ellipse cx="100" cy="130" rx="35" ry="26" fill="#D4A860"/>
+<ellipse cx="68" cy="122" rx="14" ry="9" fill="rgba(255,100,60,.22)"/>
+<ellipse cx="132" cy="122" rx="14" ry="9" fill="rgba(255,100,60,.22)"/>
+<ellipse cx="100" cy="116" rx="13" ry="10" fill="#150800"/>
+<ellipse cx="96" cy="113" rx="4.5" ry="3" fill="rgba(255,255,255,.42)"/>
+<line x1="100" y1="126" x2="100" y2="132" stroke="#9B6420" stroke-width="3" stroke-linecap="round"/>
+<g id="qEyesSleep">
+<path d="M64 93 Q78 78 92 93" stroke="#F8DC90" stroke-width="6" fill="none" stroke-linecap="round"/>
+<path d="M108 93 Q122 78 136 93" stroke="#F8DC90" stroke-width="6" fill="none" stroke-linecap="round"/>
+<line x1="68" y1="90" x2="65" y2="82" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+<line x1="78" y1="84" x2="78" y2="76" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+<line x1="88" y1="90" x2="91" y2="82" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+<line x1="112" y1="90" x2="109" y2="82" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+<line x1="122" y1="84" x2="122" y2="76" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+<line x1="132" y1="90" x2="135" y2="82" stroke="#F8DC90" stroke-width="3" stroke-linecap="round"/>
+</g>
+<g id="qEyesAwake" display="none">
+<circle cx="78" cy="91" r="21" fill="white"/>
+<circle cx="122" cy="91" r="21" fill="white"/>
+<circle cx="80" cy="94" r="14" fill="#180800"/>
+<circle cx="120" cy="94" r="14" fill="#180800"/>
+<circle cx="86" cy="86" r="6" fill="white"/>
+<circle cx="126" cy="86" r="6" fill="white"/>
+<circle cx="78" cy="99" r="3" fill="white"/>
+<circle cx="118" cy="99" r="3" fill="white"/>
+</g>
+<path id="qSmileSleep" d="M86 149 Q100 161 114 149" stroke="#9B6420" stroke-width="4" fill="none" stroke-linecap="round"/>
+<g id="qMouthAwake" display="none">
+<path d="M84 149 Q100 168 116 149" fill="#180800"/>
+<ellipse cx="100" cy="158" rx="14" ry="11" fill="#F06878"/>
+<ellipse cx="100" cy="163" rx="10" ry="6" fill="#D85060"/>
+</g>`
   },
   gosig:{
     id:'gosig',name:'IKEA黃金犬',emoji:'🐶',
-    bgSleep:'linear-gradient(180deg,#15110000 0%,#0f0d0000 100%)',
-    bgNoisy:'linear-gradient(180deg,#3d1a0a 0%,#200f05 100%)',
     bgSleep:'linear-gradient(180deg,#141000 0%,#0d0a00 100%)',
-    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/></radialGradient></defs>
-<ellipse cx="100" cy="178" rx="68" ry="16" fill="url(#qBg)"/>
-<ellipse cx="44" cy="102" rx="27" ry="43" fill="#C89830" transform="rotate(-8,44,102)"/>
-<ellipse cx="156" cy="102" rx="27" ry="43" fill="#C89830" transform="rotate(8,156,102)"/>
-<ellipse cx="44" cy="104" rx="17" ry="32" fill="#E8C050" opacity="0.55" transform="rotate(-8,44,104)"/>
-<ellipse cx="156" cy="104" rx="17" ry="32" fill="#E8C050" opacity="0.55" transform="rotate(8,156,104)"/>
-<circle cx="100" cy="108" r="80" fill="#E8C060"/>
-<circle cx="80" cy="88" r="26" fill="rgba(255,255,255,.1)"/>
-<ellipse cx="100" cy="130" rx="38" ry="27" fill="#F0D080"/>
-<ellipse cx="100" cy="123" rx="11" ry="8" fill="#2a1500"/>
-<ellipse cx="97" cy="120" rx="3.8" ry="2.8" fill="rgba(255,255,255,.35)"/>
-<ellipse cx="64" cy="137" rx="14" ry="9" fill="rgba(255,140,90,.35)"/>
-<ellipse cx="136" cy="137" rx="14" ry="9" fill="rgba(255,140,90,.35)"/>
-<g id="qEyesSleep"><path d="M68 103 Q78 93 88 103" stroke="#5a3010" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M112 103 Q122 93 132 103" stroke="#5a3010" stroke-width="5" fill="none" stroke-linecap="round"/><line x1="70" y1="101" x2="68" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="78" y1="96" x2="78" y2="89" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="86" y1="101" x2="88" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="114" y1="101" x2="112" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="122" y1="96" x2="122" y2="89" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/><line x1="130" y1="101" x2="132" y2="94" stroke="#5a3010" stroke-width="2.5" stroke-linecap="round"/></g>
-<g id="qEyesAwake" display="none"><circle cx="78" cy="100" r="16" fill="white"/><circle cx="122" cy="100" r="16" fill="white"/><circle cx="81" cy="102" r="10" fill="#3d1800"/><circle cx="119" cy="102" r="10" fill="#3d1800"/><circle cx="85" cy="98" r="4" fill="white"/><circle cx="123" cy="98" r="4" fill="white"/></g>
-<path id="qSmileSleep" d="M86 150 Q100 162 114 150" stroke="#5a3010" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-<path id="qMouthAwake" d="M90 152 Q95 145 100 152 Q105 159 110 152" stroke="#5a3010" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+    bgNoisy:'linear-gradient(180deg,#3d1a0a 0%,#200f05 100%)',
+    svgContent:`<defs>
+<radialGradient id="qGFur" cx="40%" cy="28%" r="62%"><stop offset="0%" stop-color="#FAD878"/><stop offset="100%" stop-color="#D4A030"/></radialGradient>
+<radialGradient id="qGEar" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#EAB840"/><stop offset="100%" stop-color="#C08020"/></radialGradient>
+</defs>
+<!-- 尾巴 -->
+<path d="M148,168 Q175,152 182,168 Q186,182 170,188 Q158,191 148,180 Z" fill="#E8B040" stroke="#C08020" stroke-width="2"/>
+<!-- 尾巴搖擺線 -->
+<path d="M183,160 Q189,155 192,158" stroke="#C08020" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M185,170 Q192,167 194,170" stroke="#C08020" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<!-- 身體 -->
+<ellipse cx="100" cy="174" rx="58" ry="34" fill="url(#qGFur)"/>
+<!-- 前腳 -->
+<ellipse cx="76" cy="192" rx="20" ry="12" fill="#E8B040"/>
+<ellipse cx="124" cy="192" rx="20" ry="12" fill="#E8B040"/>
+<!-- 爪子紋路 -->
+<line x1="69" y1="197" x2="66" y2="200" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="76" y1="198" x2="76" y2="201" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="83" y1="197" x2="86" y2="200" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="117" y1="197" x2="114" y2="200" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="124" y1="198" x2="124" y2="201" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="131" y1="197" x2="134" y2="200" stroke="#C08020" stroke-width="1.8" stroke-linecap="round"/>
+<!-- 左耳（大垂耳） -->
+<path d="M38,80 Q20,95 24,130 Q28,158 50,162 Q66,165 72,148 Q78,128 68,98 Q58,70 38,80Z" fill="url(#qGEar)" stroke="#C08020" stroke-width="1.8"/>
+<!-- 右耳（大垂耳） -->
+<path d="M162,80 Q180,95 176,130 Q172,158 150,162 Q134,165 128,148 Q122,128 132,98 Q142,70 162,80Z" fill="url(#qGEar)" stroke="#C08020" stroke-width="1.8"/>
+<!-- 耳朵毛絨邊 -->
+<path d="M36,84 Q28,90 25,100" stroke="#C08020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<path d="M34,96 Q26,104 25,114" stroke="#C08020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<path d="M164,84 Q172,90 175,100" stroke="#C08020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<path d="M166,96 Q174,104 175,114" stroke="#C08020" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+<!-- 大圓頭 -->
+<circle cx="100" cy="90" r="66" fill="url(#qGFur)"/>
+<!-- 頭頂毛絨 -->
+<path d="M84,26 Q88,14 94,10 Q100,8 106,10 Q112,14 116,26" fill="#E8B040" stroke="#C08020" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M72,34 Q72,22 78,20 Q84,20 86,30" fill="#E8B040" stroke="#C08020" stroke-width="1.5" stroke-linejoin="round"/>
+<path d="M128,34 Q128,22 122,20 Q116,20 114,30" fill="#E8B040" stroke="#C08020" stroke-width="1.5" stroke-linejoin="round"/>
+<!-- 臉部淺色中心 -->
+<ellipse cx="100" cy="108" rx="44" ry="38" fill="#FAE08A"/>
+<!-- 腮紅 -->
+<ellipse cx="68" cy="108" rx="14" ry="9" fill="rgba(255,140,80,.22)"/>
+<ellipse cx="132" cy="108" rx="14" ry="9" fill="rgba(255,140,80,.22)"/>
+<!-- 大黑鼻子 -->
+<ellipse cx="100" cy="102" rx="14" ry="10" fill="#1a0a00"/>
+<ellipse cx="95" cy="98" rx="4.5" ry="3" fill="rgba(255,255,255,.38)"/>
+<!-- 鼻紋 -->
+<line x1="100" y1="112" x2="100" y2="118" stroke="#5A3010" stroke-width="2.8" stroke-linecap="round"/>
+<!-- 睡覺眼（彎彎睡眼） -->
+<g id="qEyesSleep">
+<path d="M68 82 Q80 70 92 82" stroke="#2A1200" stroke-width="6" fill="none" stroke-linecap="round"/>
+<path d="M108 82 Q120 70 132 82" stroke="#2A1200" stroke-width="6" fill="none" stroke-linecap="round"/>
+</g>
+<!-- 醒來眼（小黑眼珠，參考圖風格） -->
+<g id="qEyesAwake" display="none">
+<circle cx="80" cy="80" r="10" fill="#1a0a00"/>
+<circle cx="120" cy="80" r="10" fill="#1a0a00"/>
+<circle cx="84" cy="76" r="3.5" fill="white"/>
+<circle cx="124" cy="76" r="3.5" fill="white"/>
+</g>
+<!-- 睡覺嘴巴 -->
+<path id="qSmileSleep" d="M86 122 Q100 134 114 122" stroke="#8B5010" stroke-width="4" fill="none" stroke-linecap="round"/>
+<!-- 醒來嘴巴（張嘴吐舌頭） -->
+<g id="qMouthAwake" display="none">
+<path d="M84 120 Q100 136 116 120" fill="#2A1000"/>
+<ellipse cx="100" cy="130" rx="14" ry="12" fill="#F06878"/>
+<ellipse cx="100" cy="135" rx="10" ry="6.5" fill="#D85060"/>
+</g>
+<!-- 紅色領巾 -->
+<path d="M52,152 Q76,144 100,147 Q124,144 148,152 Q138,166 118,169 Q110,172 100,170 Q90,172 82,169 Q62,166 52,152Z" fill="#DC2626"/>
+<!-- 領巾蝴蝶結 -->
+<path d="M92,158 Q100,150 108,158 Q112,166 100,170 Q88,166 92,158Z" fill="#B91C1C"/>
+<ellipse cx="100" cy="160" rx="5" ry="4" fill="#EF4444"/>
+<path d="M94,165 L82,178" stroke="#DC2626" stroke-width="7" stroke-linecap="round"/>
+<path d="M106,165 L118,178" stroke="#DC2626" stroke-width="7" stroke-linecap="round"/>`
   },
   panda:{
     id:'panda',name:'熊貓',emoji:'🐼',
     bgSleep:'linear-gradient(180deg,#0d1b3e 0%,#0a2040 100%)',
     bgNoisy:'linear-gradient(180deg,#1a0d3d 0%,#0d0520 100%)',
-    svgContent:`<defs><radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient></defs>
-<ellipse cx="100" cy="178" rx="65" ry="16" fill="url(#qBg)"/>
-<circle cx="54" cy="52" r="29" fill="#1a1a1a"/>
-<circle cx="146" cy="52" r="29" fill="#1a1a1a"/>
-<circle cx="54" cy="52" r="18" fill="#2d2d2d"/>
-<circle cx="146" cy="52" r="18" fill="#2d2d2d"/>
-<circle cx="100" cy="112" r="78" fill="#f5f5f0"/>
-<ellipse cx="76" cy="98" rx="23" ry="20" fill="#1a1a1a" transform="rotate(-10,76,98)"/>
-<ellipse cx="124" cy="98" rx="23" ry="20" fill="#1a1a1a" transform="rotate(10,124,98)"/>
-<ellipse cx="100" cy="130" rx="30" ry="20" fill="#ebe8e0"/>
-<ellipse cx="100" cy="124" rx="10" ry="7" fill="#1a1a1a"/>
-<ellipse cx="97" cy="121" rx="3.5" ry="2.5" fill="rgba(255,255,255,.4)"/>
-<ellipse cx="65" cy="136" rx="12" ry="8" fill="rgba(255,130,130,.3)"/>
-<ellipse cx="135" cy="136" rx="12" ry="8" fill="rgba(255,130,130,.3)"/>
-<g id="qEyesSleep"><path d="M66 97 Q76 87 86 97" stroke="white" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M114 97 Q124 87 134 97" stroke="white" stroke-width="4.5" fill="none" stroke-linecap="round"/></g>
-<g id="qEyesAwake" display="none"><circle cx="76" cy="96" r="14" fill="white"/><circle cx="124" cy="96" r="14" fill="white"/><circle cx="79" cy="98" r="8.5" fill="#1a1a1a"/><circle cx="121" cy="98" r="8.5" fill="#1a1a1a"/><circle cx="82" cy="95" r="3" fill="white"/><circle cx="124" cy="95" r="3" fill="white"/></g>
-<path id="qSmileSleep" d="M88 148 Q100 157 112 148" stroke="#2a2a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-<path id="qMouthAwake" d="M88 150 Q95 143 100 150 Q105 157 112 150" stroke="#2a2a2a" stroke-width="3.5" fill="none" stroke-linecap="round" display="none"/>`
+    svgContent:`<defs>
+<radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#6366f1" stop-opacity="0.28"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="100" cy="192" rx="54" ry="11" fill="url(#qBg)"/>
+<ellipse cx="100" cy="170" rx="40" ry="31" fill="#f0f0ea"/>
+<ellipse cx="80" cy="188" rx="18" ry="11" fill="#e0e0da"/>
+<ellipse cx="120" cy="188" rx="18" ry="11" fill="#e0e0da"/>
+<circle cx="52" cy="50" r="30" fill="#1a1a1a"/>
+<circle cx="148" cy="50" r="30" fill="#1a1a1a"/>
+<circle cx="52" cy="50" r="19" fill="#2d2d2d"/>
+<circle cx="148" cy="50" r="19" fill="#2d2d2d"/>
+<circle cx="100" cy="106" r="70" fill="#f5f5f0"/>
+<ellipse cx="74" cy="96" rx="25" ry="22" fill="#1a1a1a" transform="rotate(-12,74,96)"/>
+<ellipse cx="126" cy="96" rx="25" ry="22" fill="#1a1a1a" transform="rotate(12,126,96)"/>
+<ellipse cx="100" cy="132" rx="34" ry="24" fill="#eae8e0"/>
+<ellipse cx="68" cy="125" rx="13" ry="9" fill="rgba(255,140,140,.32)"/>
+<ellipse cx="132" cy="125" rx="13" ry="9" fill="rgba(255,140,140,.32)"/>
+<ellipse cx="100" cy="118" rx="12" ry="9" fill="#1a1a1a"/>
+<ellipse cx="97" cy="115" rx="4" ry="3" fill="rgba(255,255,255,.45)"/>
+<line x1="100" y1="127" x2="100" y2="133" stroke="#444" stroke-width="2.5" stroke-linecap="round"/>
+<g id="qEyesSleep">
+<path d="M62 95 Q74 80 86 95" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
+<path d="M114 95 Q126 80 138 95" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
+<line x1="66" y1="91" x2="63" y2="83" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<line x1="74" y1="85" x2="74" y2="77" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<line x1="82" y1="91" x2="85" y2="83" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<line x1="118" y1="91" x2="115" y2="83" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<line x1="126" y1="85" x2="126" y2="77" stroke="white" stroke-width="3" stroke-linecap="round"/>
+<line x1="134" y1="91" x2="137" y2="83" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</g>
+<g id="qEyesAwake" display="none">
+<!-- 驚嚇！大白眼、瞳孔縮小移上 -->
+<circle cx="74" cy="96" r="23" fill="white"/>
+<circle cx="126" cy="96" r="23" fill="white"/>
+<circle cx="76" cy="90" r="11" fill="#1a1a1a"/>
+<circle cx="124" cy="90" r="11" fill="#1a1a1a"/>
+<circle cx="80" cy="86" r="4.5" fill="white"/>
+<circle cx="128" cy="86" r="4.5" fill="white"/>
+<!-- 吃驚眉毛 -->
+<path d="M56 74 Q74 62 92 74" stroke="#444" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+<path d="M108 74 Q126 62 144 74" stroke="#444" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+<!-- 驚嚇汗珠 -->
+<ellipse cx="150" cy="78" rx="5" ry="8" fill="#7EC8E3" transform="rotate(20,150,78)"/>
+<ellipse cx="152" cy="85" rx="3" ry="5" fill="#7EC8E3" transform="rotate(15,152,85)"/>
+<!-- 動作震動線 -->
+<line x1="38" y1="68" x2="28" y2="58" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="30" y1="82" x2="18" y2="78" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="162" y1="68" x2="172" y2="58" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="170" y1="82" x2="182" y2="78" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+<line x1="100" y1="34" x2="100" y2="22" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+</g>
+<path id="qSmileSleep" d="M86 151 Q100 163 114 151" stroke="#444" stroke-width="4" fill="none" stroke-linecap="round"/>
+<g id="qMouthAwake" display="none">
+<!-- 大嘴巴驚叫O形 -->
+<ellipse cx="100" cy="157" rx="17" ry="14" fill="#1a1a1a"/>
+<ellipse cx="100" cy="157" rx="12" ry="10" fill="#F06878"/>
+<!-- 感嘆號 -->
+<text x="168" y="118" font-size="22" font-weight="900" fill="#FF4040" stroke="white" stroke-width="2" paint-order="stroke" font-family="sans-serif">！</text>
+</g>`
+  }
+  long:{
+    id:'long',name:'噴火龍',emoji:'🐉',
+    bgSleep:'linear-gradient(180deg,#06082a 0%,#030418 100%)',
+    bgNoisy:'linear-gradient(180deg,#200800 0%,#0a0300 100%)',
+    svgContent:`<defs>
+<radialGradient id="qDrHead" cx="38%" cy="30%" r="65%"><stop offset="0%" stop-color="#5B9BEF"/><stop offset="100%" stop-color="#1E3A9A"/></radialGradient>
+<radialGradient id="qDrFire" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#FDE68A"/><stop offset="100%" stop-color="#DC2626"/></radialGradient>
+</defs>
+<!-- 身影 -->
+<ellipse cx="100" cy="192" rx="52" ry="10" fill="#1E3A8A" opacity="0.28"/>
+<!-- 角（左） -->
+<path d="M74,54 Q56,18 68,2 Q82,16 84,46" fill="#C8A050" stroke="#8B6020" stroke-width="1.5" stroke-linejoin="round"/>
+<!-- 角（右） -->
+<path d="M126,54 Q144,18 132,2 Q118,16 116,46" fill="#C8A050" stroke="#8B6020" stroke-width="1.5" stroke-linejoin="round"/>
+<!-- 鬚（左） -->
+<line x1="58" y1="130" x2="12" y2="114" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<line x1="56" y1="142" x2="8"  y2="140" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+<!-- 鬚（右） -->
+<line x1="142" y1="130" x2="188" y2="114" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+<line x1="144" y1="142" x2="192" y2="140" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+<!-- 大圓頭 -->
+<circle cx="100" cy="108" r="68" fill="url(#qDrHead)"/>
+<!-- 鱗片紋理 -->
+<ellipse cx="80" cy="98" rx="14" ry="10" fill="rgba(120,180,255,.13)" transform="rotate(-15,80,98)"/>
+<ellipse cx="100" cy="90" rx="14" ry="10" fill="rgba(120,180,255,.13)"/>
+<ellipse cx="120" cy="98" rx="14" ry="10" fill="rgba(120,180,255,.13)" transform="rotate(15,120,98)"/>
+<!-- 嘴鼻 -->
+<ellipse cx="100" cy="140" rx="30" ry="20" fill="#2554C7"/>
+<ellipse cx="92" cy="135" rx="4.5" ry="3.5" fill="#1E3A8A"/>
+<ellipse cx="108" cy="135" rx="4.5" ry="3.5" fill="#1E3A8A"/>
+<ellipse cx="91" cy="134" rx="1.5" ry="1" fill="rgba(255,255,255,.4)"/>
+<ellipse cx="107" cy="134" rx="1.5" ry="1" fill="rgba(255,255,255,.4)"/>
+<!-- 臉頰暈 -->
+<ellipse cx="62" cy="118" rx="13" ry="9" fill="rgba(100,180,255,.22)"/>
+<ellipse cx="138" cy="118" rx="13" ry="9" fill="rgba(100,180,255,.22)"/>
+<!-- 睡覺眼睛 -->
+<g id="qEyesSleep">
+<path d="M66 97 Q80 82 94 97" stroke="#93C5FD" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<path d="M106 97 Q120 82 134 97" stroke="#93C5FD" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<line x1="70" y1="93" x2="67" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<line x1="80" y1="87" x2="80" y2="79" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<line x1="90" y1="93" x2="93" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<line x1="110" y1="93" x2="107" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<line x1="120" y1="87" x2="120" y2="79" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<line x1="130" y1="93" x2="133" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
+<!-- ZZZ -->
+<text x="150" y="84" font-size="11" fill="#93C5FD" font-weight="900" opacity=".75">z</text>
+<text x="159" y="72" font-size="14" fill="#93C5FD" font-weight="900" opacity=".88">z</text>
+<text x="170" y="58" font-size="17" fill="#93C5FD" font-weight="900">Z</text>
+</g>
+<!-- 醒來眼睛（大圓眼震驚） -->
+<g id="qEyesAwake" display="none">
+<circle cx="78" cy="94" r="22" fill="white"/>
+<circle cx="122" cy="94" r="22" fill="white"/>
+<circle cx="80" cy="97" r="14" fill="#1E3A8A"/>
+<circle cx="120" cy="97" r="14" fill="#1E3A8A"/>
+<circle cx="87" cy="89" r="6" fill="white"/>
+<circle cx="127" cy="89" r="6" fill="white"/>
+<circle cx="78" cy="103" r="3" fill="white"/>
+<circle cx="118" cy="103" r="3" fill="white"/>
+</g>
+<!-- 睡覺嘴巴 -->
+<path id="qSmileSleep" d="M86 153 Q100 163 114 153" stroke="#1E3A8A" stroke-width="4" fill="none" stroke-linecap="round"/>
+<!-- 噴火（被吵醒）-->
+<g id="qMouthAwake" display="none">
+<!-- 張嘴 -->
+<path d="M76 150 Q100 170 124 150 L118 143 Q100 158 82 143 Z" fill="#0a0500"/>
+<path d="M84 147 L88 142 L93 147 L98 141 L103 147 L108 141 L113 147 L117 142" fill="white" opacity="0.9"/>
+<!-- 外層火焰（深紅） -->
+<path d="M70,162 Q40,155 14,168 Q-5,178 8,196 Q22,210 45,198 Q62,210 80,196 Q98,210 100,196 Q102,210 120,196 Q138,210 155,198 Q178,210 192,196 Q205,178 186,168 Q160,155 130,162 Q115,148 100,162 Q85,148 70,162Z" fill="#B91C1C"/>
+<!-- 中層火焰（橙） -->
+<path d="M74,165 Q52,160 32,170 Q16,178 26,194 Q40,204 58,194 Q74,204 88,194 Q98,204 100,194 Q102,204 112,194 Q126,204 142,194 Q160,204 174,194 Q184,178 168,170 Q148,160 126,165 Q113,153 100,165 Q87,153 74,165Z" fill="#EA580C"/>
+<!-- 內層火焰（金黃） -->
+<path d="M78,168 Q62,163 48,172 Q36,180 46,192 Q58,200 72,192 Q84,200 92,192 Q98,200 100,192 Q102,200 108,192 Q116,200 128,192 Q142,200 154,192 Q164,180 152,172 Q138,163 122,168 Q112,156 100,168 Q88,156 78,168Z" fill="#FBBF24"/>
+<!-- 文字 -->
+<text x="100" y="183" text-anchor="middle" font-size="16" font-weight="900" fill="#7F1D1D" stroke="#FEF3C7" stroke-width="3.5" paint-order="stroke" font-family="sans-serif" letter-spacing="1">安靜！太吵了！</text>
+</g>`
   }
 };
 let qCurrentChar='mali';
@@ -9268,7 +9509,7 @@ function qSetChar(id){
     const el=document.getElementById(eid); if(el) el.textContent=c.emoji;
   });
   // 更新按鈕選取狀態
-  ['mali','gosig','panda'].forEach(cid=>{
+  ['mali','gosig','panda','long'].forEach(cid=>{
     const cap=cid.charAt(0).toUpperCase()+cid.slice(1);
     const ob=document.getElementById('qOvChar'+cap);
     const hb=document.getElementById('qHomeChar'+cap);
@@ -9298,7 +9539,7 @@ function openQuietMini(){
   qWakeMs    =parseInt(document.getElementById('quietWakeSelect')?.value||1000);
   // reset
   qQuietSec=0; qWallSec=0; qRunning=false; qSleeping=true;
-  qNoiseAt=null; qQuietAt=null;
+  qNoiseAt=null; qQuietAt=null; qWakeCount=0; qAwardStars=1;
   ['quietMiniProgressFill','quietMiniPct'].forEach((id,i)=>{
     const el=document.getElementById(id); if(el) el[i===0?'style':'textContent']&&(i===0?(el.style.width='0%'):(el.textContent='0%'));
   });
