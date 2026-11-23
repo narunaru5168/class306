@@ -9227,6 +9227,10 @@ const Q_CHARS={
 <radialGradient id="qBg" cx="50%" cy="80%" r="50%"><stop offset="0%" stop-color="#d97706" stop-opacity="0.35"/><stop offset="100%" stop-color="#d97706" stop-opacity="0"/></radialGradient>
 </defs>
 <ellipse cx="100" cy="192" rx="54" ry="11" fill="url(#qBg)"/>
+<!-- 超人斗篷（先畫在最後面） -->
+<path d="M56,160 Q42,186 46,207 Q66,215 100,213 Q134,215 154,207 Q158,186 144,160 Q124,174 100,176 Q76,174 56,160Z" fill="#1D4ED8"/>
+<path d="M60,158 Q48,182 52,203 Q70,211 100,209 Q130,211 148,203 Q152,182 140,158 Q122,170 100,172 Q78,170 60,158Z" fill="#3B82F6"/>
+<text x="100" y="199" text-anchor="middle" font-size="21" font-weight="900" fill="#FCD34D" stroke="#1D4ED8" stroke-width="1.5" paint-order="stroke" font-family="sans-serif">S</text>
 <path d="M124 165 Q156 146 149 128 Q143 116 133 131" fill="none" stroke="#C89040" stroke-width="15" stroke-linecap="round"/>
 <ellipse cx="100" cy="170" rx="40" ry="31" fill="url(#qFur)"/>
 <ellipse cx="100" cy="161" rx="24" ry="20" fill="#2A1500" opacity=".62"/>
@@ -9420,76 +9424,88 @@ const Q_CHARS={
     bgSleep:'linear-gradient(180deg,#06082a 0%,#030418 100%)',
     bgNoisy:'linear-gradient(180deg,#200800 0%,#0a0300 100%)',
     svgContent:`<defs>
-<radialGradient id="qDrHead" cx="38%" cy="30%" r="65%"><stop offset="0%" stop-color="#5B9BEF"/><stop offset="100%" stop-color="#1E3A9A"/></radialGradient>
-<radialGradient id="qDrFire" cx="50%" cy="30%" r="60%"><stop offset="0%" stop-color="#FDE68A"/><stop offset="100%" stop-color="#DC2626"/></radialGradient>
+<radialGradient id="qDrHead" cx="40%" cy="28%" r="65%"><stop offset="0%" stop-color="#72C8FF"/><stop offset="60%" stop-color="#2070D0"/><stop offset="100%" stop-color="#0D2A80"/></radialGradient>
+<radialGradient id="qDrFace" cx="50%" cy="55%" r="52%"><stop offset="0%" stop-color="#96D8FF"/><stop offset="100%" stop-color="#3080C8"/></radialGradient>
 </defs>
 <!-- 身影 -->
-<ellipse cx="100" cy="192" rx="52" ry="10" fill="#1E3A8A" opacity="0.28"/>
-<!-- 角（左） -->
-<path d="M74,54 Q56,18 68,2 Q82,16 84,46" fill="#C8A050" stroke="#8B6020" stroke-width="1.5" stroke-linejoin="round"/>
-<!-- 角（右） -->
-<path d="M126,54 Q144,18 132,2 Q118,16 116,46" fill="#C8A050" stroke="#8B6020" stroke-width="1.5" stroke-linejoin="round"/>
-<!-- 鬚（左） -->
-<line x1="58" y1="130" x2="12" y2="114" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
-<line x1="56" y1="142" x2="8"  y2="140" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
-<!-- 鬚（右） -->
-<line x1="142" y1="130" x2="188" y2="114" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
-<line x1="144" y1="142" x2="192" y2="140" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+<ellipse cx="100" cy="192" rx="52" ry="10" fill="#0D2060" opacity="0.38"/>
+<!-- 身體 -->
+<ellipse cx="100" cy="178" rx="44" ry="24" fill="#1050A8"/>
+<ellipse cx="80" cy="190" rx="18" ry="11" fill="#0E3A8A"/>
+<ellipse cx="120" cy="190" rx="18" ry="11" fill="#0E3A8A"/>
+<!-- 左翅膀 -->
+<path d="M34,148 Q6,122 10,86 Q16,58 36,66 Q28,88 32,112 Q48,96 60,100 Q50,122 34,148Z" fill="#1448A8" opacity="0.95"/>
+<path d="M36,146 Q12,122 16,88 Q20,66 38,70 Q32,90 36,112 Q50,98 60,102 Q50,122 36,146Z" fill="#2060C8" opacity="0.75"/>
+<!-- 右翅膀 -->
+<path d="M166,148 Q194,122 190,86 Q184,58 164,66 Q172,88 168,112 Q152,96 140,100 Q150,122 166,148Z" fill="#1448A8" opacity="0.95"/>
+<path d="M164,146 Q188,122 184,88 Q180,66 162,70 Q168,90 164,112 Q150,98 140,102 Q150,122 164,146Z" fill="#2060C8" opacity="0.75"/>
+<!-- 左大角（葉形彎角） -->
+<path d="M68,62 Q38,38 42,6 Q52,-2 62,8 Q66,20 62,42 Q76,30 90,34 Q82,50 68,62Z" fill="#D4A020" stroke="#907010" stroke-width="1.5" stroke-linejoin="round"/>
+<!-- 右大角（葉形彎角） -->
+<path d="M132,62 Q162,38 158,6 Q148,-2 138,8 Q134,20 138,42 Q124,30 110,34 Q118,50 132,62Z" fill="#D4A020" stroke="#907010" stroke-width="1.5" stroke-linejoin="round"/>
+<!-- 頭頂脊刺 -->
+<polygon points="90,50 94,34 100,46" fill="#1660C0"/>
+<polygon points="98,44 100,28 102,44" fill="#1660C0"/>
+<polygon points="100,50 106,34 110,50" fill="#1660C0"/>
 <!-- 大圓頭 -->
-<circle cx="100" cy="108" r="68" fill="url(#qDrHead)"/>
+<circle cx="100" cy="106" r="64" fill="url(#qDrHead)"/>
 <!-- 鱗片紋理 -->
-<ellipse cx="80" cy="98" rx="14" ry="10" fill="rgba(120,180,255,.13)" transform="rotate(-15,80,98)"/>
-<ellipse cx="100" cy="90" rx="14" ry="10" fill="rgba(120,180,255,.13)"/>
-<ellipse cx="120" cy="98" rx="14" ry="10" fill="rgba(120,180,255,.13)" transform="rotate(15,120,98)"/>
-<!-- 嘴鼻 -->
-<ellipse cx="100" cy="140" rx="30" ry="20" fill="#2554C7"/>
-<ellipse cx="92" cy="135" rx="4.5" ry="3.5" fill="#1E3A8A"/>
-<ellipse cx="108" cy="135" rx="4.5" ry="3.5" fill="#1E3A8A"/>
-<ellipse cx="91" cy="134" rx="1.5" ry="1" fill="rgba(255,255,255,.4)"/>
-<ellipse cx="107" cy="134" rx="1.5" ry="1" fill="rgba(255,255,255,.4)"/>
+<ellipse cx="82" cy="96" rx="14" ry="10" fill="rgba(140,220,255,.20)" transform="rotate(-15,82,96)"/>
+<ellipse cx="100" cy="88" rx="14" ry="10" fill="rgba(140,220,255,.20)"/>
+<ellipse cx="118" cy="96" rx="14" ry="10" fill="rgba(140,220,255,.20)" transform="rotate(15,118,96)"/>
+<ellipse cx="80" cy="116" rx="11" ry="8" fill="rgba(140,220,255,.13)" transform="rotate(-10,80,116)"/>
+<ellipse cx="120" cy="116" rx="11" ry="8" fill="rgba(140,220,255,.13)" transform="rotate(10,120,116)"/>
+<!-- 嘴鼻（較寬） -->
+<ellipse cx="100" cy="138" rx="34" ry="22" fill="url(#qDrFace)"/>
+<ellipse cx="92" cy="134" rx="4.5" ry="3.5" fill="#0E3A8A"/>
+<ellipse cx="108" cy="134" rx="4.5" ry="3.5" fill="#0E3A8A"/>
+<ellipse cx="91" cy="133" rx="1.5" ry="1" fill="rgba(255,255,255,.45)"/>
+<ellipse cx="107" cy="133" rx="1.5" ry="1" fill="rgba(255,255,255,.45)"/>
 <!-- 臉頰暈 -->
-<ellipse cx="62" cy="118" rx="13" ry="9" fill="rgba(100,180,255,.22)"/>
-<ellipse cx="138" cy="118" rx="13" ry="9" fill="rgba(100,180,255,.22)"/>
+<ellipse cx="58" cy="116" rx="14" ry="10" fill="rgba(100,210,255,.28)"/>
+<ellipse cx="142" cy="116" rx="14" ry="10" fill="rgba(100,210,255,.28)"/>
+<!-- 鬚（左，三根） -->
+<line x1="58" y1="126" x2="6"  y2="112" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
+<line x1="56" y1="140" x2="4"  y2="138" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".75"/>
+<line x1="62" y1="114" x2="10" y2="98"  stroke="#93C5FD" stroke-width="2" stroke-linecap="round" opacity=".65"/>
+<!-- 鬚（右，三根） -->
+<line x1="142" y1="126" x2="194" y2="112" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>
+<line x1="144" y1="140" x2="196" y2="138" stroke="#93C5FD" stroke-width="2.5" stroke-linecap="round" opacity=".75"/>
+<line x1="138" y1="114" x2="190" y2="98"  stroke="#93C5FD" stroke-width="2" stroke-linecap="round" opacity=".65"/>
 <!-- 睡覺眼睛 -->
 <g id="qEyesSleep">
-<path d="M66 97 Q80 82 94 97" stroke="#93C5FD" stroke-width="6.5" fill="none" stroke-linecap="round"/>
-<path d="M106 97 Q120 82 134 97" stroke="#93C5FD" stroke-width="6.5" fill="none" stroke-linecap="round"/>
-<line x1="70" y1="93" x2="67" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<line x1="80" y1="87" x2="80" y2="79" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<line x1="90" y1="93" x2="93" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<line x1="110" y1="93" x2="107" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<line x1="120" y1="87" x2="120" y2="79" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<line x1="130" y1="93" x2="133" y2="85" stroke="#93C5FD" stroke-width="3" stroke-linecap="round"/>
-<!-- ZZZ -->
-<text x="150" y="84" font-size="11" fill="#93C5FD" font-weight="900" opacity=".75">z</text>
-<text x="159" y="72" font-size="14" fill="#93C5FD" font-weight="900" opacity=".88">z</text>
-<text x="170" y="58" font-size="17" fill="#93C5FD" font-weight="900">Z</text>
+<path d="M66 95 Q80 80 94 95" stroke="#B8DEFF" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<path d="M106 95 Q120 80 134 95" stroke="#B8DEFF" stroke-width="6.5" fill="none" stroke-linecap="round"/>
+<line x1="70" y1="91" x2="67" y2="83" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<line x1="80" y1="85" x2="80" y2="77" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<line x1="90" y1="91" x2="93" y2="83" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<line x1="110" y1="91" x2="107" y2="83" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<line x1="120" y1="85" x2="120" y2="77" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<line x1="130" y1="91" x2="133" y2="83" stroke="#B8DEFF" stroke-width="3" stroke-linecap="round"/>
+<text x="150" y="80" font-size="11" fill="#93C5FD" font-weight="900" opacity=".78">z</text>
+<text x="159" y="68" font-size="14" fill="#93C5FD" font-weight="900" opacity=".90">z</text>
+<text x="170" y="54" font-size="17" fill="#B8DEFF" font-weight="900">Z</text>
 </g>
-<!-- 醒來眼睛（大圓眼震驚） -->
+<!-- 醒來眼睛 -->
 <g id="qEyesAwake" display="none">
-<circle cx="78" cy="94" r="22" fill="white"/>
-<circle cx="122" cy="94" r="22" fill="white"/>
-<circle cx="80" cy="97" r="14" fill="#1E3A8A"/>
-<circle cx="120" cy="97" r="14" fill="#1E3A8A"/>
-<circle cx="87" cy="89" r="6" fill="white"/>
-<circle cx="127" cy="89" r="6" fill="white"/>
-<circle cx="78" cy="103" r="3" fill="white"/>
-<circle cx="118" cy="103" r="3" fill="white"/>
+<circle cx="78" cy="92" r="22" fill="white"/>
+<circle cx="122" cy="92" r="22" fill="white"/>
+<circle cx="80" cy="95" r="14" fill="#0E3A8A"/>
+<circle cx="120" cy="95" r="14" fill="#0E3A8A"/>
+<circle cx="87" cy="87" r="6" fill="white"/>
+<circle cx="127" cy="87" r="6" fill="white"/>
+<circle cx="78" cy="102" r="3" fill="white"/>
+<circle cx="118" cy="102" r="3" fill="white"/>
 </g>
 <!-- 睡覺嘴巴 -->
-<path id="qSmileSleep" d="M86 153 Q100 163 114 153" stroke="#1E3A8A" stroke-width="4" fill="none" stroke-linecap="round"/>
+<path id="qSmileSleep" d="M86 151 Q100 161 114 151" stroke="#0E3A8A" stroke-width="4" fill="none" stroke-linecap="round"/>
 <!-- 噴火（被吵醒）-->
 <g id="qMouthAwake" display="none">
-<!-- 張嘴 -->
-<path d="M76 150 Q100 170 124 150 L118 143 Q100 158 82 143 Z" fill="#0a0500"/>
-<path d="M84 147 L88 142 L93 147 L98 141 L103 147 L108 141 L113 147 L117 142" fill="white" opacity="0.9"/>
-<!-- 外層火焰（深紅） -->
+<path d="M76 148 Q100 168 124 148 L118 141 Q100 156 82 141 Z" fill="#0a0500"/>
+<path d="M84 145 L88 140 L93 145 L98 139 L103 145 L108 139 L113 145 L117 140" fill="white" opacity="0.9"/>
 <path d="M70,162 Q40,155 14,168 Q-5,178 8,196 Q22,210 45,198 Q62,210 80,196 Q98,210 100,196 Q102,210 120,196 Q138,210 155,198 Q178,210 192,196 Q205,178 186,168 Q160,155 130,162 Q115,148 100,162 Q85,148 70,162Z" fill="#B91C1C"/>
-<!-- 中層火焰（橙） -->
 <path d="M74,165 Q52,160 32,170 Q16,178 26,194 Q40,204 58,194 Q74,204 88,194 Q98,204 100,194 Q102,204 112,194 Q126,204 142,194 Q160,204 174,194 Q184,178 168,170 Q148,160 126,165 Q113,153 100,165 Q87,153 74,165Z" fill="#EA580C"/>
-<!-- 內層火焰（金黃） -->
 <path d="M78,168 Q62,163 48,172 Q36,180 46,192 Q58,200 72,192 Q84,200 92,192 Q98,200 100,192 Q102,200 108,192 Q116,200 128,192 Q142,200 154,192 Q164,180 152,172 Q138,163 122,168 Q112,156 100,168 Q88,156 78,168Z" fill="#FBBF24"/>
-<!-- 文字 -->
 <text x="100" y="183" text-anchor="middle" font-size="16" font-weight="900" fill="#7F1D1D" stroke="#FEF3C7" stroke-width="3.5" paint-order="stroke" font-family="sans-serif" letter-spacing="1">安靜！太吵了！</text>
 </g>`
   }
