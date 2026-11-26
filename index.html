@@ -1333,14 +1333,19 @@ document.body && (document.body.scrollLeft = 0);
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px;padding:10px 12px;background:rgba(255,255,255,.06);border-radius:10px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:.74rem;color:rgba(255,255,255,.45);white-space:nowrap;">⏱ 目標</span>
-        <select id="quietGoalSelect" style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:white;border-radius:8px;padding:5px 10px;font-size:.82rem;font-family:inherit;cursor:pointer;">
+        <select id="quietGoalSelect" onchange="qGoalSelectChange(this)" style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:white;border-radius:8px;padding:5px 10px;font-size:.82rem;font-family:inherit;cursor:pointer;">
           <option value="60">1 分鐘</option>
           <option value="120">2 分鐘</option>
           <option value="180">3 分鐘</option>
           <option value="300" selected>5 分鐘</option>
           <option value="600">10 分鐘</option>
           <option value="900">15 分鐘</option>
+          <option value="1200">20 分鐘</option>
+          <option value="1500">25 分鐘</option>
+          <option value="1800">30 分鐘</option>
+          <option value="custom">✏️ 自訂</option>
         </select>
+        <input type="number" id="quietGoalCustom" min="1" max="120" placeholder="幾分鐘？" style="display:none;width:76px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.3);color:white;border-radius:8px;padding:5px 8px;font-size:.82rem;font-family:inherit;margin-top:4px;">
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2456,14 +2461,19 @@ document.body && (document.body.scrollLeft = 0);
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
       <div>
         <div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px;font-weight:700;">目標時間</div>
-        <select id="quietGoalSelect" style="border:2px solid #e2e8f0;border-radius:10px;padding:7px 12px;font-size:.88rem;font-family:inherit;background:#fff;">
+        <select id="quietGoalSelect" onchange="qGoalSelectChange(this)" style="border:2px solid #e2e8f0;border-radius:10px;padding:7px 12px;font-size:.88rem;font-family:inherit;background:#fff;">
           <option value="60">1 分鐘</option>
           <option value="120">2 分鐘</option>
           <option value="180">3 分鐘</option>
           <option value="300" selected>5 分鐘</option>
           <option value="600">10 分鐘</option>
           <option value="900">15 分鐘</option>
+          <option value="1200">20 分鐘</option>
+          <option value="1500">25 分鐘</option>
+          <option value="1800">30 分鐘</option>
+          <option value="custom">✏️ 自訂</option>
         </select>
+        <input type="number" id="quietGoalCustom2" min="1" max="120" placeholder="幾分鐘？" style="display:none;border:2px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:.88rem;font-family:inherit;width:90px;margin-top:6px;">
       </div>
       <div>
         <div style="font-size:.75rem;color:#94a3b8;margin-bottom:4px;font-weight:700;">靈敏度（越低越靈敏）</div>
@@ -2571,22 +2581,38 @@ document.body && (document.body.scrollLeft = 0);
   </div>
 
   <!-- Celebrate (inside overlay) -->
-  <div id="quietCelebrate" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10001;flex-direction:column;align-items:center;justify-content:center;">
+  <div id="quietCelebrate" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10001;flex-direction:column;align-items:center;justify-content:center;overflow-y:auto;padding:20px 0;">
     <canvas id="quietFireworks" style="position:fixed;inset:0;pointer-events:none;z-index:10002;"></canvas>
-    <div style="font-size:4.5rem;margin-bottom:12px;animation:qBounce .6s ease-in-out infinite alternate;">🎉</div>
-    <div style="font-size:2.2rem;font-weight:900;color:#fbbf24;margin-bottom:8px;text-shadow:0 0 30px rgba(251,191,36,.6);">挑戰成功！</div>
-    <div id="quietCelSub" style="font-size:.95rem;color:rgba(255,255,255,.65);margin-bottom:24px;text-align:center;line-height:1.8;"></div>
-    <button id="quietStarAllBtn" onclick="quietGrantAllStars()" style="
-      background:linear-gradient(135deg,#b45309,#d97706,#fbbf24);
-      border:none;border-radius:50px;color:white;
-      padding:14px 40px;font-size:1.05rem;font-weight:900;
-      cursor:pointer;font-family:inherit;letter-spacing:1px;
-      box-shadow:0 6px 25px rgba(251,191,36,.5);margin-bottom:10px;
-    ">⭐ 全班加 1 顆星！</button>
-    <div id="quietStarMsg" style="font-size:.85rem;color:#fde68a;min-height:1.4em;margin-bottom:16px;text-align:center;"></div>
-    <div style="display:flex;gap:12px;">
-      <button onclick="quietResetChallenge()" style="background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:white;border-radius:50px;padding:11px 28px;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit;">🔄 再挑戰</button>
-      <button onclick="closeQuietOverlay()" style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:50px;padding:11px 28px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;">↩️ 回到網站</button>
+    <div style="position:relative;z-index:10003;display:flex;flex-direction:column;align-items:center;width:100%;max-width:400px;padding:0 20px;">
+      <div style="font-size:4rem;margin-bottom:8px;animation:qBounce .6s ease-in-out infinite alternate;">🎉</div>
+      <div style="font-size:2rem;font-weight:900;color:#fbbf24;margin-bottom:14px;text-shadow:0 0 30px rgba(251,191,36,.6);">挑戰成功！</div>
+
+      <!-- 星星結果卡 -->
+      <div id="quietResultCard" style="background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);border-radius:20px;padding:18px 28px;margin-bottom:14px;width:100%;text-align:center;">
+        <div id="quietResultEmoji" style="font-size:2.5rem;margin-bottom:6px;letter-spacing:4px;">⭐⭐⭐</div>
+        <div id="quietResultStarText" style="font-size:1.4rem;font-weight:900;color:#fbbf24;margin-bottom:4px;">獲得 3 顆星！</div>
+        <div id="quietResultWakeText" style="font-size:.88rem;color:rgba(255,255,255,.7);margin-bottom:10px;"></div>
+        <!-- 說明列表 -->
+        <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 14px;text-align:left;font-size:.78rem;color:rgba(255,255,255,.5);line-height:1.9;">
+          <div>🌟🌟🌟 完全沒被吵醒 → <span style="color:#fbbf24;font-weight:800;">+3 顆星</span></div>
+          <div>⭐⭐ 被吵醒 1–3 次 → <span style="color:#fbbf24;font-weight:800;">+2 顆星</span></div>
+          <div>⭐ 被吵醒 4–6 次 → <span style="color:#fbbf24;font-weight:800;">+1 顆星</span></div>
+          <div>😅 被吵醒 7 次以上 → <span style="color:#ef4444;font-weight:800;">沒有星星</span></div>
+        </div>
+      </div>
+
+      <button id="quietStarAllBtn" onclick="quietGrantAllStars()" style="
+        background:linear-gradient(135deg,#b45309,#d97706,#fbbf24);
+        border:none;border-radius:50px;color:white;
+        padding:14px 40px;font-size:1.05rem;font-weight:900;
+        cursor:pointer;font-family:inherit;letter-spacing:1px;
+        box-shadow:0 6px 25px rgba(251,191,36,.5);margin-bottom:8px;width:100%;
+      ">⭐ 全班加 1 顆星！</button>
+      <div id="quietStarMsg" style="font-size:.85rem;color:#fde68a;min-height:1.4em;margin-bottom:12px;text-align:center;"></div>
+      <div style="display:flex;gap:12px;width:100%;">
+        <button onclick="quietResetChallenge()" style="flex:1;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:white;border-radius:50px;padding:11px 10px;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit;">🔄 再挑戰</button>
+        <button onclick="closeQuietOverlay()" style="flex:1;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:50px;padding:11px 10px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;">↩️ 回到網站</button>
+      </div>
     </div>
   </div>
 </div><!-- end quietOverlay -->
@@ -6351,6 +6377,27 @@ function editLegendaryDesigner(){
     if(el) el.textContent = val.trim();
   }
 }
+function qGoalSelectChange(sel){
+  // 顯示或隱藏自訂輸入框
+  const customId1 = 'quietGoalCustom';
+  const customId2 = 'quietGoalCustom2';
+  const inp1 = document.getElementById(customId1);
+  const inp2 = document.getElementById(customId2);
+  if(sel.value === 'custom'){
+    if(inp1) inp1.style.display='inline-block';
+    if(inp2) inp2.style.display='inline-block';
+    // 同步另一個 select 也選到 custom
+    const selects = document.querySelectorAll('#quietGoalSelect');
+    selects.forEach(s=>{ if(s!==sel) s.value='custom'; });
+  } else {
+    if(inp1) inp1.style.display='none';
+    if(inp2) inp2.style.display='none';
+    // 同步另一個 select 的值
+    const selects = document.querySelectorAll('#quietGoalSelect');
+    selects.forEach(s=>{ if(s!==sel) s.value=sel.value; });
+  }
+}
+
 function editLavaDesigner(){
   const cur = localStorage.getItem('lavaDesignerName') || '2號&6號同學設計';
   const val = prompt('設計者名稱：', cur);
@@ -8981,7 +9028,14 @@ function openQuietOverlay(){
   const ov=document.getElementById('quietOverlay');
   ov.style.display='flex';
   // 讀設定
-  qGoalSec   = parseInt(document.getElementById('quietGoalSelect')?.value||300);
+  const _goalSel=document.getElementById('quietGoalSelect');
+  if(_goalSel && _goalSel.value==='custom'){
+    const _ci=document.getElementById('quietGoalCustom')||document.getElementById('quietGoalCustom2');
+    const _m=_ci?parseInt(_ci.value)||5:5;
+    qGoalSec=Math.max(1,Math.min(120,_m))*60;
+  } else {
+    qGoalSec=parseInt(_goalSel?.value||300)||300;
+  }
   qThreshold = parseFloat(document.getElementById('quietThresholdInput')?.value||22);
   qWakeMs    = parseInt(document.getElementById('quietWakeSelect')?.value||1000);
   // reset state
@@ -9165,6 +9219,16 @@ function qCelebrate(){
   qAwardStars=stars;
   document.getElementById('quietCelSub').innerHTML=
     `全班保持安靜 ${mins} 分鐘！<br><span style="font-size:1.3rem;letter-spacing:2px;">${starEmoji}</span><br><span style="font-size:.85rem;">${starLabel}</span>`;
+  // 更新結果卡
+  const resEmoji = document.getElementById('quietResultEmoji');
+  const resStarText = document.getElementById('quietResultStarText');
+  const resWakeText = document.getElementById('quietResultWakeText');
+  if(resEmoji) resEmoji.textContent = starEmoji;
+  if(resStarText) resStarText.textContent = stars > 0 ? `獲得 ${stars} 顆星！` : '沒有獲得星星 😅';
+  if(resWakeText) {
+    if(qWakeCount === 0) resWakeText.textContent = '動物完全沒有被吵醒 🎉';
+    else resWakeText.textContent = `動物被吵醒了 ${qWakeCount} 次`;
+  }
   // 更新按鈕
   const sb=document.getElementById('quietStarAllBtn');
   if(sb){
@@ -9243,6 +9307,11 @@ function closeQuietOverlay(){
   document.getElementById('quietOverlay').style.display='none';
   document.getElementById('quietCelebrate').style.display='none';
   document.getElementById('quietMini').style.display='none';
+  // 清空煙火畫布，避免殘影
+  const fc=document.getElementById('quietFireworks');
+  if(fc){ const ctx=fc.getContext('2d'); ctx.clearRect(0,0,fc.width,fc.height); }
+  // 回到首頁，避免畫面黑掉
+  showPage('home');
 }
 
 // ══ 靜悄悄：角色系統 ══
@@ -9618,7 +9687,14 @@ function qSetCharHome(id){ qSetChar(id); }
 function openQuietMini(){
   if(qMode==='full'){ switchToQuietMini(); return; }
   // 讀設定
-  qGoalSec   =parseInt(document.getElementById('quietGoalSelect')?.value||300);
+  const _goalSel2=document.getElementById('quietGoalSelect');
+  if(_goalSel2 && _goalSel2.value==='custom'){
+    const _ci2=document.getElementById('quietGoalCustom')||document.getElementById('quietGoalCustom2');
+    const _m2=_ci2?parseInt(_ci2.value)||5:5;
+    qGoalSec=Math.max(1,Math.min(120,_m2))*60;
+  } else {
+    qGoalSec=parseInt(_goalSel2?.value||300)||300;
+  }
   qThreshold =parseFloat(document.getElementById('quietThresholdInput')?.value||22);
   qWakeMs    =parseInt(document.getElementById('quietWakeSelect')?.value||1000);
   // reset
