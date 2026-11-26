@@ -6290,6 +6290,7 @@ async function loadData() {
 
   // 時間戳仲裁：如果 localStorage 比 Firebase 新，說明 Firebase 還沒寫完就刷新了
   // 此時用 localStorage 的資料保護剛加的星星不被舊版 Firebase 蓋掉
+  const originalFirebaseStudents = sVal; // ✅ 修正：先保存 Firebase 原始資料，不受時間戳仲裁影響
   const localSavedAt = parseInt(localStorage.getItem('cls_savedAt') || '0');
   const cloudSavedAt = typeof saVal === 'number' ? saVal : 0;
   if (localSavedAt > cloudSavedAt) {
@@ -6302,7 +6303,8 @@ async function loadData() {
   }
 
   // 🔒 合併保護：Firebase 與 localStorage 都有資料時，逐人比較 stars，永遠取較大值
-  const rawCloud = sVal !== null ? sVal : [];
+  // ✅ 修正：用 originalFirebaseStudents（真正的 Firebase 資料）而非被時間戳仲裁覆蓋的 sVal
+  const rawCloud = originalFirebaseStudents !== null ? originalFirebaseStudents : [];
   let rawLocal = [];
   try { rawLocal = JSON.parse(localStorage.getItem('cls_students')||'[]'); } catch(_e) {}
   if (rawCloud.length > 0 && rawLocal.length > 0) {
@@ -14706,6 +14708,30 @@ async function initApp() {
 }
 initApp().catch(() => {
   document.getElementById('loadingOverlay').style.display = 'none';
+});
+
+// ── 即時多裝置同步：監聽 savedAt，其他裝置存檔時自動更新 ──
+let _syncListenerReady = false;
+db.ref('class306/savedAt').on('value', async (snap) => {
+  if (!_syncListenerReady) {
+    // 第一次觸發是初始載入，跳過
+    _syncListenerReady = true;
+    return;
+  }
+  const cloudTs = snap.val();
+  const localTs = parseInt(localStorage.getItem('cls_savedAt') || '0');
+  // 只有雲端比本機新，才代表是「其他裝置」存的
+  if (typeof cloudTs === 'number' && cloudTs > localTs) {
+    console.log('[即時同步] 偵測到其他裝置更新，重新載入資料');
+    toast('🔄 其他裝置已更新，同步中…');
+    try {
+      await loadData();
+      renderStudentList();
+      toast('✅ 已同步最新資料');
+    } catch(e) {
+      console.warn('[即時同步] 同步失敗', e);
+    }
+  }
 });
 
 // ══════════════════════════════════════════
