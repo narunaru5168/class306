@@ -1021,6 +1021,9 @@ document.body && (document.body.scrollLeft = 0);
     <button onclick="openModal('starRulesModal')" title="星星規則說明" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📖</button>
     <button onclick="openRestoreModal()" title="資料還原（緊急救援用）" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🛟</button>
     <button onclick="openModal('emergencyStarModal')" title="緊急補星（同步衝突補救用）" style="background:rgba(255,100,0,.5);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🚨</button>
+    <button onclick="openBulkRestoreModal()" title="⭐ 星星補填申報（同學申報各自的星星數，存回 Firebase 並建立備份）" style="background:rgba(220,38,38,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🔧</button>
+    <button onclick="downloadStudentBackup()" title="📥 下載今日學生備份（JSON）" style="background:rgba(37,99,235,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📥</button>
+    <button onclick="openFirebaseBackupModal()" title="🗂️ 查看 Firebase 雲端備份紀錄" style="background:rgba(5,150,105,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🗂️</button>
   </div>
   <div class="nav-row" id="navRow1"></div>
   <div class="nav-row nav-row-full" id="navRow2"></div>
@@ -6157,6 +6160,15 @@ function setupMainDataListeners(){
   });
 }
 async function doSaveAll() {
+  // ═══════════════════════════════════════════════════════════
+  // 防呆：自動補名單時，絕對禁止寫入 Firebase，避免蓋掉真實資料
+  // ═══════════════════════════════════════════════════════════
+  if (rosterWasAutoSeeded) {
+    console.warn('[防呆] 名單是自動補入的預設名單，跳過所有 Firebase 寫入，僅更新本機快取。');
+    try { localStorage.setItem('cls_students', JSON.stringify(students)); } catch(e){}
+    return; // 立刻返回，不執行下方任何 Firebase 操作
+  }
+
   // 先記錄這次存檔的時間戳（localStorage 立即寫入，Firebase 非同步跟上）
   // loadData 讀取時用這個時間戳判斷哪份資料比較新，避免刷新時舊版 Firebase 蓋掉剛加的星星
   const saveTs = Date.now();
@@ -6189,6 +6201,25 @@ async function doSaveAll() {
   await saveField('class306/disciplineKeywords', disciplineKeywords, 'cls_disciplineKeywords');
   await saveField('class306/officerMonthlyAward', officerMonthlyAward, 'cls_officerMonthlyAward');
   await saveField('class306/essayRecords', essayRecords, 'cls_essayRecords');
+
+  // ═══════════════════════════════════════════════════════════
+  // 每次存檔自動備份到 Firebase /class306/backups/YYYYMMDD/
+  // 保留最近 30 天，可用「🗂️ 備份還原」鈕查看及還原
+  // ═══════════════════════════════════════════════════════════
+  try {
+    if (useCloud && db && students.length > 0) {
+      const dateKey = new Date().toISOString().slice(0,10).replace(/-/g,''); // e.g. "20261126"
+      const totalStars = students.reduce((s,x)=>s+(x.stars||0),0);
+      await db.ref(`class306/backups/${dateKey}`).set({
+        students: students.map(s=>({
+          id:s.id, seatNo:s.seatNo, name:s.name, stars:s.stars||0,
+          log:(s.log||[]).slice(-100), role:s.role||'', note:s.note||''
+        })),
+        savedAt: new Date().toISOString(),
+        totalStars
+      });
+    }
+  } catch(e) { console.warn('[自動備份] 失敗', e); }
 }
 async function fetchField(path, defaultVal){
   if (useCloud && db) {
@@ -6380,6 +6411,174 @@ function doEmergencyStarRestore(){
   closeModal('emergencyStarModal');
   toast(`✅ 全班各補發 ${amt} 顆星完成！`);
   confetti();
+}
+
+// 🔧 批量還原星星
+function openBulkRestoreModal() {
+  const list = document.getElementById('bulkRestoreList');
+  if (!list) return;
+  list.innerHTML = '';
+  const sorted = [...students].sort((a,b)=>parseInt(a.seatNo||0)-parseInt(b.seatNo||0));
+  function updateBulkTotal() {
+    let total = 0, filled = 0;
+    document.querySelectorAll('#bulkRestoreList input[data-sid]').forEach(inp => {
+      const v = parseInt(inp.value);
+      if (!isNaN(v) && inp.value !== '') { total += v; filled++; }
+    });
+    const elNum = document.getElementById('bulkRestoreTotalNum');
+    const elFill = document.getElementById('bulkRestoreFilledCount');
+    if (elNum) elNum.textContent = total.toLocaleString();
+    if (elFill) elFill.textContent = `已填 ${filled} / ${sorted.length} 人`;
+  }
+  sorted.forEach(s => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9;';
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.min = '0'; inp.max = '9999';
+    inp.value = s.stars || 0;
+    inp.dataset.sid = s.id;
+    inp.placeholder = '顆數';
+    inp.style.cssText = 'width:90px;border:1.5px solid #34d399;border-radius:8px;padding:5px 8px;font-size:.95rem;text-align:center;background:#f0fdf4;';
+    inp.addEventListener('input', () => {
+      inp.style.borderColor = inp.value ? '#34d399' : '#fbbf24';
+      inp.style.background = inp.value ? '#f0fdf4' : '#fffbeb';
+      updateBulkTotal();
+    });
+    const seat = document.createElement('span');
+    seat.style.cssText = 'width:28px;text-align:right;color:#888;font-size:.8rem;flex-shrink:0;';
+    seat.textContent = s.seatNo;
+    const name = document.createElement('span');
+    name.style.cssText = 'flex:1;font-weight:700;';
+    name.textContent = s.name;
+    row.append(seat, name, inp);
+    list.appendChild(row);
+  });
+  updateBulkTotal();
+  openModal('bulkRestoreModal');
+}
+
+async function saveBulkRestore() {
+  const inputs = document.querySelectorAll('#bulkRestoreList input[data-sid]');
+  if (!inputs.length) return;
+  const today = new Date().toLocaleDateString('zh-TW');
+  let changed = 0;
+  inputs.forEach(inp => {
+    const sid = parseInt(inp.dataset.sid);
+    const newStars = parseInt(inp.value) || 0;
+    const s = students.find(x => x.id === sid);
+    if (!s) return;
+    const diff = newStars - (s.stars||0);
+    s.stars = newStars;
+    s.log = s.log || [];
+    if (diff !== 0) {
+      s.log.push({id:generateId(), reason:`🔧 星星補填申報（同學回報修正）`, amt:diff, date:today});
+      changed++;
+    }
+  });
+  // ── 存回 Firebase（只改星星欄位，名字 / 成長紀錄 / 其他欄位不動）
+  try {
+    await doSaveAll();
+    // 同時在 backups 建立快照，方便以後查閱還原紀錄
+    if (db && !rosterWasAutoSeeded) {
+      const dateKey = new Date().toISOString().slice(0,10).replace(/-/g,'') + '_studentReport';
+      const totalStars = students.reduce((acc,x)=>acc+(x.stars||0),0);
+      await db.ref(`class306/backups/${dateKey}`).set({
+        students: students.map(s=>({seatNo:s.seatNo, name:s.name, stars:s.stars||0})),
+        savedAt: new Date().toISOString(),
+        totalStars,
+        note: '星星補填申報（同學回報數量）'
+      });
+      localStorage.setItem('cls_dailyBackupDate', new Date().toISOString().slice(0,10).replace(/-/g,''));
+    }
+  } catch(e) { console.warn('[補填存檔失敗]', e); }
+  renderStudents();
+  updateStats();
+  closeModal('bulkRestoreModal');
+  toast(`✅ 存回 Firebase 並建立備份快照！（${changed} 人有異動）`);
+  confetti();
+}
+
+
+// ════════════════════════════════════════════════════════════
+// 📥 下載今日學生備份（JSON 檔）
+// ════════════════════════════════════════════════════════════
+function downloadStudentBackup() {
+  if (!students || students.length === 0) { toast('⚠️ 目前沒有學生資料可備份'); return; }
+  const data = {
+    exportedAt: new Date().toISOString(),
+    totalStars: students.reduce((s,x)=>s+(x.stars||0),0),
+    studentCount: students.length,
+    students: students.map(s=>({
+      seatNo: s.seatNo, name: s.name, gender: s.gender||'',
+      stars: s.stars||0, log: s.log||[], role: s.role||'', note: s.note||''
+    }))
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const dateStr = new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'');
+  a.download = `306班學生備份_${dateStr}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 5000);
+  toast('✅ 備份已下載！請存到安全的地方。');
+}
+
+// ════════════════════════════════════════════════════════════
+// 🗂️ Firebase 雲端備份管理（查看 / 還原過去每日備份）
+// ════════════════════════════════════════════════════════════
+async function openFirebaseBackupModal() {
+  if (!useCloud || !db) { toast('⚠️ 目前未連線到雲端，無法查看備份'); return; }
+  const modal = document.getElementById('firebaseBackupModal');
+  if (!modal) return;
+  const list = document.getElementById('firebaseBackupList');
+  list.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">讀取備份中…</div>';
+  openModal('firebaseBackupModal');
+  try {
+    const snap = await db.ref('class306/backups').once('value');
+    const val = snap.val();
+    if (!val) { list.innerHTML = '<div style="color:#888;text-align:center;padding:20px;">尚無備份紀錄</div>'; return; }
+    const dates = Object.keys(val).sort().reverse(); // 最新的排前面
+    list.innerHTML = dates.map(d=>{
+      const b = val[d];
+      const dateDisp = `${d.slice(0,4)}/${d.slice(4,6)}/${d.slice(6,8)}`;
+      const stars = b.totalStars||0;
+      const cnt = (b.students||[]).length;
+      const savedAt = b.savedAt ? new Date(b.savedAt).toLocaleString('zh-TW') : '';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;background:#f8fafc;margin-bottom:6px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:.95rem;">${dateDisp}</div>
+          <div style="color:#888;font-size:.78rem;">${savedAt} ｜ ${cnt}人 ｜ 共 ${stars} ⭐</div>
+        </div>
+        <button onclick="restoreFromFirebaseBackup('${d}')" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.82rem;white-space:nowrap;">還原此備份</button>
+      </div>`;
+    }).join('');
+  } catch(e) { list.innerHTML = `<div style="color:#ef4444;">讀取失敗：${e.message}</div>`; }
+}
+
+async function restoreFromFirebaseBackup(dateKey) {
+  if (!confirm(`確定要還原「${dateKey.slice(0,4)}/${dateKey.slice(4,6)}/${dateKey.slice(6,8)}」的備份嗎？\n\n現在的資料會被這份備份取代，此操作無法復原！`)) return;
+  if (!useCloud || !db) { toast('⚠️ 未連線到雲端'); return; }
+  try {
+    const snap = await db.ref(`class306/backups/${dateKey}`).once('value');
+    const val = snap.val();
+    if (!val || !val.students || !val.students.length) { toast('⚠️ 備份資料為空，無法還原'); return; }
+    // 把備份還原到 students
+    students = val.students.map(s=>({
+      id: s.id||generateId(), seatNo:s.seatNo, name:s.name, gender:s.gender||'',
+      stars:s.stars||0, log:s.log||[], role:s.role||'', note:s.note||'',
+      avatar: (students.find(x=>x.id===s.id)||{}).avatar || avatarsBoy[0],
+      badges:[], sid:s.seatNo
+    }));
+    rosterWasAutoSeeded = false; // 明確標記這是正常資料
+    save();
+    renderStudents();
+    updateStats();
+    closeModal('firebaseBackupModal');
+    toast(`✅ 已還原 ${dateKey.slice(0,4)}/${dateKey.slice(4,6)}/${dateKey.slice(6,8)} 的備份！`);
+    confetti();
+  } catch(e) { toast(`❌ 還原失敗：${e.message}`); }
 }
 
 let restoreValidatedData = null;
@@ -13166,7 +13365,40 @@ function printAfricaTaskCards(){
   <p class="sub">每人一格，剪開後發給學生</p>
   <div class="grid">${cards}</div>
   <script>window.onload=()=>window.print();<\/script>
-  </body></html>`);
+  
+<!-- 🗂️ Firebase 雲端備份管理 Modal -->
+<div id="firebaseBackupModal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:24px;">
+    <h2 style="margin:0 0 4px;font-size:1.2rem;">🗂️ 雲端備份紀錄</h2>
+    <p style="color:#64748b;font-size:.82rem;margin:0 0 14px;">每次存檔都會自動備份一份到雲端。找到要還原的日期，按「還原此備份」即可。</p>
+    <div id="firebaseBackupList" style="display:flex;flex-direction:column;max-height:65vh;overflow-y:auto;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('firebaseBackupModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🔧 批量還原星星 Modal -->
+<div id="bulkRestoreModal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:24px;">
+    <h2 style="margin:0 0 4px;font-size:1.2rem;">🔧 星星補填申報</h2>
+    <p style="color:#6b7280;font-size:.82rem;margin:0 0 10px;line-height:1.6;">
+      請同學說出記得的星星數，逐一在這裡填入。<br>
+      ✅ 只更新星星數量，名字和成長紀錄完全不受影響。<br>
+      ✅ 存回後會自動在雲端建立一份備份快照。
+    </p>
+    <div style="background:#1e293b;border-radius:10px;padding:9px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#fbbf24;font-weight:700;font-size:1rem;">目前填入總計：<span id="bulkRestoreTotalNum">0</span> ⭐</span>
+      <span style="color:#94a3b8;font-size:.8rem;" id="bulkRestoreFilledCount">已填 0 人</span>
+    </div>
+    <div id="bulkRestoreList" style="display:flex;flex-direction:column;gap:0;max-height:55vh;overflow-y:auto;border:1px solid #f1f5f9;border-radius:10px;padding:4px 8px;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('bulkRestoreModal')">取消</button>
+      <button class="btn btn-success" onclick="saveBulkRestore()">✅ 存回 Firebase＋建立備份</button>
+    </div>
+  </div>
+</div>
+</body></html>`);
   win.document.close();
 }
 
@@ -14361,22 +14593,7 @@ async function initApp() {
     renderClassFund();
   } catch(e){}
 
-  // 🚨 一次性緊急補星（2026-11-26 同步衝突補救）
-  try {
-    const EMERGENCY_KEY = 'cls_emergencyRestore_20261126';
-    if (!localStorage.getItem(EMERGENCY_KEY) && students.length > 0) {
-      const AMT = 82;
-      const today = new Date().toLocaleDateString('zh-TW');
-      students.forEach(s => {
-        s.stars = (s.stars||0) + AMT;
-        s.log = s.log||[];
-        s.log.push({id:(typeof generateId==='function'?generateId():Date.now()+''), reason:'🚨 緊急補星（2026-11-26 同步衝突補救）', amt:AMT, date:today});
-      });
-      localStorage.setItem(EMERGENCY_KEY, '1');
-      try { await saveField('class306/students', students, 'cls_students'); } catch(e){}
-      console.log('[緊急補星] 完成，每人 +82 顆星');
-    }
-  } catch(err) { console.warn('[緊急補星] 跳過：', err); }
+  // [緊急補星已停用]
 
   // 渲染畫面
   try {
@@ -14431,6 +14648,36 @@ async function initApp() {
       <button onclick="location.reload()" style="background:#fff;color:#dc2626;border:none;border-radius:20px;padding:4px 14px;font-weight:800;cursor:pointer;margin-left:8px;">🔄 立即重新整理</button>
       <button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:20px;padding:4px 14px;font-weight:800;cursor:pointer;margin-left:6px;">我知道了</button>`;
     document.body.prepend(banner);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 每日開啟自動備份（不需要手動存檔也會執行）
+  // 只要今天還沒備份過、名單是真實資料、雲端已連線，就自動備份
+  // ═══════════════════════════════════════════════════════════
+  if (!rosterWasAutoSeeded && students.length > 0 && useCloud && db) {
+    const todayKey = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const lastBackupDay = localStorage.getItem('cls_dailyBackupDate') || '';
+    if (lastBackupDay !== todayKey) {
+      setTimeout(async () => {
+        try {
+          const totalStars = students.reduce((s,x)=>s+(x.stars||0),0);
+          await db.ref(`class306/backups/${todayKey}`).set({
+            students: students.map(s=>({
+              id:s.id, seatNo:s.seatNo, name:s.name, stars:s.stars||0,
+              log:(s.log||[]).slice(-100), role:s.role||'', note:s.note||''
+            })),
+            savedAt: new Date().toISOString(),
+            totalStars,
+            source: 'daily-auto'
+          });
+          localStorage.setItem('cls_dailyBackupDate', todayKey);
+          console.log(`[每日備份] 完成 ${todayKey}，總星星：${totalStars}`);
+          toast(`☁️ 今日備份完成（${totalStars.toLocaleString()} 顆星）`);
+        } catch(e) {
+          console.warn('[每日備份] 失敗', e);
+        }
+      }, 2000); // 頁面穩定 2 秒後再執行，不影響啟動速度
+    }
   }
 }
 initApp().catch(() => {
