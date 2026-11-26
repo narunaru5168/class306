@@ -1020,6 +1020,7 @@ document.body && (document.body.scrollLeft = 0);
     <button onclick="openNavSettingsModal()" title="設定選單名稱" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">⚙️</button>
     <button onclick="openModal('starRulesModal')" title="星星規則說明" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📖</button>
     <button onclick="openRestoreModal()" title="資料還原（緊急救援用）" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🛟</button>
+    <button onclick="openModal('emergencyStarModal')" title="緊急補星（同步衝突補救用）" style="background:rgba(255,100,0,.5);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🚨</button>
   </div>
   <div class="nav-row" id="navRow1"></div>
   <div class="nav-row nav-row-full" id="navRow2"></div>
@@ -1121,6 +1122,30 @@ document.body && (document.body.scrollLeft = 0);
       <button class="btn" style="background:#eff6ff;color:#0369a1;" onclick="previewRestoreData()">🔍 先預覽確認</button>
       <button class="btn btn-success" id="restoreConfirmBtn" onclick="confirmRestoreData()" disabled>✅ 確認還原</button>
       <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('restoreModal')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────── EMERGENCY STAR RESTORE MODAL ─────────────── -->
+<div id="emergencyStarModal" class="modal-overlay" onclick="if(event.target===this)closeModal('emergencyStarModal')">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-title">🚨 緊急補星</div>
+    <p style="font-size:.88rem;color:#555;line-height:1.7;margin-bottom:16px;">
+      同步衝突導致星星減少時使用。<br>
+      輸入補發顆數，系統會幫<strong>全班每位同學</strong>各加上這個數字。
+    </p>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label style="font-size:.82rem;font-weight:700;color:#374151;">每人補發顆數</label>
+      <input type="number" id="emergencyStarAmt" min="1" max="500" value="82"
+        style="width:100%;border:2px solid #e2e8f0;border-radius:10px;padding:8px 12px;font-size:1rem;margin-top:4px;">
+    </div>
+    <div style="font-size:.8rem;color:#6b7280;background:#f9fafb;border-radius:8px;padding:10px 12px;margin-bottom:14px;">
+      💡 2號同學原本 740 → 變 658，差了 82 顆。<br>
+      如果其他同學也是同一次同步被蓋掉，補發相同數字即可。
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-success" onclick="doEmergencyStarRestore()">✅ 確認補發</button>
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('emergencyStarModal')">取消</button>
     </div>
   </div>
 </div>
@@ -6230,7 +6255,28 @@ async function loadData() {
     if (lsTeamDailyChecks !== null) tdcVal = lsTeamDailyChecks;
   }
 
-  students = sVal !== null ? sVal : JSON.parse(localStorage.getItem('cls_students')||'[]');
+  // 🔒 合併保護：Firebase 與 localStorage 都有資料時，逐人比較 stars，永遠取較大值
+  const rawCloud = sVal !== null ? sVal : [];
+  const rawLocal = JSON.parse(localStorage.getItem('cls_students')||'[]');
+  if (rawCloud.length > 0 && rawLocal.length > 0) {
+    // 兩邊都有資料 → 合併，stars 只進不退
+    const localMap = {};
+    rawLocal.forEach(s => { localMap[s.id] = s; });
+    sVal = rawCloud.map(cs => {
+      const ls = localMap[cs.id];
+      if (!ls) return cs;
+      // stars 取較大值；log 取較長者（保留更多紀錄）
+      return {
+        ...cs,
+        stars: Math.max(cs.stars || 0, ls.stars || 0),
+        log: (ls.log||[]).length >= (cs.log||[]).length ? ls.log : cs.log,
+        repairTasks: cs.repairTasks || ls.repairTasks,
+        chanceProgress: Math.max(cs.chanceProgress||0, ls.chanceProgress||0),
+        spinChances: Math.max(cs.spinChances||0, ls.spinChances||0),
+      };
+    });
+  }
+  students = sVal !== null ? sVal : rawLocal;
   grades = gVal !== null ? gVal : JSON.parse(localStorage.getItem('cls_grades')||'[]');
   classMilestoneClaimed = mVal !== null ? mVal : parseInt(localStorage.getItem('cls_classMilestone')||'0');
   classTrophies = tVal !== null ? tVal : JSON.parse(localStorage.getItem('cls_classTrophies')||'[]');
@@ -6318,6 +6364,23 @@ function renderNav(){
   if(row2) row2.innerHTML = NAV_KEYS_ROW2.map(makeBtn).join('');
 }
 // ─── 🛟 資料還原（緊急救援用）───
+// 🚨 緊急補星（同步衝突補救用）
+function doEmergencyStarRestore(){
+  const amt = parseInt(document.getElementById('emergencyStarAmt').value||'0');
+  if(!amt || amt <= 0){ toast('⚠️ 請輸入要補發的顆數'); return; }
+  if(!confirm(`確定要幫全班 ${students.length} 位同學各補 ${amt} 顆星嗎？`)) return;
+  const today = new Date().toLocaleDateString('zh-TW');
+  students.forEach(s => {
+    s.stars = (s.stars||0) + amt;
+    s.log = s.log||[];
+    s.log.push({id:generateId(), reason:'🚨 緊急補星（同步衝突補救）', amt, date:today});
+  });
+  save(); renderStudents(); updateStats();
+  closeModal('emergencyStarModal');
+  toast(`✅ 全班各補發 ${amt} 顆星完成！`);
+  confetti();
+}
+
 let restoreValidatedData = null;
 function openRestoreModal(){
   restoreValidatedData = null;
@@ -6535,11 +6598,12 @@ function confetti() {
   }
 }
 function levelInfo(stars){
-  if(stars>=600) return {label:'🐲 獨家級魔龍ROBLOX', color:'#dc2626', pct:100};
-  if(stars>=400) return {label:'🐉 傳說龍獵人',  color:'#A855F7', pct:Math.min(((stars-400)/200)*100,100)};
-  if(stars>=250) return {label:'🦅 翱翔精英',    color:'#f97316', pct:Math.min(((stars-250)/150)*100,100)};
-  if(stars>=120) return {label:'🐦 展翅獵人',    color:'#5BB8F5', pct:((stars-120)/130)*100};
-  if(stars>=40)  return {label:'🐣 破殼探索者',  color:'#86efac', pct:((stars-40)/80)*100};
+  if(stars>=850) return {label:'🔥 岩漿噴火龍',      color:'#1a1a1a', pct:Math.min(((stars-850)/250)*100,100)};
+  if(stars>=600) return {label:'🐲 獨家級魔龍ROBLOX', color:'#dc2626', pct:Math.min(((stars-600)/250)*100,100)};
+  if(stars>=400) return {label:'🐉 傳說龍獵人',       color:'#A855F7', pct:Math.min(((stars-400)/200)*100,100)};
+  if(stars>=250) return {label:'🦅 翱翔精英',         color:'#f97316', pct:Math.min(((stars-250)/150)*100,100)};
+  if(stars>=120) return {label:'🐦 展翅獵人',         color:'#5BB8F5', pct:((stars-120)/130)*100};
+  if(stars>=40)  return {label:'🐣 破殼探索者',       color:'#86efac', pct:((stars-40)/80)*100};
   return {label:'🥚 見習蛋', color:'#94a3b8', pct:(stars/40)*100};
 }
 
@@ -7652,7 +7716,7 @@ function grantStars(s, amt){
 
   if(leveledUp){
     if((s.spinChances||0) < MAX_STORED_CHANCES) s.spinChances = (s.spinChances||0) + 1;
-    if(afterLevel.includes('獨家級魔龍ROBLOX')){
+    if(afterLevel.includes('岩漿噴火龍') || afterLevel.includes('獨家級魔龍ROBLOX')){
       // 🐲 傳說最高級特別慶祝
       setTimeout(()=>{
         toast(`🐲✨ ${s.name} 突破傳說！成為「獨家級魔龍ROBLOX」！！額外獲得 1 次抽選機會！`);
@@ -14295,6 +14359,21 @@ async function initApp() {
     renderClassFundSyncTime(localStorage.getItem('cls_classFundSyncTime') || '');
     renderClassFund();
   } catch(e){}
+
+  // 🚨 一次性緊急補星（2026-11-26 同步衝突補救）
+  const EMERGENCY_KEY = 'cls_emergencyRestore_20261126';
+  if (!localStorage.getItem(EMERGENCY_KEY) && students.length > 0) {
+    const AMT = 82;
+    const today = new Date().toLocaleDateString('zh-TW');
+    students.forEach(s => {
+      s.stars = (s.stars||0) + AMT;
+      s.log = s.log||[];
+      s.log.push({id:generateId(), reason:'🚨 緊急補星（2026-11-26 同步衝突補救）', amt:AMT, date:today});
+    });
+    localStorage.setItem(EMERGENCY_KEY, '1');
+    try { await saveField('class306/students', students, 'cls_students'); } catch(e){}
+    console.log('[緊急補星] 完成，每人 +82 顆星');
+  }
 
   // 渲染畫面
   try {
