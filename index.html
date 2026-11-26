@@ -330,6 +330,21 @@
     align-items: center; justify-content: center;
   }
   .modal-overlay.open { display: flex; }
+  /* ── 頂部按鈕說明泡泡 ── */
+  .lbtn { position: relative; display: inline-flex; flex-shrink: 0; }
+  .lbtn .ltip {
+    position: absolute; top: calc(100% + 10px); left: 50%;
+    transform: translateX(-50%); background: #1e293b; color: #fff;
+    font-size: .72rem; font-family: 'Nunito', sans-serif; font-weight: 600;
+    line-height: 1.5; white-space: nowrap; padding: 6px 11px; border-radius: 9px;
+    pointer-events: none; opacity: 0; transition: opacity .12s; z-index: 9999;
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  }
+  .lbtn .ltip::before {
+    content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-bottom-color: #1e293b;
+  }
+  .lbtn:hover .ltip { opacity: 1; }
   .modal {
     background: var(--card-bg);
     border-radius: 24px; padding: 32px 28px;
@@ -1017,13 +1032,13 @@ document.body && (document.body.scrollLeft = 0);
 <!-- TOP BAR -->
 <header class="topbar">
   <div class="logo"><span id="siteTitleDisplay">🐾 成長獵人訓練所</span>
-    <button onclick="openNavSettingsModal()" title="設定選單名稱" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">⚙️</button>
-    <button onclick="openModal('starRulesModal')" title="星星規則說明" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📖</button>
-    <button onclick="openRestoreModal()" title="資料還原（緊急救援用）" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🛟</button>
-    <button onclick="openModal('emergencyStarModal')" title="緊急補星（同步衝突補救用）" style="background:rgba(255,100,0,.5);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🚨</button>
-    <button onclick="openBulkRestoreModal()" title="⭐ 星星補填申報（同學申報各自的星星數，存回 Firebase 並建立備份）" style="background:rgba(220,38,38,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🔧</button>
-    <button onclick="downloadStudentBackup()" title="📥 下載今日學生備份（JSON）" style="background:rgba(37,99,235,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">📥</button>
-    <button onclick="openFirebaseBackupModal()" title="🗂️ 查看 Firebase 雲端備份紀錄" style="background:rgba(5,150,105,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;margin-left:4px;flex-shrink:0;">🗂️</button>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openNavSettingsModal()" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">⚙️</button><span class="ltip">設定網站標題<br>與選單名稱</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openModal('starRulesModal')" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">📖</button><span class="ltip">星星獎勵規則說明</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openRestoreModal()" style="background:rgba(255,255,255,.25);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">🛟</button><span class="ltip">緊急救援<br>從 JSON 備份檔還原資料</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openModal('emergencyStarModal')" style="background:rgba(255,100,0,.5);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">🚨</button><span class="ltip">緊急補星<br>全班同時加固定顆數</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openBulkRestoreModal()" style="background:rgba(220,38,38,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">🔧</button><span class="ltip">⭐ 星星補填申報<br>同學各自說出顆數 → 存回Firebase</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="downloadStudentBackup()" style="background:rgba(37,99,235,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">📥</button><span class="ltip">下載今日學生備份<br>（JSON 檔案，存在自己電腦）</span></span>
+    <span class="lbtn" style="margin-left:4px;"><button onclick="openFirebaseBackupModal()" style="background:rgba(5,150,105,.85);border:none;border-radius:50%;width:26px;height:26px;color:#fff;cursor:pointer;font-size:.85rem;">🗂️</button><span class="ltip">查看雲端備份紀錄<br>找到日期 → 一鍵還原</span></span>
   </div>
   <div class="nav-row" id="navRow1"></div>
   <div class="nav-row nav-row-full" id="navRow2"></div>
@@ -13367,8 +13382,8 @@ function printAfricaTaskCards(){
   <script>window.onload=()=>window.print();<\/script>
   
 <!-- 🗂️ Firebase 雲端備份管理 Modal -->
-<div id="firebaseBackupModal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:24px;">
+<div id="firebaseBackupModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
     <h2 style="margin:0 0 4px;font-size:1.2rem;">🗂️ 雲端備份紀錄</h2>
     <p style="color:#64748b;font-size:.82rem;margin:0 0 14px;">每次存檔都會自動備份一份到雲端。找到要還原的日期，按「還原此備份」即可。</p>
     <div id="firebaseBackupList" style="display:flex;flex-direction:column;max-height:65vh;overflow-y:auto;"></div>
@@ -13379,8 +13394,8 @@ function printAfricaTaskCards(){
 </div>
 
 <!-- 🔧 批量還原星星 Modal -->
-<div id="bulkRestoreModal" class="modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;max-width:600px;margin:40px auto;padding:24px;">
+<div id="bulkRestoreModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
     <h2 style="margin:0 0 4px;font-size:1.2rem;">🔧 星星補填申報</h2>
     <p style="color:#6b7280;font-size:.82rem;margin:0 0 10px;line-height:1.6;">
       請同學說出記得的星星數，逐一在這裡填入。<br>
