@@ -6257,7 +6257,8 @@ async function loadData() {
 
   // 🔒 合併保護：Firebase 與 localStorage 都有資料時，逐人比較 stars，永遠取較大值
   const rawCloud = sVal !== null ? sVal : [];
-  const rawLocal = JSON.parse(localStorage.getItem('cls_students')||'[]');
+  let rawLocal = [];
+  try { rawLocal = JSON.parse(localStorage.getItem('cls_students')||'[]'); } catch(_e) {}
   if (rawCloud.length > 0 && rawLocal.length > 0) {
     // 兩邊都有資料 → 合併，stars 只進不退
     const localMap = {};
@@ -14361,19 +14362,21 @@ async function initApp() {
   } catch(e){}
 
   // 🚨 一次性緊急補星（2026-11-26 同步衝突補救）
-  const EMERGENCY_KEY = 'cls_emergencyRestore_20261126';
-  if (!localStorage.getItem(EMERGENCY_KEY) && students.length > 0) {
-    const AMT = 82;
-    const today = new Date().toLocaleDateString('zh-TW');
-    students.forEach(s => {
-      s.stars = (s.stars||0) + AMT;
-      s.log = s.log||[];
-      s.log.push({id:generateId(), reason:'🚨 緊急補星（2026-11-26 同步衝突補救）', amt:AMT, date:today});
-    });
-    localStorage.setItem(EMERGENCY_KEY, '1');
-    try { await saveField('class306/students', students, 'cls_students'); } catch(e){}
-    console.log('[緊急補星] 完成，每人 +82 顆星');
-  }
+  try {
+    const EMERGENCY_KEY = 'cls_emergencyRestore_20261126';
+    if (!localStorage.getItem(EMERGENCY_KEY) && students.length > 0) {
+      const AMT = 82;
+      const today = new Date().toLocaleDateString('zh-TW');
+      students.forEach(s => {
+        s.stars = (s.stars||0) + AMT;
+        s.log = s.log||[];
+        s.log.push({id:(typeof generateId==='function'?generateId():Date.now()+''), reason:'🚨 緊急補星（2026-11-26 同步衝突補救）', amt:AMT, date:today});
+      });
+      localStorage.setItem(EMERGENCY_KEY, '1');
+      try { await saveField('class306/students', students, 'cls_students'); } catch(e){}
+      console.log('[緊急補星] 完成，每人 +82 顆星');
+    }
+  } catch(err) { console.warn('[緊急補星] 跳過：', err); }
 
   // 渲染畫面
   try {
