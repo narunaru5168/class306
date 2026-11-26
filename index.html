@@ -13391,40 +13391,7 @@ function printAfricaTaskCards(){
   <p class="sub">每人一格，剪開後發給學生</p>
   <div class="grid">${cards}</div>
   <script>window.onload=()=>window.print();<\/script>
-  
-<!-- 🗂️ Firebase 雲端備份管理 Modal -->
-<div id="firebaseBackupModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
-    <h2 style="margin:0 0 4px;font-size:1.2rem;">🗂️ 雲端備份紀錄</h2>
-    <p style="color:#64748b;font-size:.82rem;margin:0 0 14px;">每次存檔都會自動備份一份到雲端。找到要還原的日期，按「還原此備份」即可。</p>
-    <div id="firebaseBackupList" style="display:flex;flex-direction:column;max-height:65vh;overflow-y:auto;"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
-      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('firebaseBackupModal')">關閉</button>
-    </div>
-  </div>
-</div>
-
-<!-- 🔧 批量還原星星 Modal -->
-<div id="bulkRestoreModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
-  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
-    <h2 style="margin:0 0 4px;font-size:1.2rem;">🔧 星星補填申報</h2>
-    <p style="color:#6b7280;font-size:.82rem;margin:0 0 10px;line-height:1.6;">
-      請同學說出記得的星星數，逐一在這裡填入。<br>
-      ✅ 只更新星星數量，名字和成長紀錄完全不受影響。<br>
-      ✅ 存回後會自動在雲端建立一份備份快照。
-    </p>
-    <div style="background:#1e293b;border-radius:10px;padding:9px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="color:#fbbf24;font-weight:700;font-size:1rem;">目前填入總計：<span id="bulkRestoreTotalNum">0</span> ⭐</span>
-      <span style="color:#94a3b8;font-size:.8rem;" id="bulkRestoreFilledCount">已填 0 人</span>
-    </div>
-    <div id="bulkRestoreList" style="display:flex;flex-direction:column;gap:0;max-height:55vh;overflow-y:auto;border:1px solid #f1f5f9;border-radius:10px;padding:4px 8px;"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap;">
-      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('bulkRestoreModal')">取消</button>
-      <button class="btn btn-success" onclick="saveBulkRestore()">✅ 存回 Firebase＋建立備份</button>
-    </div>
-  </div>
-</div>
-</body></html>`);
+  </body></html>`);
   win.document.close();
 }
 
@@ -15065,6 +15032,39 @@ function deleteEssayRecord(id) {
 </script>
 
 <!-- ─────────────── 個人週進步結算 MODAL ─────────────── -->
+<!-- 🗂️ Firebase 雲端備份管理 Modal -->
+<div id="firebaseBackupModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
+    <h2 style="margin:0 0 4px;font-size:1.2rem;">🗂️ 雲端備份紀錄</h2>
+    <p style="color:#64748b;font-size:.82rem;margin:0 0 14px;">每次存檔都會自動備份一份到雲端。找到要還原的日期，按「還原此備份」即可。</p>
+    <div id="firebaseBackupList" style="display:flex;flex-direction:column;max-height:65vh;overflow-y:auto;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('firebaseBackupModal')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🔧 批量還原星星 Modal -->
+<div id="bulkRestoreModal" class="modal-overlay" style="align-items:flex-start;overflow-y:auto;">
+  <div style="background:#fff;border-radius:16px;max-width:600px;width:90%;margin:40px auto;padding:24px;">
+    <h2 style="margin:0 0 4px;font-size:1.2rem;">🔧 星星補填申報</h2>
+    <p style="color:#6b7280;font-size:.82rem;margin:0 0 10px;line-height:1.6;">
+      請同學說出記得的星星數，逐一在這裡填入。<br>
+      ✅ 只更新星星數量，名字和成長紀錄完全不受影響。<br>
+      ✅ 存回後會自動在雲端建立一份備份快照。
+    </p>
+    <div style="background:#1e293b;border-radius:10px;padding:9px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#fbbf24;font-weight:700;font-size:1rem;">目前填入總計：<span id="bulkRestoreTotalNum">0</span> ⭐</span>
+      <span style="color:#94a3b8;font-size:.8rem;" id="bulkRestoreFilledCount">已填 0 人</span>
+    </div>
+    <div id="bulkRestoreList" style="display:flex;flex-direction:column;gap:0;max-height:55vh;overflow-y:auto;border:1px solid #f1f5f9;border-radius:10px;padding:4px 8px;"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn" style="background:#e2e8f0;color:#555;" onclick="closeModal('bulkRestoreModal')">取消</button>
+      <button class="btn btn-success" onclick="saveBulkRestore()">✅ 存回 Firebase＋建立備份</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="weeklySettleModal">
   <div class="modal" style="max-width:500px;">
     <h3 style="margin-bottom:6px;">📅 個人週進步結算</h3>
