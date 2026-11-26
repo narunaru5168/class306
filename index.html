@@ -6390,8 +6390,8 @@ function toast(msg) {
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id) { const el=document.getElementById(id); if(!el)return; el.style.display='flex'; el.classList.add('open'); }
+function closeModal(id) { const el=document.getElementById(id); if(!el)return; el.classList.remove('open'); el.style.display=''; }
 // ─── 選單名稱自訂 ───
 function ensureNavLabels(){
   Object.keys(NAV_DEFAULTS).forEach(k=>{ if(!navLabels[k]) navLabels[k] = NAV_DEFAULTS[k]; });
@@ -6430,8 +6430,17 @@ function doEmergencyStarRestore(){
 
 // 🔧 批量還原星星
 function openBulkRestoreModal() {
-  const list = document.getElementById('bulkRestoreList');
-  if (!list) return;
+  let list = document.getElementById('bulkRestoreList');
+  if (!list) {
+    // 舊版 HTML 相容：動態建立清單容器
+    const modalInner = document.querySelector('#bulkRestoreModal > div');
+    if (!modalInner) { toast('⚠️ 找不到補填視窗，請重新整理頁面'); return; }
+    list = document.createElement('div');
+    list.id = 'bulkRestoreList';
+    list.style.cssText = 'display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:12px;';
+    const closeBtn = modalInner.querySelector('button');
+    modalInner.insertBefore(list, closeBtn ? closeBtn.parentElement : null);
+  }
   list.innerHTML = '';
   const sorted = [...students].sort((a,b)=>parseInt(a.seatNo||0)-parseInt(b.seatNo||0));
   function updateBulkTotal() {
