@@ -2652,9 +2652,9 @@ document.body && (document.body.scrollLeft = 0);
         box-shadow:0 6px 25px rgba(251,191,36,.5);margin-bottom:8px;width:100%;
       ">⭐ 全班加 1 顆星！</button>
       <div id="quietStarMsg" style="font-size:.85rem;color:#fde68a;min-height:1.4em;margin-bottom:12px;text-align:center;"></div>
-      <div style="display:flex;gap:12px;width:100%;">
-        <button onclick="quietResetChallenge()" style="flex:1;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:white;border-radius:50px;padding:11px 10px;font-size:.9rem;font-weight:800;cursor:pointer;font-family:inherit;">🔄 再挑戰</button>
-        <button onclick="closeQuietOverlay()" style="flex:1;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:50px;padding:11px 10px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;">↩️ 回到網站</button>
+      <div style="display:flex;gap:10px;width:100%;flex-wrap:wrap;">
+        <button onclick="quietResetChallenge()" style="flex:1;min-width:90px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.3);color:white;border-radius:50px;padding:11px 10px;font-size:.88rem;font-weight:800;cursor:pointer;font-family:inherit;">🔄 再挑戰</button>
+        <button onclick="closeQuietOverlay()" style="flex:1;min-width:90px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;color:white;border-radius:50px;padding:11px 10px;font-size:.88rem;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 15px rgba(37,99,235,.4);">🏠 回首頁</button>
       </div>
     </div>
   </div>
@@ -6824,13 +6824,13 @@ function confetti() {
   }
 }
 function levelInfo(stars){
-  if(stars>=850) return {label:'🔥 岩漿噴火龍',      color:'#1a1a1a', pct:Math.min(((stars-850)/250)*100,100)};
-  if(stars>=600) return {label:'🐲 獨家級魔龍ROBLOX', color:'#dc2626', pct:Math.min(((stars-600)/250)*100,100)};
-  if(stars>=400) return {label:'🐉 傳說龍獵人',       color:'#A855F7', pct:Math.min(((stars-400)/200)*100,100)};
-  if(stars>=250) return {label:'🦅 翱翔精英',         color:'#f97316', pct:Math.min(((stars-250)/150)*100,100)};
-  if(stars>=120) return {label:'🐦 展翅獵人',         color:'#5BB8F5', pct:((stars-120)/130)*100};
-  if(stars>=40)  return {label:'🐣 破殼探索者',       color:'#86efac', pct:((stars-40)/80)*100};
-  return {label:'🥚 見習蛋', color:'#94a3b8', pct:(stars/40)*100};
+  if(stars>=850) return {label:'🔥 岩漿噴火龍',      color:'#ff6b35', pct:Math.min(((stars-850)/250)*100,100), next:null};
+  if(stars>=600) return {label:'🐲 獨家級魔龍ROBLOX', color:'#dc2626', pct:Math.min(((stars-600)/250)*100,100), next:850};
+  if(stars>=400) return {label:'🐉 傳說龍獵人',       color:'#A855F7', pct:Math.min(((stars-400)/200)*100,100), next:600};
+  if(stars>=250) return {label:'🦅 翱翔精英',         color:'#f97316', pct:Math.min(((stars-250)/150)*100,100), next:400};
+  if(stars>=120) return {label:'🐦 展翅獵人',         color:'#5BB8F5', pct:Math.min(((stars-120)/130)*100,100), next:250};
+  if(stars>=40)  return {label:'🐣 破殼探索者',       color:'#4ade80', pct:Math.min(((stars-40)/80)*100,100),   next:120};
+  return {label:'🥚 見習蛋', color:'#94a3b8', pct:Math.min((stars/40)*100,100), next:40};
 }
 
 // ─── STUDENTS ───
@@ -7093,8 +7093,9 @@ function renderStudents(){
           <button class="btn" style="flex:1;background:#fef2f2;color:#b91c1c;border:1.5px solid #fecaca;padding:5px 8px;font-size:.7rem;font-weight:800;" onclick="startGameChallenge(${s.id},'${pendingList[0][0]}')" title="轉盤抽到但還沒去玩的語詞遊戲挑戰，點一下就開始">🎮 待完成挑戰${pendingList.length>1?` ×${pendingList.length}`:''}（點我開始）</button>
           <button class="btn" style="background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;padding:5px 9px;font-size:.7rem;font-weight:800;" onclick="clearPendingChallengeManually(${s.id},'${pendingList[0][0]}','${s.name}')" title="如果已經玩過、分頁被關掉卡住不會消失，或不想玩了，點這裡手動清除">✕</button>
         </div>` : ''}
-      <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:4px;">${lv.label}</div>
-      <div class="level-bar-wrap"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
+      <div style="font-size:.75rem;color:${lv.color};font-weight:800;margin-bottom:3px;">${lv.label}</div>
+      <div class="level-bar-wrap" title="${lv.next?`還需 ${Math.max(0,lv.next-s.stars)} 顆星升下一級`:'已達最高等級！'}"><div class="level-bar" style="width:${pct}%;background:${lv.color}"></div></div>
+      <div style="font-size:.6rem;color:#94a3b8;font-weight:700;margin-bottom:3px;text-align:right;">${lv.next?`還需 ${Math.max(0,lv.next-s.stars)} ⭐ 升級`:'🏆 最高級！'}</div>
       <div class="stars"><span>⭐</span> ${s.stars} 顆星${growthBadge(s)}</div>
       <div style="font-size:.68rem;font-weight:800;color:#6d28d9;margin-bottom:2px;" title="努力值不受修復任務限制，隨時都加得到">💪 努力值 ${effortPoints}</div>
       <div style="font-size:.62rem;font-weight:800;color:#0ea5a4;margin-bottom:2px;">📚已讀${readingCountFor(s.id)}本</div>
@@ -8005,8 +8006,8 @@ function updateStats(){
   const total=students.reduce((a,s)=>a+s.stars,0);
   document.getElementById('statStars').textContent=total;
   const king=students.sort((a,b)=>b.stars-a.stars)[0];
-  document.getElementById('statKing').textContent=king?king.name+' '+king.avatar:'-';
-  students.sort((a,b)=>a.sid.localeCompare(b.sid));
+  document.getElementById('statKing').textContent=king?king.name+(king.avatar?' '+king.avatar:''):'-';
+  students.sort((a,b)=>(a.sid||'').localeCompare(b.sid||''));
   document.getElementById('statMissions').textContent=Object.keys(africaDone||{}).length;
 
   // 提醒：已達抽選次數上限、卻還在累積星星進度的學生（正在浪費機會）
@@ -10091,7 +10092,12 @@ function qLaunchFireworks(){
       ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
     }
     ctx.globalAlpha=1;
-    qFwRaf=requestAnimationFrame(draw);
+    if(qFwParts.length>0){
+      qFwRaf=requestAnimationFrame(draw);
+    } else {
+      // 粒子全消失，清空畫布避免殘留黑屏
+      ctx.clearRect(0,0,cv.width,cv.height);
+    }
   }
   draw();
 }
